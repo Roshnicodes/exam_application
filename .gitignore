@@ -36,3 +36,6 @@
 
 # Local Claude Code preview settings
 /.claude/
+
+# Gems installed on the server with `bundle config deployment true`
+/vendor/bundle
