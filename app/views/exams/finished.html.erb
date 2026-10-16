@@ -1,0 +1,31 @@
+<% content_for :title, "Exam submitted" %>
+<% terminated = @invitation.terminated? %>
+<div class="exam-wrap" data-controller="media-cleanup">
+  <%= render "header" %>
+  <div class="card finish-card">
+    <div class="big-ico <%= 'bad' if terminated %>"><%= icon(terminated ? "x-circle" : "check-circle") %></div>
+    <% if terminated %>
+      <h1>Exam ended</h1>
+      <p class="muted" style="margin-top:.6rem">Your exam was closed automatically: <b><%= @invitation.termination_reason %></b>. Your responses so far have been submitted to HR for review.</p>
+    <% else %>
+      <h1>All done, <%= @invitation.candidate_name.split.first %>! 🎉</h1>
+      <p class="muted" style="margin-top:.6rem">Your answers for <b><%= @invitation.vacancy %></b> have been submitted successfully. The HR team will review your assessment and get back to you.</p>
+    <% end %>
+    <% if @invitation.quiz.show_result_to_candidate? %>
+      <div class="cand-result">
+        <div class="score-ring" style="--p: <%= @invitation.percentage %>"><div><div><b><%= @invitation.percentage %>%</b><span><%= @invitation.score %>/<%= @invitation.total_marks %> marks</span></div></div></div>
+        <div>
+          <span class="result-badge <%= @invitation.passed? ? 'pass' : 'fail' %>" style="font-size:.95rem"><%= icon(@invitation.passed? ? "check-circle" : "x-circle") %> <%= @invitation.passed? ? "Passed" : "Not cleared" %></span>
+          <p class="small muted" style="margin-top:.6rem">Pass mark for this test is <b><%= @invitation.quiz.pass_percentage %>%</b>. HR will contact you about the next round.</p>
+        </div>
+      </div>
+    <% end %>
+    <div class="kv" style="margin-top:2rem;text-align:left">
+      <div><span>Answered</span><b><%= @invitation.answered_count %> / <%= @invitation.quiz.questions.size %></b></div>
+      <div><span>Submitted at</span><b><%= nice_time(@invitation.submitted_at) %></b></div>
+      <% if @invitation.interview_date %><div><span>Interview</span><b><%= @invitation.interview_date.strftime("%d %b %Y, %-I:%M %p") %></b></div><% end %>
+      <div><span>Time taken</span><b><%= duration_between(@invitation.started_at, @invitation.submitted_at) %></b></div>
+    </div>
+    <p class="tiny muted" style="margin-top:2rem">You can close this window now.</p>
+  </div>
+</div>

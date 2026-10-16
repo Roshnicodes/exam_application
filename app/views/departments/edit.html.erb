@@ -1,0 +1,14 @@
+<% content_for :title, "Edit #{@department.name}" %>
+<%= render layout: "shared/page_header", locals: { title: "Edit department", subtitle: @department.name, icon: "building", crumbs: [ [ "Departments", departments_path ] ] } do %>
+<% end %>
+<%= form_with model: @department, class: "card" do |f| %>
+  <div class="form-section stack">
+    <%= render "shared/errors", record: @department %>
+    <%= render "fields", f: f %>
+    <label class="row small" style="cursor:pointer"><%= f.check_box :active, style: "width:18px;height:18px;accent-color:var(--brand)" %> Active (show in vacancy dropdowns)</label>
+  </div>
+  <div class="form-actions">
+    <%= link_to "Cancel", departments_path, class: "btn btn-light" %>
+    <%= f.button class: "btn btn-primary" do %><%= icon("check") %> Save changes<% end %>
+  </div>
+<% end %>

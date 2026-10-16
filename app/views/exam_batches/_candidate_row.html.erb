@@ -1,0 +1,8 @@
+<div class="cand-input-row repeat-row">
+  <span class="row-num"></span>
+  <input type="text" name="candidates[][candidate_name]" value="<%= row[:candidate_name] %>" placeholder="Full name *" class="input">
+  <input type="email" name="candidates[][candidate_email]" value="<%= row[:candidate_email] %>" placeholder="Email" class="input">
+  <input type="tel" name="candidates[][candidate_phone]" value="<%= row[:candidate_phone] %>" placeholder="Mobile (10 digit)" class="input" maxlength="14">
+  <input type="text" name="candidates[][experience]" value="<%= row[:experience] %>" placeholder="Experience" class="input hide-sm">
+  <button type="button" class="btn btn-danger icon-btn" data-action="repeater#remove" aria-label="Remove"><%= icon("trash") %></button>
+</div>

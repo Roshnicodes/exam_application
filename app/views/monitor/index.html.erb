@@ -1,0 +1,26 @@
+<% content_for :title, @batch ? "Monitor · #{@batch.name}" : "Live monitor" %>
+<% content_for :head do %><meta name="turbo-refresh-method" content="morph"><meta name="turbo-refresh-scroll" content="preserve"><% end %>
+<%= turbo_stream_from Current.user, :invitations %>
+<% list = @invitations.to_a.sort_by { |i| [ { "in_progress" => 0, "otp_requested" => 1, "verified" => 2 }.fetch(i.status, 3), -i.warnings_count, i.candidate_name ] } %>
+<%= render layout: "shared/page_header", locals: {
+      title: @batch ? "Live monitor — #{@batch.name}" : "Live monitor",
+      subtitle: "Every candidate on one screen. Tiles update by themselves and flash red on suspicious activity.", icon: "video",
+      crumbs: @batch ? [ [ "Batches", exam_batches_path ], [ @batch.name, exam_batch_path(@batch) ] ] : [ [ "Dashboard", root_path ] ],
+      stats: [
+        { label: "On screen", value: list.size, icon: "users", tone: "violet" },
+        { label: "Writing exam", value: list.count(&:in_progress?), icon: "video", tone: "red" },
+        { label: "Awaiting OTP / check", value: list.count { |i| i.otp_requested? || i.verified? }, icon: "key", tone: "amber" },
+        { label: "Finished", value: list.count(&:finished?), icon: "check-circle", tone: "green" }
+      ] } do %>
+  <span class="pill" style="color:#e0e7ff"><span class="live-dot"></span> Live</span>
+  <% if @batch %><%= link_to exam_batch_path(@batch), class: "btn btn-light" do %><%= icon("link") %> Links<% end %><% end %>
+<% end %>
+
+<div data-controller="autorefresh" data-autorefresh-interval-value="45000">
+  <% if list.any? %>
+    <div class="mon-grid"><%= render partial: "monitor/tile", collection: list, as: :invitation %></div>
+    <p class="tiny muted" style="text-align:center;margin-top:1rem">New candidates appear automatically every 45 seconds · Click a tile to open full timeline, recordings and snapshots</p>
+  <% else %>
+    <div class="card empty"><div class="ico"><%= icon("video") %></div><h3>Nobody is taking an exam right now</h3><p>Candidates show up here as soon as they request their OTP.</p></div>
+  <% end %>
+</div>

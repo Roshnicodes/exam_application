@@ -1,0 +1,28 @@
+<% content_for :title, "Create account" %>
+<h2>Create your HR account</h2>
+<p>Start running secure, proctored hiring exams in minutes.</p>
+
+<%= form_with model: @user, url: registration_path, class: "stack" do |f| %>
+  <%= render "shared/errors", record: @user %>
+  <div class="field">
+    <%= f.label :name, "Full name" %>
+    <div class="input-wrap"><%= icon("user") %><%= f.text_field :name, required: true, autofocus: true, placeholder: "Priya Sharma", class: "input" %></div>
+  </div>
+  <div class="field">
+    <%= f.label :email_address, "Work email" %>
+    <div class="input-wrap"><%= icon("mail") %><%= f.email_field :email_address, required: true, placeholder: "hr@company.com", class: "input" %></div>
+  </div>
+  <div class="fields">
+    <div class="field">
+      <%= f.label :password %>
+      <%= f.password_field :password, required: true, minlength: 6, maxlength: 72, placeholder: "Min 6 characters", class: "input" %>
+    </div>
+    <div class="field">
+      <%= f.label :password_confirmation, "Confirm" %>
+      <%= f.password_field :password_confirmation, required: true, maxlength: 72, placeholder: "Repeat password", class: "input" %>
+    </div>
+  </div>
+  <%= f.button class: "btn btn-primary btn-lg btn-block" do %>Create account <%= icon("arrow-right") %><% end %>
+<% end %>
+
+<p class="muted small" style="margin-top:1.5rem;text-align:center">Already have an account? <%= link_to "Sign in", new_session_path %></p>

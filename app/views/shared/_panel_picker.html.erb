@@ -1,0 +1,17 @@
+<%# Interview panel multi-select. locals: f:, selected_ids:, hint: %>
+<div class="form-section">
+  <div class="form-section-head">
+    <span class="ico"><%= icon("users") %></span>
+    <div class="grow"><h3>Interview panel</h3><p><%= hint %></p></div>
+    <%= link_to employees_path, class: "btn btn-light btn-sm", target: "_blank" do %><%= icon("id-card") %> Employees<% end %>
+  </div>
+  <% if @employees.any? %>
+    <div class="field" data-controller="combobox" data-combobox-placeholder-value="Search panelist by name, code, department…">
+      <%= f.select :panelist_ids, options_for_select(@employees.map { |e| [ e.name, e.id, { "data-sub" => e.subtitle } ] }, selected_ids),
+            {}, multiple: true, class: "input", data: { combobox_target: "select" } %>
+      <span class="hint">Each panelist gets a private "watch link" to see the candidate's live camera — share it from the candidate / batch page.</span>
+    </div>
+  <% else %>
+    <div class="waiting" style="margin:0"><%= icon("alert") %><span>No employees yet. <%= link_to "Upload your employee list", employees_path %> to pick panelists.</span></div>
+  <% end %>
+</div>

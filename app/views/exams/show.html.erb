@@ -1,0 +1,61 @@
+<% content_for :title, "Assessment · #{@invitation.vacancy}" %>
+<% otp_step = @invitation.otp_requested? && @invitation.entered_phone.present? && params[:step] != "phone" %>
+<div class="exam-wrap">
+  <%= render "header" %>
+
+  <div class="candidate-hero">
+    <%= render "hero_top" %>
+    <div class="candidate-grid">
+      <div>
+        <h2>Hi <%= @invitation.candidate_name.split.first %> 👋</h2>
+        <p class="muted" style="margin-top:.35rem">Welcome to your online assessment. Complete these three steps to begin.</p>
+        <div class="steps">
+          <div class="step <%= otp_step ? 'done' : 'current' %>"><span class="n"><%= otp_step ? icon("check") : "1" %></span><div><b>Enter your mobile number</b><p>We'll generate a one-time password for verification.</p></div></div>
+          <div class="step <%= 'current' if otp_step %>"><span class="n">2</span><div><b>Get OTP from HR</b><p>The OTP goes to your HR. Call or message them to get the code.</p></div></div>
+          <div class="step"><span class="n">3</span><div><b>Camera check &amp; start</b><p>Allow camera access, sit in a well-lit room and begin.</p></div></div>
+        </div>
+        <% if @invitation.location.present? || @invitation.notes.present? %>
+          <div class="kv" style="margin-top:1.5rem;grid-template-columns:1fr">
+            <% if @invitation.location.present? %><div><span>Interview location</span><b><%= @invitation.location %></b></div><% end %>
+            <% if @invitation.notes.present? %><div><span>Note from HR</span><b style="font-weight:500"><%= @invitation.notes %></b></div><% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <div>
+        <% if @invitation.link_expired? %>
+          <div class="empty"><div class="ico" style="background:var(--red-soft);color:var(--red)"><%= icon("lock") %></div><h3>This link has expired</h3><p>Please contact your HR for a new exam link.</p></div>
+        <% elsif otp_step %>
+          <h2>Enter the OTP</h2>
+          <div class="waiting" style="margin-top:1rem"><span class="spinner"></span><span>OTP sent to your HR for <b>+91 <%= @invitation.entered_phone %></b>. Ask HR to share the 6-digit code.</span></div>
+          <%= form_with url: exam_verify_otp_path(@invitation.token), class: "stack", data: { controller: "otp" } do |f| %>
+            <div class="otp-field-wrap">
+              <input type="text" name="otp" id="otp" class="otp-field" inputmode="numeric" autocomplete="one-time-code"
+                     maxlength="6" pattern="[0-9]{6}" required autofocus placeholder="______" aria-label="6 digit OTP"
+                     data-otp-target="field" data-action="input->otp#input">
+            </div>
+            <p class="tiny muted" style="text-align:center;margin-top:-.4rem">Type or paste the 6-digit code shared by HR</p>
+            <%= f.button class: "btn btn-primary btn-lg btn-block", data: { otp_target: "submit" } do %><%= icon("shield") %> Verify &amp; continue<% end %>
+          <% end %>
+          <div class="row between small" style="margin-top:1rem">
+            <%= link_to "Change number", exam_path(@invitation.token, step: "phone") %>
+            <%= button_to "Resend OTP", exam_request_otp_path(@invitation.token), params: { phone: @invitation.entered_phone }, class: "btn btn-ghost btn-sm" %>
+          </div>
+        <% else %>
+          <h2>Verify your mobile</h2>
+          <p class="muted small" style="margin:.35rem 0 1.25rem">Enter the mobile number you shared with HR.</p>
+          <%= form_with url: exam_request_otp_path(@invitation.token), class: "stack" do |f| %>
+            <div class="field">
+              <label for="phone">Mobile number</label>
+              <div class="input-wrap"><%= icon("phone") %>
+                <%= f.telephone_field :phone, required: true, autofocus: true, inputmode: "numeric", pattern: "[0-9+ -]{10,14}", maxlength: 14, placeholder: "98765 43210", class: "input", value: @invitation.entered_phone %>
+              </div>
+            </div>
+            <%= f.button class: "btn btn-primary btn-lg btn-block" do %>Get OTP <%= icon("arrow-right") %><% end %>
+          <% end %>
+          <p class="tiny muted" style="margin-top:1rem;text-align:center"><%= icon("lock") %> The OTP is delivered to your HR, who will share it with you.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,88 @@
+<%= form_with model: quiz, class: "card", data: { controller: "nested-form" } do |f| %>
+  <div class="form-section">
+    <%= render "shared/errors", record: quiz %>
+    <div class="form-section-head">
+      <span class="ico"><%= icon("file") %></span>
+      <div><h3>Paper details</h3><p>Title, time limit and passing criteria.</p></div>
+    </div>
+    <div class="fields three">
+      <div class="field" style="grid-column:span 1">
+        <%= f.label :title do %>Title <span class="req">*</span><% end %>
+        <%= f.text_field :title, required: true, placeholder: "e.g. Aptitude & Logical Reasoning", class: "input" %>
+      </div>
+      <div class="field">
+        <%= f.label :duration_minutes, "Duration (minutes)" %>
+        <%= f.number_field :duration_minutes, min: 1, max: 300, class: "input" %>
+      </div>
+      <div class="field">
+        <%= f.label :pass_percentage, "Pass percentage" %>
+        <%= f.number_field :pass_percentage, min: 0, max: 100, class: "input" %>
+      </div>
+      <div class="field full">
+        <%= f.label :description %>
+        <%= f.text_area :description, rows: 2, placeholder: "Short description shown to candidates", class: "input" %>
+      </div>
+      <label class="field full result-toggle">
+        <span class="row" style="gap:.7rem;align-items:flex-start">
+          <%= f.check_box :show_result_to_candidate, style: "width:20px;height:20px;accent-color:var(--brand);margin-top:.15rem" %>
+          <span><b>Show result to the candidate after submitting</b><br><span class="hint">Candidate sees their score, percentage and pass / fail on the final screen. HR always sees full results.</span></span>
+        </span>
+      </label>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <% if @import_errors.present? %>
+      <div class="errors"><b>Excel upload failed — nothing was imported. Fix these rows and upload again:</b>
+        <ul><% @import_errors.first(10).each do |e| %><li><%= e %></li><% end %></ul>
+        <% if @import_errors.size > 10 %><p>…and <%= @import_errors.size - 10 %> more.</p><% end %>
+      </div>
+    <% end %>
+    <div class="form-section-head">
+      <span class="ico"><%= icon("sheet") %></span>
+      <div class="grow"><h3>Bulk upload from Excel</h3><p>Download the template, fill one question per row with its <b style="color:#059669">Correct Answer</b> (green column — used to calculate the result), and upload it here.</p></div>
+    </div>
+    <div class="excel-card">
+      <div class="dropzone" data-controller="dropzone" data-action="click->dropzone#pick">
+        <span class="ico"><%= icon("upload") %></span>
+        <div class="grow">
+          <div class="small" data-dropzone-target="label"><b>Click to choose</b> or drag &amp; drop a <b>.xlsx</b> / <b>.csv</b> file</div>
+          <div class="tiny muted">Columns: Question · Option A–D · <b style="color:#059669">Correct Answer (A/B/C/D)</b> · Marks</div>
+        </div>
+        <%= f.file_field :questions_file, accept: ".xlsx,.xls,.csv", data: { dropzone_target: "input", action: "change->dropzone#changed" } %>
+      </div>
+      <div class="row wrap">
+        <%= link_to template_quizzes_path, class: "btn btn-light", data: { turbo: false } do %><span class="xl-badge">X</span> Download template<% end %>
+        <% if quiz.persisted? %>
+          <%= link_to export_quiz_path(quiz), class: "btn btn-light", data: { turbo: false } do %><%= icon("download") %> Current questions<% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-head">
+      <span class="ico"><%= icon("list") %></span>
+      <div class="grow"><h3>Questions</h3><p>Add manually, or leave this blank when uploading from Excel. Select the radio next to the correct option.</p></div>
+    </div>
+
+    <div data-nested-form-target="list">
+      <%= f.fields_for :questions do |qf| %>
+        <%= render "question_fields", f: qf %>
+      <% end %>
+    </div>
+
+    <template data-nested-form-target="template">
+      <%= f.fields_for :questions, Question.new(options: [ "", "", "", "" ]), child_index: "NEW_RECORD" do |qf| %>
+        <%= render "question_fields", f: qf %>
+      <% end %>
+    </template>
+
+    <button type="button" class="btn btn-light btn-block" style="margin-top:1rem;border-style:dashed" data-action="nested-form#add"><%= icon("plus") %> Add question</button>
+  </div>
+
+  <div class="form-actions">
+    <%= link_to "Cancel", quiz.persisted? ? quiz_path(quiz) : quizzes_path, class: "btn btn-light" %>
+    <%= f.button class: "btn btn-primary" do %><%= icon("check") %> Save paper<% end %>
+  </div>
+<% end %>

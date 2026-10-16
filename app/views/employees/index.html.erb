@@ -1,0 +1,119 @@
+<% content_for :title, "Employees" %>
+<% filter_params = params.permit(:q, :department).to_h %>
+
+<%= render layout: "shared/page_header", locals: {
+      title: "Employees & panelists", subtitle: "Upload the employee list once, then pick interview panelists from it in any vacancy.", icon: "id-card",
+      crumbs: [ [ "Masters", departments_path ] ],
+      stats: [
+        { label: "Employees", value: @stats[:total], icon: "users", tone: "violet" },
+        { label: "Departments", value: @stats[:departments], icon: "building", tone: "pink" },
+        { label: "With email", value: @stats[:with_email], icon: "mail", tone: "green" },
+        { label: "On interview panels", value: @stats[:panelists], icon: "award", tone: "amber" }
+      ] } do %>
+  <%= link_to export_employees_path, class: "btn btn-light", data: { turbo: false } do %><%= icon("download") %> Export<% end %>
+  <button type="button" class="btn btn-light" data-action="toggle-panel#open" data-panel="upload-panel"><%= icon("upload") %> Upload Excel</button>
+  <button type="button" class="btn btn-primary" data-action="toggle-panel#open" data-panel="add-panel"><%= icon("plus") %> Add employee</button>
+<% end %>
+
+<div data-controller="toggle-panel">
+  <div id="upload-panel" class="card emp-panel <%= 'hidden' %>" data-toggle-panel-target="panel">
+    <div class="emp-panel-head">
+      <span class="emp-panel-ico" style="background:linear-gradient(135deg,#10b981,#14b8a6)"><%= icon("sheet") %></span>
+      <div class="grow"><h3>Bulk upload from Excel / CSV</h3><p>All sheets are read. Existing employees are updated by Employee Code — blank cells keep old data.</p></div>
+      <button type="button" class="btn btn-ghost icon-btn" data-action="toggle-panel#close" aria-label="Close"><%= icon("x") %></button>
+    </div>
+    <div class="emp-panel-body">
+      <%= form_with url: import_employees_path, multipart: true, data: { turbo: false } do %>
+        <div class="dropzone emp-drop" data-controller="dropzone" data-dropzone-submit-value="true" data-action="click->dropzone#pick">
+          <span class="ico"><%= icon("upload") %></span>
+          <div class="grow">
+            <div data-dropzone-target="label"><b>Click to upload</b> or drag &amp; drop your .xlsx / .csv file</div>
+            <div class="tiny muted">Recognised columns: Name / Name of Employee · Employee Code · Email / Work email · Mobile Number · Department · Designation / Position</div>
+          </div>
+          <input type="file" name="file" accept=".xlsx,.xls,.csv" data-dropzone-target="input" data-action="change->dropzone#changed">
+        </div>
+      <% end %>
+      <%= link_to template_employees_path, class: "btn btn-light btn-sm", data: { turbo: false } do %><span class="xl-badge">X</span> Download sample template<% end %>
+    </div>
+  </div>
+
+  <%= form_with model: @employee, id: "add-panel", class: "card emp-panel #{'hidden' unless @employee.errors.any?}", data: { toggle_panel_target: "panel" } do |f| %>
+    <div class="emp-panel-head">
+      <span class="emp-panel-ico"><%= icon("plus") %></span>
+      <div class="grow"><h3>Add an employee</h3><p>Quick add without a file.</p></div>
+      <button type="button" class="btn btn-ghost icon-btn" data-action="toggle-panel#close" aria-label="Close"><%= icon("x") %></button>
+    </div>
+    <div class="emp-panel-body">
+      <%= render "shared/errors", record: @employee %>
+      <div class="fields three"><%= render "fields", f: f %></div>
+      <div class="row" style="justify-content:flex-end;margin-top:1rem"><%= f.button class: "btn btn-primary" do %><%= icon("check") %> Save employee<% end %></div>
+    </div>
+  <% end %>
+</div>
+
+<div class="card toolbar emp-filter">
+  <%= form_with url: employees_path, method: :get, class: "search" do |f| %>
+    <%= icon("search") %>
+    <%= hidden_field_tag :department, params[:department] if params[:department].present? %>
+    <%= f.search_field :q, value: params[:q], placeholder: "Search by name, code, email, designation…", class: "input", autocomplete: "off" %>
+  <% end %>
+  <span class="meta"><b><%= @filtered_count %></b> <%= "result".pluralize(@filtered_count) %></span>
+  <div class="dept-chips">
+    <%= link_to employees_path(q: params[:q]), class: "dept-chip #{'active' if params[:department].blank?}", style: "--c:#6366f1" do %>All <span><%= @stats[:total] %></span><% end %>
+    <% @department_counts.each do |dept, count| %>
+      <% key = dept.presence || "none" %>
+      <%= link_to employees_path(q: params[:q], department: key), class: "dept-chip #{'active' if params[:department] == key}", style: "--c:#{dept ? tint_for(dept) : '#94a3b8'}" do %>
+        <%= dept || "No department" %> <span><%= count %></span>
+      <% end %>
+    <% end %>
+  </div>
+</div>
+
+<% if @employees.any? %>
+  <div class="emp-grid">
+    <% @employees.each do |e| %>
+      <article class="card emp-card" style="--g: <%= gradient_for(e.department_name || e.name) %>">
+        <div class="emp-cover"></div>
+        <div class="emp-body">
+          <div class="emp-avatar" style="background: <%= gradient_for(e.name) %>"><%= initials_for(e.name) %></div>
+          <div class="emp-actions">
+            <%= link_to edit_employee_path(e), class: "emp-icon", title: "Edit" do %><%= icon("edit") %><% end %>
+            <%= button_to employee_path(e), method: :delete, class: "emp-icon danger", title: "Delete", form: { data: { turbo_confirm: "Remove #{e.name}?" } } do %><%= icon("trash") %><% end %>
+          </div>
+          <h3 title="<%= e.name %>"><%= e.name %></h3>
+          <p class="emp-role"><%= e.designation.presence || "—" %></p>
+          <div class="emp-tags">
+            <% if e.employee_code.present? %><span class="emp-tag code">#<%= e.employee_code %></span><% end %>
+            <% if e.department_name.present? %><span class="emp-tag" style="--c: <%= tint_for(e.department_name) %>"><%= e.department_name %></span><% end %>
+            <% if e.vacancies.any? %><span class="emp-tag panel" title="<%= e.vacancies.map(&:title).join(', ') %>"><%= icon("award") %> Panelist · <%= e.vacancies.size %></span><% end %>
+          </div>
+          <div class="emp-contact">
+            <% if e.email.present? %>
+              <a href="mailto:<%= e.email %>" title="<%= e.email %>"><%= icon("mail") %><span><%= e.email %></span></a>
+            <% else %>
+              <span class="muted"><%= icon("mail") %><span>No email</span></span>
+            <% end %>
+            <% if e.phone.present? %>
+              <a href="tel:<%= e.phone %>"><%= icon("phone") %><span><%= e.phone %></span></a>
+            <% else %>
+              <span class="muted"><%= icon("phone") %><span>No phone</span></span>
+            <% end %>
+          </div>
+        </div>
+      </article>
+    <% end %>
+  </div>
+
+  <% if @pages > 1 %>
+    <nav class="pager">
+      <%= link_to employees_path(filter_params.merge(page: @page - 1)), class: "btn btn-light btn-sm #{'disabled' if @page == 1}" do %><%= icon("chevron-left") %> Prev<% end %>
+      <% window = ([ 1, @page - 2 ].max..[ @pages, @page + 2 ].min) %>
+      <% if window.first > 1 %><%= link_to "1", employees_path(filter_params.merge(page: 1)), class: "pager-num" %><% if window.first > 2 %><span class="muted">…</span><% end %><% end %>
+      <% window.each do |n| %><%= link_to n, employees_path(filter_params.merge(page: n)), class: "pager-num #{'active' if n == @page}" %><% end %>
+      <% if window.last < @pages %><% if window.last < @pages - 1 %><span class="muted">…</span><% end %><%= link_to @pages, employees_path(filter_params.merge(page: @pages)), class: "pager-num" %><% end %>
+      <%= link_to employees_path(filter_params.merge(page: @page + 1)), class: "btn btn-light btn-sm #{'disabled' if @page == @pages}" do %>Next <%= icon("chevron-right") %><% end %>
+    </nav>
+  <% end %>
+<% else %>
+  <div class="card empty"><div class="ico"><%= icon("users") %></div><h3><%= params[:q].present? || params[:department].present? ? "No matching employees" : "No employees yet" %></h3><p>Try another search, or upload your Excel list.</p></div>
+<% end %>

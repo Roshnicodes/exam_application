@@ -1,0 +1,37 @@
+<% content_for :title, "Candidates" %>
+<%= turbo_stream_from Current.user, :invitations %>
+
+<% all = Current.user.invitations %>
+<%= render layout: "shared/page_header", locals: {
+      title: "Candidates", subtitle: "Everyone you've invited, their exam status and results.", icon: "users",
+      crumbs: [ [ "Dashboard", root_path ] ],
+      stats: [
+        { label: "Invited", value: all.count, icon: "send", tone: "violet", path: invitations_path },
+        { label: "Live now", value: all.live.count, icon: "video", tone: "red", path: invitations_path(status: "in_progress") },
+        { label: "Submitted", value: all.where(status: "submitted").count, icon: "check-circle", tone: "green", path: invitations_path(status: "submitted") },
+        { label: "Terminated", value: all.where(status: "terminated").count, icon: "x-circle", tone: "amber", path: invitations_path(status: "terminated") }
+      ] } do %>
+  <%= link_to new_invitation_path, class: "btn btn-primary" do %><%= icon("plus") %> Invite candidate<% end %>
+<% end %>
+
+<div class="card toolbar">
+  <nav class="tabs">
+    <%= link_to "All", invitations_path(q: params[:q]), class: ("active" if params[:status].blank?) %>
+    <% { "pending" => "Link shared", "otp_requested" => "Awaiting OTP", "in_progress" => "Live", "submitted" => "Submitted", "terminated" => "Terminated" }.each do |key, label| %>
+      <%= link_to label, invitations_path(status: key, q: params[:q]), class: ("active" if params[:status] == key) %>
+    <% end %>
+  </nav>
+  <%= form_with url: invitations_path, method: :get, class: "search" do |f| %>
+    <%= icon("search") %>
+    <%= hidden_field_tag :status, params[:status] if params[:status].present? %>
+    <%= f.search_field :q, value: params[:q], placeholder: "Search name, email or vacancy…", class: "input" %>
+  <% end %>
+</div>
+
+<div class="card">
+  <% if @invitations.any? %>
+    <div class="cand-list"><% @invitations.each do |inv| %><%= render "invitations/manage_row", invitation: inv %><% end %></div>
+  <% else %>
+    <div class="empty"><div class="ico"><%= icon("users") %></div><h3>No candidates found</h3><p>Try a different filter or invite someone new.</p></div>
+  <% end %>
+</div>

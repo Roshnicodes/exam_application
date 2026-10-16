@@ -1,0 +1,45 @@
+<%#
+  Standard page header used on every HR page.
+  render layout: "shared/page_header", locals: { title:, subtitle:, icon:, crumbs: [[label, path]], chips: [[icon, text]], stats: [{ label:, value:, icon:, tone:, path: }], avatar: } do
+    ...action buttons...
+  end
+%>
+<% crumbs = local_assigns.fetch(:crumbs, []) %>
+<% chips = local_assigns.fetch(:chips, []) %>
+<% stats = local_assigns.fetch(:stats, []) %>
+<section class="hero page-hero">
+  <div class="ph-top">
+    <% if local_assigns[:avatar] %>
+      <span class="ph-icon ph-avatar"><%= local_assigns[:avatar] %></span>
+    <% else %>
+      <span class="ph-icon"><%= icon(local_assigns.fetch(:icon, "home")) %></span>
+    <% end %>
+    <div class="ph-text">
+      <% if crumbs.any? %>
+        <nav class="ph-crumbs" aria-label="Breadcrumb">
+          <% crumbs.each do |label, path| %><%= link_to label, path %><%= icon("chevron-right") %><% end %>
+        </nav>
+      <% end %>
+      <h1><%= title %></h1>
+      <% if local_assigns[:subtitle].present? %><p><%= subtitle %></p><% end %>
+      <% if chips.any? %>
+        <div class="chip-row"><% chips.each do |ico, text| %><span class="chip"><%= icon(ico) %> <%= text %></span><% end %></div>
+      <% end %>
+    </div>
+    <div class="ph-actions"><%= yield %></div>
+  </div>
+  <%= local_assigns[:extra] %>
+</section>
+
+<% if stats.any? %>
+  <div class="stat-cards" style="--cols: <%= stats.size %>">
+    <% stats.each do |s| %>
+      <% body = capture do %>
+        <span class="sc-ico"><%= icon(s[:icon]) %></span>
+        <div class="sc-text"><b><%= s[:value] %></b><small><%= s[:label] %></small></div>
+        <% if s[:path] %><%= icon("arrow-right", css: "sc-go") %><% end %>
+      <% end %>
+      <%= s[:path] ? link_to(body, s[:path], class: "stat-card tone-#{s[:tone] || 'violet'}") : tag.div(body, class: "stat-card tone-#{s[:tone] || 'violet'}") %>
+    <% end %>
+  </div>
+<% end %>

@@ -1,0 +1,11 @@
+<div class="top">
+  <p class="small" style="font-weight:700;letter-spacing:.08em">ONLINE ASSESSMENT</p>
+  <h1><%= @invitation.vacancy %></h1>
+  <p style="margin-top:.35rem"><%= @invitation.quiz.title %><%= " · #{@invitation.department}" if @invitation.department.present? %></p>
+  <div class="chip-row">
+    <span class="chip"><%= icon("clock") %> <%= @invitation.quiz.duration_minutes %> minutes</span>
+    <span class="chip"><%= icon("list") %> <%= @invitation.quiz.questions.size %> questions</span>
+    <% if @invitation.interview_date %><span class="chip"><%= icon("calendar") %> Interview <%= @invitation.interview_date.strftime("%d %b, %-I:%M %p") %></span><% end %>
+    <% if @invitation.interview_mode.present? %><span class="chip"><%= icon("briefcase") %> <%= @invitation.interview_mode %></span><% end %>
+  </div>
+</div>

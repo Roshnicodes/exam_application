@@ -1,0 +1,20 @@
+<% show_candidate = local_assigns.fetch(:show_candidate, false) %>
+<li id="event_<%= proctor_event.id %>">
+  <%= event_icon(proctor_event) %>
+  <div class="t-body">
+    <div class="row between" style="gap:.5rem;align-items:flex-start">
+      <b><%= proctor_event.label %></b>
+      <span class="tiny muted" style="white-space:nowrap"><%= proctor_event.created_at.strftime("%-I:%M:%S %p") %></span>
+    </div>
+    <% if show_candidate %>
+      <p><%= link_to proctor_event.invitation.candidate_name, invitation_path(proctor_event.invitation) %> · <%= proctor_event.invitation.vacancy %></p>
+    <% end %>
+    <% if proctor_event.message.present? && proctor_event.kind != "otp_requested" %><p><%= proctor_event.message %></p><% end %>
+    <% if proctor_event.violation? %><span class="badge sev-<%= proctor_event.severity %>" style="margin-top:.3rem"><%= proctor_event.severity.upcase %></span><% end %>
+  </div>
+  <% if proctor_event.snapshot.attached? %>
+    <%= link_to rails_blob_path(proctor_event.snapshot, disposition: "inline"), target: "_blank", rel: "noopener" do %>
+      <%= image_tag rails_blob_path(proctor_event.snapshot, disposition: "inline"), class: "t-snap", alt: "Snapshot", loading: "lazy" %>
+    <% end %>
+  <% end %>
+</li>

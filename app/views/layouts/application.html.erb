@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%= render "shared/head" %>
+  </head>
+  <body>
+    <div class="shell" data-controller="nav">
+      <aside class="sidebar">
+        <%= link_to root_path do %><%= render "shared/brand" %><% end %>
+        <nav class="nav">
+          <span class="nav-label">Workspace</span>
+          <%= nav_link "Dashboard", root_path, "home" %>
+          <%= nav_link "Candidates", invitations_path, "users", active: controller_name == "invitations" && action_name != "new" %>
+          <%= nav_link "Results", results_path, "award", active: controller_name == "results" %>
+          <%= nav_link "Invite candidate", new_invitation_path, "send" %>
+          <%= nav_link "Bulk invite (batch)", exam_batches_path, "users", active: controller_name == "exam_batches" && action_name != "monitor" %>
+          <%= nav_link "Live monitor", live_monitor_path, "video", active: controller_name == "monitor" || action_name == "monitor",
+                count: Current.user.invitations.live.count %>
+          <span class="nav-label">Assessments</span>
+          <%= nav_link "Question papers", quizzes_path, "file", active: controller_name == "quizzes" && action_name != "new" %>
+          <%= nav_link "New paper", new_quiz_path, "plus" %>
+          <span class="nav-label">Masters</span>
+          <%= nav_link "Departments", departments_path, "building", active: controller_name == "departments" %>
+          <%= nav_link "Vacancies", vacancies_path, "briefcase", active: controller_name == "vacancies" %>
+          <%= nav_link "Employees", employees_path, "id-card", active: controller_name == "employees" %>
+        </nav>
+        <div class="sidebar-foot">
+          <div class="user-chip">
+            <span class="avatar"><%= Current.user.initials %></span>
+            <div class="grow"><b><%= Current.user.name %></b><span><%= Current.user.email_address %></span></div>
+            <%= button_to session_path, method: :delete, title: "Sign out", form: { data: { turbo_confirm: "Sign out of HireProctor?" } } do %><%= icon("logout") %><% end %>
+          </div>
+        </div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <button class="btn btn-light icon-btn menu-btn" data-action="nav#toggle" aria-label="Menu"><%= icon("menu") %></button>
+          <div class="grow">
+            <span class="pill"><span class="live-dot off" id="live-indicator"></span><span id="live-label">Connecting to live alerts…</span></span>
+          </div>
+          <button class="btn btn-light btn-sm sound-toggle" id="sound-toggle">
+            <%= icon("volume-off") %><span>Enable sound alerts</span>
+          </button>
+          <%= link_to new_invitation_path, class: "btn btn-primary btn-sm" do %><%= icon("plus") %><span class="hide-sm">Invite</span><% end %>
+        </header>
+
+        <main class="content">
+          <%= yield %>
+        </main>
+      </div>
+    </div>
+
+    <%= render "shared/flash" %>
+    <div id="hr-alerts" data-turbo-permanent data-controller="hr-alerts"></div>
+  </body>
+</html>

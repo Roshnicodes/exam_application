@@ -1,0 +1,6 @@
+<% content_for :title, "Edit #{@quiz.title}" %>
+<%= render layout: "shared/page_header", locals: {
+      title: "Edit question paper", subtitle: "Changes apply to candidates who haven't started yet.", icon: "edit",
+      crumbs: [ [ "Question papers", quizzes_path ], [ @quiz.title, quiz_path(@quiz) ] ] } do %>
+<% end %>
+<%= render "form", quiz: @quiz %>

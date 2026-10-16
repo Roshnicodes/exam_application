@@ -1,0 +1,12 @@
+<%# Live camera player. locals: invitation:, watch_token: nil, compact: false, poster: nil %>
+<% compact = local_assigns.fetch(:compact, false) %>
+<div class="live-video <%= 'compact' if compact %>" data-controller="live-video" data-live-state="connecting"
+     data-live-video-invitation-id-value="<%= invitation.id %>"
+     <% if local_assigns[:watch_token] %>data-live-video-watch-token-value="<%= watch_token %>"<% end %>>
+  <% if local_assigns[:poster] %><img class="lv-poster" src="<%= poster %>" alt=""><% end %>
+  <video data-live-video-target="video" autoplay muted playsinline></video>
+  <span class="lv-badge"><span class="rec-dot"></span> <span data-live-video-target="status">Connecting…</span></span>
+  <% unless compact %>
+    <button type="button" class="lv-sound" data-live-video-target="sound" data-action="live-video#toggleSound">🔇 Unmute</button>
+  <% end %>
+</div>

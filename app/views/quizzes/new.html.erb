@@ -1,0 +1,6 @@
+<% content_for :title, "New question paper" %>
+<%= render layout: "shared/page_header", locals: {
+      title: "New question paper", subtitle: "Add questions manually or upload them from Excel.", icon: "file",
+      crumbs: [ [ "Question papers", quizzes_path ] ] } do %>
+<% end %>
+<%= render "form", quiz: @quiz %>

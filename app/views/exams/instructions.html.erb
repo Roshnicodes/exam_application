@@ -1,0 +1,50 @@
+<% content_for :title, "System check" %>
+<div class="exam-wrap" data-controller="system-check">
+  <%= render "header" %>
+
+  <div class="candidate-hero">
+    <%= render "hero_top" %>
+    <div class="candidate-grid">
+      <div>
+        <h2>Camera &amp; system check</h2>
+        <p class="muted small" style="margin:.35rem 0 1.2rem">Your camera and microphone stay on for the whole exam. Video is recorded and shared with HR.</p>
+        <div class="cam-preview">
+          <video data-system-check-target="video" autoplay muted playsinline></video>
+          <span class="cam-tag hidden" data-system-check-target="tag"><span class="rec-dot"></span> Camera on</span>
+          <div class="cam-empty" data-system-check-target="placeholder"><div><%= icon("camera") %><br>Click "Allow camera" to preview</div></div>
+        </div>
+        <div class="check-list" style="margin-top:1rem">
+          <div class="check" data-system-check-target="camCheck"><%= icon("camera") %> Camera &amp; microphone <span class="st">Pending</span></div>
+          <div class="check" data-system-check-target="faceCheck"><%= icon("user") %> Single face visible <span class="st">Pending</span></div>
+          <div class="check" data-system-check-target="screenCheck"><%= icon("monitor") %> Single display &amp; full screen support <span class="st">Pending</span></div>
+        </div>
+      </div>
+
+      <div>
+        <h2>Exam rules</h2>
+        <p class="muted small" style="margin:.35rem 0 1.2rem">Breaking a rule triggers a warning, alerts HR instantly, and too many warnings end the exam automatically<%= " (#{@invitation.max_warnings} warnings)" if @invitation.max_warnings.positive? %>.</p>
+        <div class="rules">
+          <div class="rule"><%= icon("user") %> Stay in front of the camera, alone</div>
+          <div class="rule"><%= icon("users") %> No other person in the room</div>
+          <div class="rule"><%= icon("maximize") %> Stay in full screen mode</div>
+          <div class="rule"><%= icon("monitor") %> Do not switch tabs or apps</div>
+          <div class="rule"><%= icon("copy") %> Copy, paste &amp; right-click are blocked</div>
+          <div class="rule"><%= icon("mic") %> Keep quiet — no talking</div>
+          <div class="rule"><%= icon("phone") %> No phones, books or other devices</div>
+          <div class="rule"><%= icon("eye") %> Keep your eyes on the screen</div>
+          <div class="rule"><%= icon("clock") %> Exam auto-submits when time ends</div>
+        </div>
+        <label class="row small" style="margin:1.4rem 0;cursor:pointer;align-items:flex-start">
+          <input type="checkbox" data-system-check-target="agree" data-action="system-check#refresh" style="width:18px;height:18px;accent-color:var(--brand);margin-top:.15rem">
+          <span>I agree to be recorded and to follow the exam rules. I understand that suspicious activity will be reported to HR.</span>
+        </label>
+        <div class="stack">
+          <button type="button" class="btn btn-light btn-lg btn-block" data-action="system-check#allow" data-system-check-target="allowBtn"><%= icon("camera") %> Allow camera &amp; microphone</button>
+          <%= form_with url: exam_start_path(@invitation.token), data: { system_check_target: "form" } do |f| %>
+            <%= f.button class: "btn btn-primary btn-lg btn-block", disabled: true, data: { system_check_target: "startBtn", action: "system-check#start" } do %><%= icon("play") %> Start exam in full screen<% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

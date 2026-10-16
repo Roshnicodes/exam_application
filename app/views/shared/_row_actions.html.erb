@@ -1,0 +1,9 @@
+<%# Edit + delete icon buttons. locals: edit_path:, delete_path:, confirm: %>
+<span class="row-actions">
+  <% if local_assigns[:edit_path] %>
+    <%= link_to edit_path, class: "act-btn", title: "Edit", data: { turbo_frame: "_top" } do %><%= icon("edit") %><% end %>
+  <% end %>
+  <% if local_assigns[:delete_path] %>
+    <%= button_to delete_path, method: :delete, class: "act-btn danger", title: "Delete", form: { data: { turbo_confirm: local_assigns.fetch(:confirm, "Delete this?") } } do %><%= icon("trash") %><% end %>
+  <% end %>
+</span>

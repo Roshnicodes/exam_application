@@ -1,0 +1,8 @@
+<div class="manage-row">
+  <%= render "invitations/item", invitation: invitation %>
+  <div class="manage-actions">
+    <%= local_assigns[:extra] %>
+    <%= render "shared/row_actions", edit_path: edit_invitation_path(invitation), delete_path: invitation_path(invitation),
+          confirm: "Delete #{invitation.candidate_name}? Their exam, recordings and result will be removed." %>
+  </div>
+</div>

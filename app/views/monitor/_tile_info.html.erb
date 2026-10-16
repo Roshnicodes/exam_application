@@ -1,0 +1,26 @@
+<% last = invitation.last_alert %>
+<% fresh_alert = last&.violation? && last.created_at > 20.seconds.ago %>
+<% total = invitation.quiz.questions.size %>
+<div id="monitor_tile_<%= invitation.id %>" class="mon-info status-<%= invitation.status %> <%= 'alerting' if fresh_alert %> <%= 'risky' if invitation.warnings_count >= 3 %>">
+  <span class="mon-badge"><%= status_badge(invitation) %></span>
+  <% if invitation.warnings_count.positive? %>
+    <span class="mon-warn"><%= icon("alert") %> <%= invitation.warnings_count %><%= "/#{invitation.max_warnings}" if invitation.max_warnings.positive? %></span>
+  <% end %>
+  <div class="mon-body">
+    <b><%= invitation.candidate_name %></b>
+    <small><%= invitation.vacancy %></small>
+    <% if invitation.otp_active? %>
+      <div class="mon-otp"><%= icon("key") %> OTP <b><%= invitation.otp_code %></b></div>
+    <% elsif invitation.in_progress? %>
+      <div class="mon-progress">
+        <div class="progress"><div style="width:<%= total.zero? ? 0 : invitation.answered_count * 100 / total %>%"></div></div>
+        <span><%= invitation.answered_count %>/<%= total %> · <%= invitation.seconds_left / 60 %>m left</span>
+      </div>
+    <% elsif invitation.finished? %>
+      <div class="mon-progress"><span class="result-badge <%= invitation.passed? ? 'pass' : 'fail' %>"><%= invitation.percentage %>% · <%= invitation.result_label %></span></div>
+    <% end %>
+    <% if last %>
+      <div class="mon-last sev-text-<%= last.severity %>"><%= icon(ApplicationHelper::EVENT_ICONS.fetch(last.kind, "activity")) %> <span><%= last.label %></span><em><%= last.created_at.strftime("%-I:%M %p") %></em></div>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,54 @@
+<% content_for :title, "Results" %>
+<% filters = params.permit(:quiz_id, :vacancy, :result, :q).to_h %>
+<%= render layout: "shared/page_header", locals: {
+      title: "Results", subtitle: "Scores, ranks and pass / fail for every completed exam. Ranks are within each question paper.", icon: "award",
+      crumbs: [ [ "Dashboard", root_path ] ],
+      stats: [
+        { label: "Exams completed", value: @summary[:total], icon: "check-circle", tone: "violet", path: results_path(filters.except("result")) },
+        { label: "Passed", value: @summary[:passed], icon: "award", tone: "green", path: results_path(filters.merge("result" => "pass")) },
+        { label: "Failed", value: @summary[:failed], icon: "x-circle", tone: "red", path: results_path(filters.merge("result" => "fail")) },
+        { label: "Average score", value: "#{@summary[:average]}%", icon: "activity", tone: "blue" },
+        { label: "Top score", value: "#{@summary[:top]}%", icon: "sparkles", tone: "amber" }
+      ] } do %>
+  <%= link_to export_results_path(filters), class: "btn btn-primary", data: { turbo: false } do %><span class="xl-badge">X</span> Download Excel<% end %>
+<% end %>
+
+<%= form_with url: results_path, method: :get, class: "card toolbar result-filters", data: { controller: "autosubmit" } do |f| %>
+  <%= f.select :quiz_id, @quizzes.map { |q| [ q.title, q.id ] }, { include_blank: "All question papers", selected: params[:quiz_id] }, class: "input", data: { action: "change->autosubmit#submit" } %>
+  <%= f.select :vacancy, @vacancies, { include_blank: "All vacancies", selected: params[:vacancy] }, class: "input", data: { action: "change->autosubmit#submit" } %>
+  <%= f.select :result, [ [ "Pass & fail", "" ], [ "Passed only", "pass" ], [ "Failed only", "fail" ] ], { selected: params[:result] }, class: "input", data: { action: "change->autosubmit#submit" } %>
+  <div class="search"><%= icon("search") %><%= f.search_field :q, value: params[:q], placeholder: "Search candidate…", class: "input" %></div>
+  <% if filters.values.any?(&:present?) %><%= link_to "Clear", results_path, class: "btn btn-ghost btn-sm" %><% end %>
+<% end %>
+
+<% if @results.any? %>
+  <div class="card result-list">
+    <div class="result-head">
+      <span>Rank</span><span>Candidate</span><span class="hide-md">Paper</span><span>Score</span><span>Result</span><span class="hide-md">Warnings</span><span class="hide-md">Time</span><span></span>
+    </div>
+    <% @results.each do |i| %>
+      <% rank = @ranks[i.id] %>
+      <%= link_to report_invitation_path(i), class: "result-row" do %>
+        <span class="rank rank-<%= rank <= 3 ? rank : 'n' %>"><%= rank <= 3 ? %w[🥇 🥈 🥉][rank - 1] : "##{rank}" %></span>
+        <span class="person">
+          <span class="avatar" style="background: <%= gradient_for(i.candidate_name) %>"><%= initials_for(i.candidate_name) %></span>
+          <span class="cand-main"><b><%= i.candidate_name %></b><span><%= i.vacancy %><%= " · #{i.department}" if i.department.present? %></span></span>
+        </span>
+        <span class="hide-md small"><%= i.quiz.title %></span>
+        <span class="score-cell">
+          <b><%= i.percentage %>%</b><small><%= i.score %>/<%= i.total_marks %> marks</small>
+          <span class="score-bar"><span style="width:<%= i.percentage %>%;background:<%= i.passed? ? 'linear-gradient(90deg,#10b981,#14b8a6)' : 'linear-gradient(90deg,#f59e0b,#ef4444)' %>"></span><i style="left:<%= i.quiz.pass_percentage %>%" title="Pass mark <%= i.quiz.pass_percentage %>%"></i></span>
+        </span>
+        <span>
+          <span class="result-badge <%= i.passed? ? 'pass' : 'fail' %>"><%= icon(i.passed? ? "check-circle" : "x-circle") %> <%= i.result_label %></span>
+          <% if i.terminated? %><small class="term">Terminated</small><% end %>
+        </span>
+        <span class="hide-md"><% if i.warnings_count.positive? %><span class="warn-pill"><%= icon("alert") %> <%= i.warnings_count %></span><% else %><span class="muted small">0</span><% end %></span>
+        <span class="hide-md small"><%= duration_between(i.started_at, i.submitted_at) %></span>
+        <%= icon("chevron-right", css: "cand-chev") %>
+      <% end %>
+    <% end %>
+  </div>
+<% else %>
+  <div class="card empty"><div class="ico"><%= icon("award") %></div><h3>No results yet</h3><p>Results appear here as soon as candidates submit their exams.</p></div>
+<% end %>

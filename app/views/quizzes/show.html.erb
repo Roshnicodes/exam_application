@@ -1,0 +1,21 @@
+<% content_for :title, @quiz.title %>
+<%= render layout: "shared/page_header", locals: {
+      title: @quiz.title, subtitle: @quiz.description.presence, icon: "file",
+      crumbs: [ [ "Question papers", quizzes_path ] ],
+      chips: [ [ "list", "#{@quiz.questions.size} questions" ], [ "clock", "#{@quiz.duration_minutes} minutes" ], [ "award", "Pass at #{@quiz.pass_percentage}%" ], [ "check", "#{@quiz.total_marks} marks" ] ] } do %>
+  <%= button_to quiz_path(@quiz), method: :delete, class: "btn btn-light icon-btn", title: "Delete", form: { data: { turbo_confirm: "Delete this question paper?" } } do %><%= icon("trash") %><% end %>
+  <%= link_to export_quiz_path(@quiz), class: "btn btn-light", data: { turbo: false } do %><span class="xl-badge">X</span> Excel<% end %>
+  <%= link_to edit_quiz_path(@quiz), class: "btn btn-light" do %><%= icon("edit") %> Edit<% end %>
+  <%= link_to new_invitation_path(quiz_id: @quiz.id), class: "btn btn-primary" do %><%= icon("send") %> Invite with this paper<% end %>
+<% end %>
+
+<div class="card">
+  <% @quiz.questions.each_with_index do |q, i| %>
+    <div class="review-q">
+      <div class="row between" style="align-items:flex-start"><b>Q<%= i + 1 %>. <%= q.body %></b><span class="badge"><%= pluralize(q.marks, "mark") %></span></div>
+      <% q.options.each_with_index do |opt, idx| %>
+        <div class="review-opt <%= 'correct' if idx == q.correct_index %>"><b><%= Question::LETTERS[idx] %>.</b> <%= opt %><% if idx == q.correct_index %><span class="tiny" style="margin-left:auto">Correct</span><% end %></div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

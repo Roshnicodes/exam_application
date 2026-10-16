@@ -1,0 +1,48 @@
+<% content_for :title, "Batches" %>
+<%= render layout: "shared/page_header", locals: {
+      title: "Group exams (batches)", subtitle: "Invite many candidates at once and monitor all of them live on one screen.", icon: "users",
+      crumbs: [ [ "Dashboard", root_path ] ],
+      stats: [
+        { label: "Batches", value: @batches.size, icon: "users", tone: "violet" },
+        { label: "Candidates invited", value: @batches.sum { |b| b.invitations.size }, icon: "send", tone: "blue" },
+        { label: "Live now", value: @batches.sum { |b| b.invitations.count(&:in_progress?) }, icon: "video", tone: "red", path: live_monitor_path },
+        { label: "Completed", value: @batches.sum { |b| b.invitations.count(&:finished?) }, icon: "check-circle", tone: "green", path: results_path }
+      ] } do %>
+  <%= link_to live_monitor_path, class: "btn btn-light" do %><%= icon("video") %> Live monitor<% end %>
+  <%= link_to new_exam_batch_path, class: "btn btn-primary" do %><%= icon("plus") %> New batch<% end %>
+<% end %>
+
+<% if @batches.any? %>
+  <div class="master-grid">
+    <% @batches.each_with_index do |b, i| %>
+      <% st = b.stats %>
+      <div class="card dept-card" style="--accent: <%= param_color(i) %>">
+        <div class="top">
+          <span class="dept-ico"><%= icon("users") %></span>
+          <div class="grow" style="min-width:0">
+            <h3><%= link_to b.name, exam_batch_path(b), style: "color:inherit" %></h3>
+            <p class="dept-head"><%= icon("briefcase") %> <%= b.post_name %> · <%= b.quiz.title %></p>
+          </div>
+        </div>
+        <div class="meta-row">
+          <% if b.interview_date %><span class="pill"><%= icon("calendar") %> <%= b.interview_date.strftime("%d %b, %-I:%M %p") %></span><% end %>
+          <span class="pill"><%= icon("clock") %> <%= b.quiz.duration_minutes %> min</span>
+        </div>
+        <div class="dept-metrics" style="grid-template-columns:repeat(4,1fr)">
+          <div><b><%= st[:invited] %></b><span>Invited</span></div>
+          <div><b style="color:var(--red)"><%= st[:live] %></b><span>Live</span></div>
+          <div><b><%= st[:finished] %></b><span>Done</span></div>
+          <div><b style="color:var(--green)"><%= st[:passed] %></b><span>Passed</span></div>
+        </div>
+        <div class="dept-actions">
+          <%= link_to exam_batch_path(b), class: "btn btn-light btn-sm grow" do %><%= icon("link") %> Links &amp; status<% end %>
+          <%= link_to monitor_exam_batch_path(b), class: "btn btn-primary btn-sm" do %><%= icon("video") %> Monitor<% end %>
+          <%= render "shared/row_actions", edit_path: edit_exam_batch_path(b), delete_path: exam_batch_path(b), confirm: "Delete batch \"#{b.name}\" and all its candidates?" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <div class="card empty"><div class="ico"><%= icon("users") %></div><h3>No group exams yet</h3><p>Create a batch to invite many candidates for the same exam at once.</p><br>
+    <%= link_to new_exam_batch_path, class: "btn btn-primary" do %><%= icon("plus") %> New batch<% end %></div>
+<% end %>

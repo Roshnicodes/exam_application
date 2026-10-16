@@ -1,0 +1,8 @@
+<% content_for :title, "Invite candidate" %>
+
+<%= render layout: "shared/page_header", locals: {
+      title: "Invite a candidate", subtitle: "Fill in the candidate and vacancy details. You'll get a secure exam link to share right after.",
+      icon: "send", crumbs: [ [ "Candidates", invitations_path ] ] } do %>
+<% end %>
+
+<%= render "form", invitation: @invitation %>

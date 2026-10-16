@@ -1,0 +1,54 @@
+<% content_for :title, "Vacancies" %>
+<%= render layout: "shared/page_header", locals: {
+      title: "Vacancies", subtitle: "All open and closed posts across departments.", icon: "briefcase",
+      crumbs: [ [ "Masters", departments_path ] ],
+      stats: [
+        { label: "Vacancies", value: @vacancies.size, icon: "briefcase", tone: "violet" },
+        { label: "Open", value: @vacancies.count { |v| v.status == "open" }, icon: "check-circle", tone: "green" },
+        { label: "Total posts", value: @vacancies.sum(&:positions), icon: "users", tone: "amber" },
+        { label: "Panelists", value: @vacancies.flat_map(&:panelists).uniq.size, icon: "award", tone: "pink", path: employees_path }
+      ] } do %>
+  <%= link_to new_vacancy_path(department_id: params[:department_id]), class: "btn btn-primary" do %><%= icon("plus") %> New vacancy<% end %>
+<% end %>
+
+<% if @departments.any? %>
+  <div class="card toolbar">
+    <nav class="tabs">
+      <%= link_to "All", vacancies_path, class: ("active" if params[:department_id].blank?) %>
+      <% @departments.each do |d| %><%= link_to d.name, vacancies_path(department_id: d.id), class: ("active" if params[:department_id].to_s == d.id.to_s) %><% end %>
+    </nav>
+  </div>
+<% end %>
+
+<% if @vacancies.any? %>
+  <div class="master-grid">
+    <% @vacancies.each do |v| %>
+      <div class="card dept-card has-stretch">
+        <div class="top">
+          <span class="dept-ico"><%= icon("briefcase") %></span>
+          <div class="grow" style="min-width:0"><h3 style="font-size:1.05rem"><%= link_to v.title, vacancy_path(v), class: "stretched" %></h3><p class="small muted"><%= v.department.name %><%= " · #{v.code}" if v.code.present? %></p></div>
+          <%= vacancy_status_badge(v) %>
+        </div>
+        <div class="meta-row">
+          <span class="pill"><%= icon("users") %> <%= pluralize(v.positions, "post") %></span>
+          <span class="pill"><%= icon("calendar") %> <%= v.issue_date&.strftime("%d %b") || "—" %> → <%= v.end_date&.strftime("%d %b %Y") || "—" %></span>
+        </div>
+        <%= render "vacancies/params", vacancy: v %>
+        <div class="row between" style="margin-top:auto">
+          <% if v.panelists.any? %>
+            <div class="panel-stack" title="<%= v.panelists.map(&:name).join(', ') %>">
+              <% v.panelists.first(5).each do |p| %><span class="avatar"><%= initials_for(p.name) %></span><% end %>
+              <% if v.panelists.size > 5 %><span class="avatar soft">+<%= v.panelists.size - 5 %></span><% end %>
+            </div>
+          <% else %>
+            <span class="tiny muted">No panelists</span>
+          <% end %>
+          <%= render "shared/row_actions", edit_path: edit_vacancy_path(v), delete_path: vacancy_path(v), confirm: "Delete vacancy \"#{v.title}\"?" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <div class="card empty"><div class="ico"><%= icon("briefcase") %></div><h3>No vacancies yet</h3><p>Create a vacancy to start inviting candidates against it.</p><br>
+    <%= link_to new_vacancy_path, class: "btn btn-primary" do %><%= icon("plus") %> New vacancy<% end %></div>
+<% end %>

@@ -1,0 +1,25 @@
+<% content_for :title, "Live · #{@invitation.candidate_name}" %>
+<%= turbo_stream_from @invitation, :events %>
+<%= render layout: "shared/page_header", locals: {
+      title: @invitation.candidate_name, avatar: initials_for(@invitation.candidate_name),
+      subtitle: [ @invitation.vacancy, @invitation.department.presence, @invitation.quiz.title ].compact.join(" · "),
+      chips: [ [ "clock", "#{@invitation.quiz.duration_minutes} min" ], [ "list", "#{@invitation.quiz.questions.size} questions" ] ] } do %>
+<% end %>
+
+<div class="split">
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2><%= icon("video") %> Live camera</h2><span class="tiny muted">Video + audio, straight from the candidate</span></div>
+      <div class="card-body"><%= render "shared/live_video", invitation: @invitation, watch_token: params[:watch_token] %></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2><%= icon("bell") %> Proctoring timeline</h2><span class="pill"><span class="live-dot"></span> Live</span></div>
+      <ul class="timeline scroll-y" id="events_invitation_<%= @invitation.id %>">
+        <%= render partial: "proctor_events/proctor_event", collection: @events %>
+      </ul>
+    </div>
+  </div>
+  <div class="stack">
+    <%= render "invitations/live_state", invitation: @invitation %>
+  </div>
+</div>

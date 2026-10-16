@@ -1,0 +1,11 @@
+<% content_for :title, "Forgot password" %>
+<h2>Forgot your password?</h2>
+<p>We'll email you a secure link to reset it.</p>
+<%= form_with url: passwords_path, class: "stack" do |form| %>
+  <div class="field">
+    <label for="email_address">Work email</label>
+    <div class="input-wrap"><%= icon("mail") %><%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "username", placeholder: "hr@company.com", value: params[:email_address], class: "input" %></div>
+  </div>
+  <%= form.button "Email reset instructions", class: "btn btn-primary btn-lg btn-block" %>
+<% end %>
+<p class="muted small" style="margin-top:1.5rem;text-align:center"><%= link_to "Back to sign in", new_session_path %></p>

@@ -1,0 +1,36 @@
+<% content_for :title, "Result · #{@invitation.candidate_name}" %>
+<%= render layout: "shared/page_header", locals: {
+      title: "Result & answer sheet", subtitle: "#{@invitation.candidate_name} · #{@invitation.vacancy} · #{@invitation.quiz.title}", icon: "file",
+      crumbs: [ [ "Results", results_path ], [ @invitation.candidate_name, invitation_path(@invitation) ] ],
+      stats: [
+        { label: @invitation.rank ? "Score · rank ##{@invitation.rank} in this paper" : "Score", value: "#{@invitation.score.to_i}/#{@invitation.total_marks.to_i}", icon: "award", tone: "violet", path: results_path(quiz_id: @invitation.quiz_id) },
+        { label: "#{@invitation.passed? ? 'Passed' : 'Below cut-off'} (#{@invitation.quiz.pass_percentage}%)", value: "#{@invitation.percentage}%", icon: "check-circle", tone: @invitation.passed? ? "green" : "red" },
+        { label: "Warnings", value: @invitation.warnings_count, icon: "alert", tone: "amber" },
+        { label: "Time taken", value: duration_between(@invitation.started_at, @invitation.submitted_at), icon: "clock", tone: "blue" }
+      ] } do %>
+  <button class="btn btn-light" onclick="window.print()"><%= icon("file") %> Print</button>
+<% end %>
+
+<div class="card">
+  <% @questions.each_with_index do |q, i| %>
+    <% given = @invitation.answers[q.id.to_s] %>
+    <div class="review-q">
+      <div class="row between" style="align-items:flex-start">
+        <b>Q<%= i + 1 %>. <%= q.body %></b>
+        <% if given.nil? %>
+          <span class="badge">Not answered</span>
+        <% elsif q.correct?(given) %>
+          <span class="badge sev-success">+<%= q.marks %> Correct</span>
+        <% else %>
+          <span class="badge sev-high">Wrong</span>
+        <% end %>
+      </div>
+      <% q.options.each_with_index do |opt, idx| %>
+        <div class="review-opt <%= 'correct' if idx == q.correct_index %> <%= 'wrong' if idx == given && idx != q.correct_index %>">
+          <b><%= Question::LETTERS[idx] %>.</b> <%= opt %>
+          <% if idx == given %><span class="tiny" style="margin-left:auto">Candidate's answer</span><% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

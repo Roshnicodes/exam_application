@@ -1,0 +1,8 @@
+<% params_list = vacancy.selection_parameters %>
+<% if params_list.any? %>
+  <% total = [ vacancy.total_weight, 1 ].max %>
+  <div class="param-bar"><% params_list.each_with_index do |p, i| %><span style="width:<%= p["weight"].to_f * 100 / total %>%;background:<%= param_color(i) %>" title="<%= p["name"] %>"></span><% end %></div>
+  <div class="param-legend"><% params_list.each_with_index do |p, i| %><span><i style="background:<%= param_color(i) %>"></i><%= p["name"] %> <b><%= p["weight"] %>%</b></span><% end %></div>
+<% else %>
+  <p class="small muted">No selection parameters defined.</p>
+<% end %>

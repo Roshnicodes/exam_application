@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%= render "shared/head" %>
+    <meta name="robots" content="noindex">
+  </head>
+  <body class="exam-body">
+    <div class="watch-wrap">
+      <div class="exam-brand">
+        <%= render "shared/brand" %>
+        <span class="pill"><%= icon("eye") %> Panelist view · read only</span>
+      </div>
+      <%= yield %>
+    </div>
+  </body>
+</html>

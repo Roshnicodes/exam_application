@@ -1,0 +1,55 @@
+<div id="live_state_invitation_<%= invitation.id %>" class="card">
+  <div class="card-head">
+    <h2><%= icon("activity") %> Exam status</h2>
+    <%= status_badge(invitation) %>
+  </div>
+  <div class="card-body stack">
+    <% if invitation.otp_active? %>
+      <div class="otp-panel">
+        <div class="tiny muted" style="font-weight:700;letter-spacing:.08em">OTP FOR +91 <%= invitation.entered_phone %></div>
+        <div class="code"><%= invitation.otp_code %></div>
+        <div class="small muted">Read this code out to the candidate · expires at <%= invitation.otp_expires_at.strftime("%-I:%M %p") %></div>
+      </div>
+    <% end %>
+
+    <% case invitation.status %>
+    <% when "pending" %>
+      <div class="row"><span class="avatar soft"><%= icon("send") %></span><div><b>Waiting for candidate</b><p class="small muted">Share the link. When they enter their mobile number, the OTP will pop up here with a ring.</p></div></div>
+    <% when "otp_requested" %>
+      <% unless invitation.otp_active? %>
+        <div class="row"><span class="avatar soft"><%= icon("key") %></span><div><b>OTP expired</b><p class="small muted">Ask the candidate to request a new OTP.</p></div></div>
+      <% end %>
+    <% when "verified" %>
+      <div class="row"><span class="avatar soft"><%= icon("shield") %></span><div><b>Verified · doing system check</b><p class="small muted">Candidate verified at <%= nice_time(invitation.verified_at) %>. Exam will begin once camera checks pass.</p></div></div>
+    <% when "in_progress" %>
+      <% total = invitation.quiz.questions.size %>
+      <div>
+        <div class="row between small"><b>Progress</b><span class="muted"><%= invitation.answered_count %>/<%= total %> answered</span></div>
+        <div class="progress" style="margin-top:.4rem"><div style="width:<%= total.zero? ? 0 : invitation.answered_count * 100 / total %>%"></div></div>
+      </div>
+      <div class="row between small"><span class="muted">Started</span><b><%= nice_time(invitation.started_at) %></b></div>
+      <div class="row between small"><span class="muted">Ends by</span><b><%= nice_time(invitation.deadline) %></b></div>
+    <% else %>
+      <div class="score-ring" style="--p: <%= invitation.percentage %>"><div><div><b><%= invitation.percentage %>%</b><span><%= invitation.score %>/<%= invitation.total_marks %> marks</span></div></div></div>
+      <div style="text-align:center">
+        <% if invitation.passed? %>
+          <span class="badge sev-success"><%= icon("award") %> Passed (cut-off <%= invitation.quiz.pass_percentage %>%)</span>
+        <% else %>
+          <span class="badge sev-high"><%= icon("x-circle") %> Below cut-off (<%= invitation.quiz.pass_percentage %>%)</span>
+        <% end %>
+      </div>
+      <% if invitation.termination_reason.present? && invitation.termination_reason != "time_up" %>
+        <div class="errors" style="margin:0"><b>Terminated:</b> <%= invitation.termination_reason %></div>
+      <% end %>
+      <div class="row between small"><span class="muted">Time taken</span><b><%= duration_between(invitation.started_at, invitation.submitted_at) %></b></div>
+      <%= link_to report_invitation_path(invitation), class: "btn btn-dark btn-block", data: { turbo_frame: "_top" } do %><%= icon("award") %> View result &amp; answer sheet<% end %>
+    <% end %>
+
+    <div>
+      <div class="row between small"><b>Warnings</b><span style="color:<%= invitation.warnings_count.positive? ? 'var(--red)' : 'var(--muted)' %>;font-weight:700"><%= invitation.warnings_count %><%= " / #{invitation.max_warnings}" if invitation.max_warnings.positive? %></span></div>
+      <% if invitation.max_warnings.positive? %>
+        <div class="progress" style="margin-top:.4rem"><div style="width:<%= [ invitation.warnings_count * 100 / invitation.max_warnings, 100 ].min %>%;background:linear-gradient(90deg,#f59e0b,#ef4444)"></div></div>
+      <% end %>
+    </div>
+  </div>
+</div>

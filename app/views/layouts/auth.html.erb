@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%= render "shared/head" %>
+  </head>
+  <body class="auth-body">
+    <main class="auth">
+      <div class="auth-shell">
+        <section class="auth-art">
+          <%= render "shared/brand" %>
+          <div class="auth-copy">
+            <h1>Hire smarter with secure, proctored exams.</h1>
+            <p>Invite candidates, verify them with HR-held OTP and watch every exam live.</p>
+          </div>
+          <ul class="auth-points">
+            <li><span><%= icon("key") %></span> OTP verified by HR</li>
+            <li><span><%= icon("camera") %></span> AI face &amp; activity monitoring</li>
+            <li><span><%= icon("bell") %></span> Instant ring alerts</li>
+          </ul>
+        </section>
+        <section class="auth-form">
+          <div class="auth-card"><%= yield %></div>
+        </section>
+      </div>
+      <p class="auth-foot">© <%= Date.current.year %> HireProctor · Secure online assessments</p>
+    </main>
+    <%= render "shared/flash" %>
+  </body>
+</html>

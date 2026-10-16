@@ -1,0 +1,17 @@
+<title><%= content_for(:title) ? "#{yield(:title)} · HireProctor" : "HireProctor · Smart proctored hiring exams" %></title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="application-name" content="HireProctor">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#312e81">
+<%= csrf_meta_tags %>
+<%= csp_meta_tag %>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta name="action-cable-url" content="<%= request.script_name %>/cable">
+<link rel="icon" href="<%= request.script_name %>/icon.svg" type="image/svg+xml">
+<link rel="icon" href="<%= request.script_name %>/icon.png" type="image/png">
+<%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+<%= javascript_importmap_tags %>
+<%= yield :head %>

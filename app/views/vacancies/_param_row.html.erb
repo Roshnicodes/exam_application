@@ -1,0 +1,5 @@
+<div class="repeat-row">
+  <input type="text" name="vacancy[selection_parameters][][name]" value="<%= param["name"] %>" placeholder="e.g. Technical interview" class="input">
+  <div class="input-wrap"><input type="number" name="vacancy[selection_parameters][][weight]" value="<%= param["weight"] %>" min="0" max="100" placeholder="Weight" class="input" style="padding-right:2rem" data-action="input->repeater#update"><span style="position:absolute;right:.8rem;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:700">%</span></div>
+  <button type="button" class="btn btn-danger icon-btn" data-action="repeater#remove" aria-label="Remove"><%= icon("trash") %></button>
+</div>

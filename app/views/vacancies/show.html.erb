@@ -1,0 +1,53 @@
+<% content_for :title, @vacancy.title %>
+<% chips = [ [ "building", @vacancy.department.name ] ]
+   chips << [ "id-card", @vacancy.code ] if @vacancy.code.present?
+   chips += [ [ "users", pluralize(@vacancy.positions, "post") ], [ "calendar", "Issued #{@vacancy.issue_date&.strftime('%d %b %Y') || '—'}" ],
+              [ "clock", "Ends #{@vacancy.end_date&.strftime('%d %b %Y') || '—'}" ], [ "check-circle", @vacancy.status.capitalize ] ] %>
+<%= render layout: "shared/page_header", locals: {
+      title: @vacancy.title, subtitle: @vacancy.description.presence, icon: "briefcase",
+      crumbs: [ [ "Vacancies", vacancies_path ], [ @vacancy.department.name, vacancies_path(department_id: @vacancy.department_id) ] ],
+      chips: chips } do %>
+  <%= button_to vacancy_path(@vacancy), method: :delete, class: "btn btn-light icon-btn", title: "Delete", form: { data: { turbo_confirm: "Delete this vacancy?" } } do %><%= icon("trash") %><% end %>
+  <%= link_to edit_vacancy_path(@vacancy), class: "btn btn-light" do %><%= icon("edit") %> Edit<% end %>
+  <%= link_to new_invitation_path(vacancy_id: @vacancy.id), class: "btn btn-primary" do %><%= icon("send") %> Invite candidate<% end %>
+<% end %>
+
+<div class="split">
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2><%= icon("users") %> Candidates for this vacancy</h2><span class="tiny muted"><%= @invitations.size %> invited</span></div>
+      <% if @invitations.any? %>
+        <div class="cand-list"><% @invitations.each do |inv| %><%= render "invitations/manage_row", invitation: inv %><% end %></div>
+      <% else %>
+        <div class="card-body muted small">No candidates invited yet.</div>
+      <% end %>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2><%= icon("graduation") %> Eligibility</h2></div>
+      <div class="card-body kv" style="grid-template-columns:1fr">
+        <div><span>Qualification</span><b style="font-weight:500"><%= @vacancy.qualification.presence || "—" %></b></div>
+        <div><span>Experience</span><b><%= @vacancy.experience_required.presence || "Any" %></b></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2><%= icon("target") %> Selection parameters</h2></div>
+      <div class="card-body"><%= render "vacancies/params", vacancy: @vacancy %></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2><%= icon("users") %> Interview panel</h2><span class="tiny muted"><%= @vacancy.panelists.size %></span></div>
+      <% if @vacancy.panelists.any? %>
+        <% @vacancy.panelists.each do |p| %>
+          <div class="list-item">
+            <span class="avatar"><%= initials_for(p.name) %></span>
+            <div class="grow person"><div><b><%= p.name %></b><span><%= p.subtitle %></span></div></div>
+            <% if p.email.present? %><a href="mailto:<%= p.email %>" class="btn btn-light btn-sm icon-btn" title="<%= p.email %>"><%= icon("mail") %></a><% end %>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="card-body muted small">No panelists. <%= link_to "Add panelists", edit_vacancy_path(@vacancy) %></div>
+      <% end %>
+    </div>
+  </div>
+</div>

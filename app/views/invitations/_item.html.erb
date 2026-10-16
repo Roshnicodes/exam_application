@@ -1,0 +1,19 @@
+<%= link_to invitation_path(invitation), id: "invitation_item_#{invitation.id}", class: "cand-row", data: { turbo_frame: "_top" } do %>
+  <span class="avatar" style="background: <%= gradient_for(invitation.candidate_name) %>"><%= initials_for(invitation.candidate_name) %></span>
+  <div class="cand-main">
+    <b><%= invitation.candidate_name %></b>
+    <span><%= invitation.vacancy %><%= " · #{invitation.department}" if invitation.department.present? %></span>
+  </div>
+  <div class="cand-status">
+    <%= status_badge(invitation) %>
+    <% if invitation.warnings_count.positive? %><small><%= icon("alert") %> <%= invitation.warnings_count %> warnings</small><% end %>
+  </div>
+  <div class="cand-score">
+    <% if invitation.finished? %>
+      <b class="<%= invitation.passed? ? 'pass' : 'fail' %>"><%= invitation.percentage %>%</b><small><%= invitation.score %>/<%= invitation.total_marks %></small>
+    <% else %>
+      <b class="muted">—</b><small><%= invitation.interview_date ? invitation.interview_date.strftime("%d %b") : "No date" %></small>
+    <% end %>
+  </div>
+  <%= icon("chevron-right", css: "cand-chev") %>
+<% end %>

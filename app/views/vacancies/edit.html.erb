@@ -1,0 +1,6 @@
+<% content_for :title, "Edit #{@vacancy.title}" %>
+<%= render layout: "shared/page_header", locals: {
+      title: "Edit vacancy", subtitle: @vacancy.label, icon: "edit",
+      crumbs: [ [ "Vacancies", vacancies_path ], [ @vacancy.title, vacancy_path(@vacancy) ] ] } do %>
+<% end %>
+<%= render "form", vacancy: @vacancy %>

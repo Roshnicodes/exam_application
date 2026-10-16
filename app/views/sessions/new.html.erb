@@ -1,0 +1,21 @@
+<% content_for :title, "Sign in" %>
+<h2>Welcome back 👋</h2>
+<p>Sign in to your HR workspace to manage candidates and live exams.</p>
+
+<%= form_with url: session_path, class: "stack" do |form| %>
+  <div class="field">
+    <label for="email_address">Work email</label>
+    <div class="input-wrap"><%= icon("mail") %>
+      <%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "username", placeholder: "hr@company.com", value: params[:email_address], class: "input" %>
+    </div>
+  </div>
+  <div class="field">
+    <div class="row between"><label for="password">Password</label><%= link_to "Forgot password?", new_password_path, class: "small" %></div>
+    <div class="input-wrap"><%= icon("lock") %>
+      <%= form.password_field :password, required: true, autocomplete: "current-password", placeholder: "••••••••", maxlength: 72, class: "input" %>
+    </div>
+  </div>
+  <%= form.button class: "btn btn-primary btn-lg btn-block" do %>Sign in <%= icon("arrow-right") %><% end %>
+<% end %>
+
+<p class="muted small" style="margin-top:1.5rem;text-align:center">New to HireProctor? <%= link_to "Create an HR account", new_registration_path %></p>

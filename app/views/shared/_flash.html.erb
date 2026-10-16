@@ -1,0 +1,11 @@
+<div class="flash-stack" id="flash-stack">
+  <% { notice: [ "notice", "check-circle", "Done" ], alert: [ "alert", "alert", "Heads up" ] }.each do |key, (css, ico, title)| %>
+    <% if flash[key].present? %>
+      <div class="toast <%= css %>" data-controller="toast" data-toast-timeout-value="5000">
+        <span class="ico"><%= icon(ico) %></span>
+        <div><b><%= title %></b><p><%= flash[key] %></p></div>
+        <button class="close" data-action="toast#dismiss" aria-label="Close"><%= icon("x") %></button>
+      </div>
+    <% end %>
+  <% end %>
+</div>

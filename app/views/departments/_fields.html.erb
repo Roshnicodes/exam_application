@@ -1,0 +1,13 @@
+<div class="field">
+  <%= f.label :name do %>Department name <span class="req">*</span><% end %>
+  <div class="input-wrap"><%= icon("building") %><%= f.text_field :name, required: true, placeholder: "e.g. Engineering", class: "input" %></div>
+</div>
+<div class="field">
+  <%= f.label :head_name, "Department head" %>
+  <div class="input-wrap"><%= icon("user") %><%= f.text_field :head_name, placeholder: "e.g. Anita Desai", class: "input", list: "head-options" %></div>
+  <datalist id="head-options"><% Current.user.employees.ordered.each do |e| %><option value="<%= e.name %>"><% end %></datalist>
+</div>
+<div class="field">
+  <%= f.label :description %>
+  <%= f.text_area :description, rows: 2, placeholder: "What this department does (optional)", class: "input" %>
+</div>

@@ -1,0 +1,41 @@
+<% content_for :title, "Question papers" %>
+<%= render layout: "shared/page_header", locals: {
+      title: "Question papers", subtitle: "Reusable MCQ papers you can assign to any candidate.", icon: "file",
+      crumbs: [ [ "Dashboard", root_path ] ],
+      stats: [
+        { label: "Papers", value: @quizzes.size, icon: "file", tone: "violet" },
+        { label: "Questions", value: @quizzes.sum { |q| q.questions.size }, icon: "list", tone: "pink" },
+        { label: "Avg. duration", value: "#{@quizzes.any? ? (@quizzes.sum(&:duration_minutes) / @quizzes.size) : 0} min", icon: "clock", tone: "blue" }
+      ] } do %>
+  <%= link_to template_quizzes_path, class: "btn btn-light", data: { turbo: false } do %><span class="xl-badge">X</span> Excel template<% end %>
+  <%= link_to new_quiz_path, class: "btn btn-primary" do %><%= icon("plus") %> New paper<% end %>
+<% end %>
+
+<% if @quizzes.any? %>
+  <div class="grid grid-3">
+    <% @quizzes.each do |quiz| %>
+      <div class="card card-pad has-stretch">
+        <div class="row between">
+          <span class="avatar soft" style="border-radius:14px"><%= icon("file") %></span>
+          <span class="row" style="gap:.4rem">
+            <span class="badge"><%= quiz.questions.size %> questions</span>
+            <%= render "shared/row_actions", edit_path: edit_quiz_path(quiz), delete_path: quiz_path(quiz), confirm: "Delete \"#{quiz.title}\"?" %>
+          </span>
+        </div>
+        <h3 style="margin-top:1rem;font-size:1.1rem"><%= link_to quiz.title, quiz_path(quiz), class: "stretched" %></h3>
+        <p class="small muted" style="margin-top:.35rem;min-height:2.6em"><%= truncate(quiz.description.presence || "No description", length: 90) %></p>
+        <div class="row" style="margin-top:1rem;gap:1rem">
+          <span class="pill"><%= icon("clock") %> <%= quiz.duration_minutes %> min</span>
+          <span class="pill"><%= icon("award") %> Pass <%= quiz.pass_percentage %>%</span>
+          <span class="pill"><%= icon("list") %> <%= quiz.total_marks %> marks</span>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <div class="card empty">
+    <div class="ico"><%= icon("file") %></div>
+    <h3>No question papers yet</h3><p>Create your first MCQ paper to start inviting candidates.</p><br>
+    <%= link_to new_quiz_path, class: "btn btn-primary" do %><%= icon("plus") %> Create paper<% end %>
+  </div>
+<% end %>

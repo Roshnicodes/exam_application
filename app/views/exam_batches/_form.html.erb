@@ -1,0 +1,100 @@
+<%= form_with model: batch, url: batch.persisted? ? exam_batch_path(batch) : exam_batches_path, class: "card", multipart: true do |f| %>
+  <div class="form-section">
+    <% if batch.errors.any? || @row_errors.present? %>
+      <div class="errors"><b>Please fix these:</b>
+        <ul>
+          <% (batch.errors.full_messages + Array(@row_errors)).first(12).each do |m| %><li><%= m %></li><% end %>
+        </ul>
+      </div>
+    <% end %>
+    <div class="form-section-head">
+      <span class="ico"><%= icon("file") %></span>
+      <div><h3>Exam details (same for everyone)</h3><p>Every candidate in this batch gets this paper, schedule and proctoring rules.</p></div>
+    </div>
+    <div class="fields three">
+      <div class="field">
+        <%= f.label :name do %>Batch name <span class="req">*</span><% end %>
+        <%= f.text_field :name, required: true, class: "input", placeholder: "e.g. Campus drive – Morning slot" %>
+      </div>
+      <div class="field">
+        <%= f.label :quiz_id do %>Question paper <span class="req">*</span><% end %>
+        <% locked = batch.persisted? && batch.invitations.where.not(started_at: nil).exists? %>
+        <%= f.select :quiz_id, @quizzes.map { |q| [ "#{q.title} (#{q.questions.size} Qs · #{q.duration_minutes} min)", q.id ] }, { prompt: "Select a question paper" }, class: "input", required: true, disabled: locked %>
+        <% if locked %><span class="hint">Locked — some candidates have already started.</span><% end %>
+      </div>
+      <% if @vacancies.any? %>
+        <div class="field" data-controller="combobox" data-combobox-placeholder-value="Search vacancy…">
+          <%= f.label :vacancy_id do %>Vacancy <span class="req">*</span><% end %>
+          <%= f.select :vacancy_id, grouped_options_for_select(@vacancies.group_by { |v| v.department.name }.transform_values { |vs| vs.map { |v| [ v.title, v.id ] } }, batch.vacancy_id, prompt: "Select vacancy"), {}, class: "input", data: { combobox_target: "select" } %>
+        </div>
+      <% else %>
+        <div class="field">
+          <%= f.label :vacancy_title do %>Post name <span class="req">*</span><% end %>
+          <%= f.text_field :vacancy_title, class: "input", placeholder: "e.g. Sales Executive" %>
+        </div>
+      <% end %>
+      <div class="field">
+        <%= f.label :interview_date, "Exam / interview date & time" %>
+        <%= f.datetime_local_field :interview_date, class: "input" %>
+      </div>
+      <div class="field">
+        <%= f.label :interview_mode, "Mode" %>
+        <%= f.select :interview_mode, Invitation::INTERVIEW_MODES, {}, class: "input" %>
+      </div>
+      <div class="field">
+        <%= f.label :location, "Location / meeting link" %>
+        <%= f.text_field :location, class: "input", placeholder: "Hall / Google Meet link" %>
+      </div>
+      <div class="field">
+        <%= f.label :max_warnings, "Auto-terminate after" %>
+        <%= f.select :max_warnings, [ [ "3 warnings", 3 ], [ "5 warnings", 5 ], [ "8 warnings", 8 ], [ "10 warnings", 10 ], [ "Never (only alert)", 0 ] ], {}, class: "input" %>
+      </div>
+      <div class="field">
+        <%= f.label :link_expires_at, "Links valid until" %>
+        <%= f.datetime_local_field :link_expires_at, class: "input" %>
+      </div>
+      <div class="field">
+        <%= f.label :notes, "Note for candidates" %>
+        <%= f.text_field :notes, class: "input", placeholder: "Shown on the exam page" %>
+      </div>
+    </div>
+  </div>
+
+  <%= render "shared/panel_picker", f: f, selected_ids: @panelist_ids,
+        hint: "Panelists for every candidate in this batch. Leave empty to use the vacancy's panel." %>
+
+  <div class="form-section" data-controller="repeater">
+    <div class="form-section-head">
+      <span class="ico"><%= icon("users") %></span>
+      <div class="grow"><h3><%= batch.persisted? ? "Add more candidates" : "Candidates" %></h3><p><%= batch.persisted? ? "Existing #{batch.invitations.size} candidates stay as they are (edit or delete them from the batch page). New rows get their own links." : "Type them in, paste rows straight from Excel, or upload a sheet. Each candidate gets their own link." %></p></div>
+      <span class="badge" data-repeater-target="count">0 candidates</span>
+    </div>
+
+    <div class="bulk-sources">
+      <div class="dropzone" data-controller="dropzone" data-action="click->dropzone#pick">
+        <span class="ico"><%= icon("sheet") %></span>
+        <div class="grow">
+          <div class="small" data-dropzone-target="label"><b>Upload Excel / CSV</b> of candidates</div>
+          <div class="tiny muted">Columns: Name · Email · Mobile · Experience — <%= link_to "download template", template_exam_batches_path, data: { turbo: false }, onclick: "event.stopPropagation()" %></div>
+        </div>
+        <%= f.file_field :candidates_file, accept: ".xlsx,.xls,.csv", data: { dropzone_target: "input", action: "change->dropzone#changed" } %>
+      </div>
+      <div class="paste-box">
+        <textarea class="input" rows="3" data-repeater-target="paste" placeholder="Or paste from Excel: Name [tab] Email [tab] Mobile — one candidate per line"></textarea>
+        <button type="button" class="btn btn-light btn-sm" data-action="repeater#paste"><%= icon("plus") %> Add pasted rows</button>
+      </div>
+    </div>
+
+    <div class="cand-input-head hide-sm"><span>#</span><span>Name</span><span>Email</span><span>Mobile</span><span>Experience</span><span></span></div>
+    <div data-repeater-target="list">
+      <% @rows.each do |row| %><%= render "exam_batches/candidate_row", row: row %><% end %>
+    </div>
+    <template data-repeater-target="template"><%= render "exam_batches/candidate_row", row: {} %></template>
+    <button type="button" class="btn btn-light btn-sm" style="border-style:dashed" data-action="repeater#add"><%= icon("plus") %> Add candidate</button>
+  </div>
+
+  <div class="form-actions">
+    <%= link_to "Cancel", batch.persisted? ? exam_batch_path(batch) : exam_batches_path, class: "btn btn-light" %>
+    <%= f.button class: "btn btn-primary" do %><%= icon(batch.persisted? ? "check" : "link") %> <%= batch.persisted? ? "Save batch" : "Create exam links" %><% end %>
+  </div>
+<% end %>

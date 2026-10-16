@@ -1,0 +1,59 @@
+<% content_for :title, "Departments" %>
+<% total_vacancies = @departments.sum { |d| d.vacancies.size } %>
+<%= render layout: "shared/page_header", locals: {
+      title: "Department master", subtitle: "Departments group your vacancies. Add a department, then create vacancies under it.", icon: "building",
+      crumbs: [ [ "Masters", departments_path ] ],
+      stats: [
+        { label: "Departments", value: @departments.size, icon: "building", tone: "violet" },
+        { label: "Vacancies", value: total_vacancies, icon: "briefcase", tone: "green", path: vacancies_path },
+        { label: "Total posts", value: @departments.sum { |d| d.vacancies.sum(&:positions) }, icon: "users", tone: "amber" }
+      ] } do %>
+  <%= link_to new_vacancy_path, class: "btn btn-primary" do %><%= icon("plus") %> New vacancy<% end %>
+<% end %>
+
+<div class="dept-layout">
+  <%= form_with model: @department, class: "card dept-add" do |f| %>
+    <div class="dept-add-head">
+      <span class="dept-add-ico"><%= icon("plus") %></span>
+      <div><h3>Add department</h3><p>Quickly add a new department.</p></div>
+    </div>
+    <div class="stack" style="padding:1.25rem">
+      <%= render "shared/errors", record: @department %>
+      <%= render "fields", f: f %>
+      <%= f.button class: "btn btn-primary btn-block" do %><%= icon("check") %> Add department<% end %>
+    </div>
+  <% end %>
+
+  <div>
+    <% if @departments.any? %>
+      <div class="dept-grid">
+        <% @departments.each_with_index do |d, i| %>
+          <div class="card dept-card <%= 'inactive' unless d.active? %>" style="--accent: <%= param_color(i) %>">
+            <div class="top">
+              <span class="dept-ico"><%= d.initials %></span>
+              <div class="grow" style="min-width:0">
+                <h3><%= d.name %></h3>
+                <p class="dept-head"><%= icon("user") %> <%= d.head_name.presence || "No head assigned" %></p>
+              </div>
+              <% unless d.active? %><span class="badge status-closed">Inactive</span><% end %>
+            </div>
+            <% if d.description.present? %><p class="small muted dept-desc"><%= d.description %></p><% end %>
+            <div class="dept-metrics">
+              <div><b><%= d.vacancies.size %></b><span>Vacancies</span></div>
+              <div><b><%= d.vacancies.sum(&:positions) %></b><span>Posts</span></div>
+              <div><b><%= d.open_vacancies_count %></b><span>Open</span></div>
+            </div>
+            <div class="dept-actions">
+              <%= link_to vacancies_path(department_id: d.id), class: "btn btn-light btn-sm grow" do %><%= icon("briefcase") %> View vacancies<% end %>
+              <%= link_to new_vacancy_path(department_id: d.id), class: "btn btn-light btn-sm icon-btn", title: "Add vacancy" do %><%= icon("plus") %><% end %>
+              <%= link_to edit_department_path(d), class: "btn btn-light btn-sm icon-btn", title: "Edit" do %><%= icon("edit") %><% end %>
+              <%= button_to department_path(d), method: :delete, class: "btn btn-danger btn-sm icon-btn", title: "Delete", form: { data: { turbo_confirm: "Delete #{d.name}?" } } do %><%= icon("trash") %><% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="card empty"><div class="ico"><%= icon("building") %></div><h3>No departments yet</h3><p>Add your first department using the form.</p></div>
+    <% end %>
+  </div>
+</div>

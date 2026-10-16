@@ -1,0 +1,108 @@
+<%= form_with model: invitation, class: "card" do |f| %>
+  <div class="form-section">
+    <% if invitation.errors.any? %><%= render "shared/errors", record: invitation %><% end %>
+    <div class="form-section-head">
+      <span class="ico"><%= icon("user") %></span>
+      <div><h3>Candidate information</h3><p>Who is taking the exam. The mobile number must match what the candidate enters.</p></div>
+    </div>
+    <div class="fields">
+      <div class="field">
+        <%= f.label :candidate_name do %>Full name <span class="req">*</span><% end %>
+        <div class="input-wrap"><%= icon("user") %><%= f.text_field :candidate_name, required: true, placeholder: "e.g. Rahul Verma", class: "input" %></div>
+      </div>
+      <div class="field">
+        <%= f.label :candidate_email, "Email" %>
+        <div class="input-wrap"><%= icon("mail") %><%= f.email_field :candidate_email, placeholder: "rahul@example.com", class: "input" %></div>
+      </div>
+      <div class="field">
+        <%= f.label :candidate_phone, "Mobile number" %>
+        <div class="input-wrap"><%= icon("phone") %><%= f.telephone_field :candidate_phone, placeholder: "10 digit mobile", maxlength: 14, class: "input" %></div>
+        <span class="hint">Optional. If set, only this number can request the OTP.</span>
+      </div>
+      <div class="field">
+        <%= f.label :experience, "Experience" %>
+        <%= f.select :experience, [ "Fresher", "0-1 years", "1-3 years", "3-5 years", "5-8 years", "8+ years" ], { include_blank: "Select experience" }, class: "input" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-head">
+      <span class="ico"><%= icon("briefcase") %></span>
+      <div><h3>Vacancy &amp; interview</h3><p>The role they're applying for and when the interview is scheduled.</p></div>
+    </div>
+    <div class="fields">
+      <% if @vacancies.any? %>
+        <div class="field full" data-controller="combobox" data-combobox-placeholder-value="Search vacancy by post or department…">
+          <%= f.label :vacancy_id do %>Vacancy from master <span class="req">*</span><% end %>
+          <%= f.select :vacancy_id, grouped_options_for_select(@vacancies.group_by { |v| v.department.name }.transform_values { |vs| vs.map { |v| [ v.title, v.id ] } }, invitation.vacancy_id, prompt: "Select vacancy"),
+                {}, class: "input", data: { combobox_target: "select" } %>
+          <span class="hint">Department, post and interview panel come from the vacancy master. <%= link_to "Manage vacancies", vacancies_path %></span>
+        </div>
+        <details class="field full" <%= "open" if invitation.vacancy_id.blank? && invitation.vacancy.present? %>>
+          <summary class="small muted" style="cursor:pointer">Vacancy not in the master? Type it manually</summary>
+          <div class="fields" style="margin-top:.8rem">
+            <div class="field"><%= f.label :vacancy, "Post name" %><%= f.text_field :vacancy, placeholder: "e.g. Sales Executive", class: "input" %></div>
+            <div class="field"><%= f.label :department %><%= f.text_field :department, placeholder: "e.g. Sales", class: "input" %></div>
+          </div>
+        </details>
+      <% else %>
+        <div class="field">
+          <%= f.label :vacancy do %>Vacancy / position <span class="req">*</span><% end %>
+          <div class="input-wrap"><%= icon("briefcase") %><%= f.text_field :vacancy, required: true, placeholder: "e.g. Senior Ruby on Rails Developer", class: "input" %></div>
+          <span class="hint"><%= link_to "Create a vacancy master", new_vacancy_path %> to pick from a list.</span>
+        </div>
+        <div class="field">
+          <%= f.label :department %>
+          <%= f.text_field :department, placeholder: "e.g. Engineering", class: "input" %>
+        </div>
+      <% end %>
+      <div class="field">
+        <%= f.label :interview_date, "Interview date & time" %>
+        <div class="input-wrap"><%= icon("calendar") %><%= f.datetime_local_field :interview_date, class: "input" %></div>
+      </div>
+      <div class="field">
+        <%= f.label :interview_mode, "Interview mode" %>
+        <%= f.select :interview_mode, Invitation::INTERVIEW_MODES, {}, class: "input" %>
+      </div>
+      <div class="field full">
+        <%= f.label :location, "Location / meeting link" %>
+        <div class="input-wrap"><%= icon("map") %><%= f.text_field :location, placeholder: "Office address or Google Meet / Zoom link", class: "input" %></div>
+      </div>
+      <div class="field full">
+        <%= f.label :notes, "Notes for candidate" %>
+        <%= f.text_area :notes, placeholder: "Anything the candidate should know before the exam…", class: "input", rows: 3 %>
+      </div>
+    </div>
+  </div>
+
+  <%= render "shared/panel_picker", f: f, selected_ids: @panelist_ids,
+        hint: "Who will interview this candidate. Leave empty to use the vacancy's / batch's panel." %>
+
+  <div class="form-section">
+    <div class="form-section-head">
+      <span class="ico"><%= icon("shield") %></span>
+      <div><h3>Exam &amp; proctoring</h3><p>Choose the question paper and how strict proctoring should be.</p></div>
+    </div>
+    <div class="fields three">
+      <div class="field">
+        <%= f.label :quiz_id do %>Question paper <span class="req">*</span><% end %>
+        <%= f.select :quiz_id, @quizzes.map { |q| [ "#{q.title} (#{q.questions.size} Qs · #{q.duration_minutes} min)", q.id ] }, { prompt: "Select a question paper" }, class: "input", required: true, disabled: invitation.started_at.present? %>
+        <% if invitation.started_at.present? %><span class="hint">Locked — the candidate has already started this paper.</span><% end %>
+      </div>
+      <div class="field">
+        <%= f.label :max_warnings, "Auto-terminate after" %>
+        <%= f.select :max_warnings, [ [ "3 warnings", 3 ], [ "5 warnings", 5 ], [ "8 warnings", 8 ], [ "10 warnings", 10 ], [ "Never (only alert)", 0 ] ], {}, class: "input" %>
+      </div>
+      <div class="field">
+        <%= f.label :link_expires_at, "Link valid until" %>
+        <%= f.datetime_local_field :link_expires_at, class: "input" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <%= link_to "Cancel", invitation.persisted? ? invitation_path(invitation) : invitations_path, class: "btn btn-light" %>
+    <%= f.button class: "btn btn-primary" do %><%= icon(invitation.persisted? ? "check" : "link") %> <%= invitation.persisted? ? "Save changes" : "Create exam link" %><% end %>
+  </div>
+<% end %>

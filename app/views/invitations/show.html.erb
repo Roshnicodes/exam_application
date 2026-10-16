@@ -1,0 +1,107 @@
+<% content_for :title, @invitation.candidate_name %>
+<%= turbo_stream_from @invitation, :events %>
+<% link = exam_url(@invitation.token) %>
+<% share_text = "Hi #{@invitation.candidate_name}, please take your online assessment for the #{@invitation.vacancy} role here: #{link} (Your HR will share the OTP with you.)" %>
+
+<% chips = []
+   chips << [ "calendar", @invitation.interview_date.strftime("%d %b %Y, %-I:%M %p") ] if @invitation.interview_date
+   chips += [ [ "clock", "#{@invitation.quiz.duration_minutes} min" ], [ "list", "#{@invitation.quiz.questions.size} questions" ] ]
+   chips << [ "lock", "Link valid till #{@invitation.link_expires_at.strftime('%d %b, %-I:%M %p')}" ] if @invitation.link_expires_at %>
+<% share = capture do %>
+  <div data-controller="clipboard">
+    <div class="share-box">
+      <%= icon("link") %>
+      <input type="text" value="<%= link %>" readonly data-clipboard-target="source" aria-label="Exam link">
+      <button type="button" class="btn btn-primary btn-sm" data-action="clipboard#copy"><%= icon("copy") %> <span data-clipboard-target="label">Copy link</span></button>
+    </div>
+    <div class="share-actions">
+      <%= whatsapp_button(@invitation.candidate_phone.presence || @invitation.entered_phone, share_text) %>
+      <a class="btn btn-light btn-sm" href="mailto:<%= @invitation.candidate_email %>?subject=<%= ERB::Util.url_encode("Online assessment - #{@invitation.vacancy}") %>&body=<%= ERB::Util.url_encode(share_text) %>"><%= icon("mail") %> Email</a>
+      <a class="btn btn-light btn-sm" href="<%= link %>" target="_blank" rel="noopener"><%= icon("eye") %> Preview</a>
+    </div>
+  </div>
+<% end %>
+<%= render layout: "shared/page_header", locals: {
+      title: @invitation.candidate_name, avatar: initials_for(@invitation.candidate_name),
+      subtitle: [ @invitation.vacancy, @invitation.department.presence, @invitation.quiz.title ].compact.join(" · "),
+      crumbs: [ [ "Candidates", invitations_path ] ], chips: chips, extra: share } do %>
+  <%= link_to edit_invitation_path(@invitation), class: "btn btn-light btn-sm" do %><%= icon("edit") %> Edit<% end %>
+  <%= button_to invitation_path(@invitation), method: :delete, class: "btn btn-light btn-sm", form: { data: { turbo_confirm: "Delete this invitation and all its recordings?" } } do %><%= icon("trash") %> Delete<% end %>
+<% end %>
+
+<div class="split">
+  <div class="stack">
+    <% unless @invitation.finished? %>
+      <div class="card">
+        <div class="card-head"><h2><%= icon("video") %> Live camera</h2><span class="tiny muted">Like a video call — video + audio from the candidate</span></div>
+        <div class="card-body"><%= render "shared/live_video", invitation: @invitation %></div>
+      </div>
+    <% end %>
+    <div class="card">
+      <div class="card-head"><h2><%= icon("bell") %> Proctoring timeline</h2><span class="pill"><span class="live-dot"></span> Live</span></div>
+      <ul class="timeline scroll-y" id="events_invitation_<%= @invitation.id %>">
+        <%= render partial: "proctor_events/proctor_event", collection: @events %>
+      </ul>
+      <% if @events.empty? %><div class="card-body muted small" style="padding-top:0">No activity yet. Events appear here instantly.</div><% end %>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2><%= icon("camera") %> Camera snapshots</h2><span class="tiny muted"><%= @snapshots.size %> captured</span></div>
+      <div class="card-body">
+        <% if @snapshots.any? %>
+          <div class="snap-grid">
+            <% @snapshots.each do |ev| %>
+              <figure>
+                <%= link_to rails_blob_path(ev.snapshot, disposition: "inline"), target: "_blank", rel: "noopener" do %>
+                  <%= image_tag rails_blob_path(ev.snapshot, disposition: "inline"), alt: ev.label, loading: "lazy" %>
+                <% end %>
+                <figcaption><%= ev.kind == "snapshot" ? "Routine" : ev.label %> · <%= ev.created_at.strftime("%-I:%M:%S") %></figcaption>
+              </figure>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="muted small">Snapshots are captured every 30 seconds and on every violation.</p>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2><%= icon("video") %> Camera recordings</h2><span class="tiny muted"><%= @invitation.recordings.size %> segments</span></div>
+      <div class="card-body">
+        <% if @invitation.recordings.attached? %>
+          <div class="video-grid">
+            <% @invitation.recordings.order(:created_at).each_with_index do |rec, i| %>
+              <div>
+                <video src="<%= rails_blob_path(rec, disposition: "inline") %>" controls preload="metadata" playsinline></video>
+                <div class="tiny muted" style="margin-top:.3rem">Part <%= i + 1 %> · <%= rec.created_at.strftime("%-I:%M:%S %p") %> · <%= number_to_human_size(rec.byte_size) %></div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="muted small">Video + audio is recorded in 1-minute segments while the exam is running.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <%= render "invitations/live_state", invitation: @invitation %>
+
+    <%= render "shared/panel_card", panelists: @invitation.panelists, invitation: @invitation,
+          watch_link: watch_url(@invitation.watch_token), edit_path: edit_invitation_path(@invitation) %>
+
+    <div class="card">
+      <div class="card-head"><h2><%= icon("user") %> Candidate details</h2></div>
+      <div class="card-body kv">
+        <div><span>Email</span><b><%= @invitation.candidate_email.presence || "—" %></b></div>
+        <div><span>Mobile (HR)</span><b><%= @invitation.candidate_phone.present? ? "+91 #{@invitation.candidate_phone}" : "—" %></b></div>
+        <div><span>Mobile (entered)</span><b><%= @invitation.entered_phone.present? ? "+91 #{@invitation.entered_phone}" : "—" %></b></div>
+        <div><span>Experience</span><b><%= @invitation.experience.presence || "—" %></b></div>
+        <div><span>Mode</span><b><%= @invitation.interview_mode.presence || "—" %></b></div>
+        <div><span>Risk level</span><b style="text-transform:capitalize"><%= @invitation.risk_level %></b></div>
+        <div style="grid-column:1/-1"><span>Location / link</span><b><%= @invitation.location.presence || "—" %></b></div>
+        <% if @invitation.notes.present? %><div style="grid-column:1/-1"><span>Notes</span><b style="font-weight:500"><%= @invitation.notes %></b></div><% end %>
+      </div>
+    </div>
+  </div>
+</div>

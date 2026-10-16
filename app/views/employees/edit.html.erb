@@ -1,0 +1,7 @@
+<% content_for :title, "Edit #{@employee.name}" %>
+<%= render layout: "shared/page_header", locals: { title: "Edit employee", subtitle: @employee.name, icon: "id-card", crumbs: [ [ "Employees", employees_path ] ] } do %>
+<% end %>
+<%= form_with model: @employee, class: "card" do |f| %>
+  <div class="form-section"><%= render "shared/errors", record: @employee %><div class="fields three"><%= render "fields", f: f %></div></div>
+  <div class="form-actions"><%= link_to "Cancel", employees_path, class: "btn btn-light" %><%= f.button class: "btn btn-primary" do %><%= icon("check") %> Save<% end %></div>
+<% end %>

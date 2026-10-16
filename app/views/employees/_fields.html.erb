@@ -1,0 +1,7 @@
+<div class="field"><%= f.label :employee_code, "Employee code" %><%= f.text_field :employee_code, placeholder: "EMP001", class: "input" %></div>
+<div class="field"><%= f.label :name do %>Name <span class="req">*</span><% end %><%= f.text_field :name, required: true, placeholder: "Full name", class: "input" %></div>
+<div class="field"><%= f.label :email %><%= f.email_field :email, placeholder: "name@company.com", class: "input" %></div>
+<div class="field"><%= f.label :phone %><%= f.telephone_field :phone, placeholder: "Mobile", class: "input" %></div>
+<div class="field"><%= f.label :department_name, "Department" %><%= f.text_field :department_name, placeholder: "Engineering", class: "input", list: "dept-options" %></div>
+<div class="field"><%= f.label :designation %><%= f.text_field :designation, placeholder: "Team Lead", class: "input" %></div>
+<datalist id="dept-options"><% Current.user.departments.ordered.each do |d| %><option value="<%= d.name %>"><% end %></datalist>

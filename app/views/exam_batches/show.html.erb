@@ -1,0 +1,47 @@
+<% content_for :title, @batch.name %>
+<%= turbo_stream_from Current.user, :invitations %>
+<% st = @batch.stats %>
+<% chips = [ [ "briefcase", @batch.post_name ], [ "file", @batch.quiz.title ], [ "clock", "#{@batch.quiz.duration_minutes} min" ] ]
+   chips << [ "calendar", @batch.interview_date.strftime("%d %b %Y, %-I:%M %p") ] if @batch.interview_date
+   chips << [ "lock", "Links valid till #{@batch.link_expires_at.strftime('%d %b, %-I:%M %p')}" ] if @batch.link_expires_at %>
+<%= render layout: "shared/page_header", locals: {
+      title: @batch.name, icon: "users", crumbs: [ [ "Batches", exam_batches_path ] ], chips: chips,
+      stats: [
+        { label: "Invited", value: st[:invited], icon: "send", tone: "violet" },
+        { label: "Waiting / verifying", value: st[:waiting], icon: "clock", tone: "blue" },
+        { label: "Live now", value: st[:live], icon: "video", tone: "red", path: monitor_exam_batch_path(@batch) },
+        { label: "Completed", value: st[:finished], icon: "check-circle", tone: "green", path: results_path(quiz_id: @batch.quiz_id) }
+      ] } do %>
+  <%= button_to exam_batch_path(@batch), method: :delete, class: "btn btn-light icon-btn", title: "Delete batch", form: { data: { turbo_confirm: "Delete this batch and all its candidates' exams?" } } do %><%= icon("trash") %><% end %>
+  <%= link_to edit_exam_batch_path(@batch), class: "btn btn-light" do %><%= icon("edit") %> Edit / add candidates<% end %>
+  <%= link_to links_exam_batch_path(@batch), class: "btn btn-light", data: { turbo: false } do %><span class="xl-badge">X</span> Links Excel<% end %>
+  <%= link_to monitor_exam_batch_path(@batch), class: "btn btn-primary" do %><%= icon("video") %> Live monitor<% end %>
+<% end %>
+
+<div class="split">
+<div>
+<div class="card" data-controller="clipboard-all">
+  <div class="card-head">
+    <h2><%= icon("link") %> Candidate links</h2>
+    <button type="button" class="btn btn-light btn-sm" data-action="clipboard-all#copy"><%= icon("copy") %> <span data-clipboard-all-target="label">Copy all links</span></button>
+  </div>
+  <% @invitations.each do |inv| %>
+    <% link = exam_url(inv.token) %>
+    <div data-clipboard-all-target="item" data-text="<%= inv.candidate_name %>: <%= link %>">
+      <% extra = capture do %>
+        <span data-controller="clipboard" class="row-actions">
+          <input type="hidden" value="<%= link %>" data-clipboard-target="source">
+          <button type="button" class="btn btn-light btn-sm" data-action="clipboard#copy" title="<%= link %>"><%= icon("copy") %> <span data-clipboard-target="label">Copy link</span></button>
+          <%= whatsapp_button(inv.candidate_phone.presence || inv.entered_phone, candidate_share_text(inv), label: nil, css: "act-btn wa") %>
+        </span>
+      <% end %>
+      <%= render "invitations/manage_row", invitation: inv, extra: extra %>
+    </div>
+  <% end %>
+</div>
+</div>
+<div class="stack">
+  <%= render "shared/panel_card", panelists: @batch.panelists.presence || @batch.opening&.panelists || [], batch: @batch,
+        watch_link: watch_batch_url(@batch.watch_token), edit_path: edit_exam_batch_path(@batch) %>
+</div>
+</div>

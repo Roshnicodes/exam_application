@@ -1,0 +1,80 @@
+<% content_for :title, "Dashboard" %>
+<%= turbo_stream_from Current.user, :invitations %>
+
+<% hour = Time.current.hour %>
+<%= render layout: "shared/page_header", locals: {
+      title: "#{hour < 12 ? "Good morning" : (hour < 17 ? "Good afternoon" : "Good evening")}, #{Current.user.first_name} 👋",
+      subtitle: "Invite candidates, share the secure link and watch every exam live.",
+      icon: "home", crumbs: [ [ Date.current.strftime("%A, %d %B"), root_path ] ],
+      stats: [
+        { label: "Total candidates", value: @stats[:total], icon: "users", tone: "violet", path: invitations_path },
+        { label: "Live exams now", value: @stats[:live], icon: "video", tone: "red", path: invitations_path(status: "in_progress") },
+        { label: "Exams completed", value: @stats[:completed], icon: "check-circle", tone: "green", path: invitations_path(status: "submitted") },
+        { label: "Alerts today", value: @stats[:alerts_today], icon: "alert", tone: "amber" }
+      ] } do %>
+  <%= link_to new_quiz_path, class: "btn btn-light" do %><%= icon("file") %> New paper<% end %>
+  <%= link_to new_invitation_path, class: "btn btn-primary" do %><%= icon("send") %> Invite candidate<% end %>
+<% end %>
+
+<div class="split">
+  <div class="stack">
+    <% if @live.any? %>
+      <div class="card">
+        <div class="card-head"><h2><span class="live-dot" style="background:var(--red);box-shadow:0 0 0 4px rgba(239,68,68,.2)"></span> Live right now</h2></div>
+        <% @live.each do |inv| %>
+          <%= link_to invitation_path(inv), class: "list-item" do %>
+            <span class="avatar"><%= initials_for(inv.candidate_name) %></span>
+            <div class="grow person"><div><b><%= inv.candidate_name %></b><span><%= inv.vacancy %> · <%= inv.quiz.title %></span></div></div>
+            <span class="badge sev-medium"><%= icon("alert") %> <%= inv.warnings_count %> warnings</span>
+            <span class="btn btn-dark btn-sm"><%= icon("eye") %> Watch</span>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="card">
+      <div class="card-head">
+        <h2><%= icon("users") %> Recent candidates</h2>
+        <%= link_to "View all", invitations_path, class: "btn btn-ghost btn-sm" %>
+      </div>
+      <% if @recent.any? %>
+        <div class="cand-list"><%= render partial: "invitations/item", collection: @recent, as: :invitation %></div>
+      <% else %>
+        <div class="empty">
+          <div class="ico"><%= icon("send") %></div>
+          <h3>No candidates yet</h3>
+          <p>Invite your first candidate to an online exam.</p><br>
+          <%= link_to new_invitation_path, class: "btn btn-primary" do %><%= icon("plus") %> Invite candidate<% end %>
+        </div>
+      <% end %>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2><%= icon("calendar") %> Upcoming interviews</h2></div>
+      <% if @upcoming.any? %>
+        <% @upcoming.each do |inv| %>
+          <%= link_to invitation_path(inv), class: "list-item" do %>
+            <span class="avatar soft"><%= icon("calendar") %></span>
+            <div class="grow person"><div><b><%= inv.candidate_name %></b><span><%= inv.vacancy %></span></div></div>
+            <span class="tiny muted" style="text-align:right"><%= inv.interview_date.strftime("%d %b") %><br><%= inv.interview_date.strftime("%-I:%M %p") %></span>
+          <% end %>
+        <% end %>
+      <% else %>
+        <div class="card-body muted small">No interviews scheduled.</div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2><%= icon("activity") %> Live activity</h2><span class="tiny muted">Auto-updating</span></div>
+      <ul class="timeline scroll-y" id="dashboard-feed" style="max-height:440px">
+        <% if @feed.any? %>
+          <%= render partial: "proctor_events/proctor_event", collection: @feed, locals: { show_candidate: true } %>
+        <% else %>
+          <li class="muted small" id="feed-empty">Activity from candidates will stream here.</li>
+        <% end %>
+      </ul>
+    </div>
+
+  </div>
+</div>

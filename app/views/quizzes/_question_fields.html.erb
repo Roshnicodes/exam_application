@@ -1,0 +1,27 @@
+<% opts = (Array(f.object.options) + [ "", "", "", "" ]).first([ Array(f.object.options).size, 4 ].max) %>
+<div class="q-builder" data-nested-form-target="item">
+  <%= f.hidden_field :id if f.object.persisted? %>
+  <%= f.hidden_field :_destroy, data: { nested_form_target: "destroy" } %>
+  <%= f.hidden_field :position, data: { nested_form_target: "position" } %>
+  <div class="row" style="align-items:flex-start">
+    <span class="q-num" data-nested-form-target="number">#</span>
+    <div class="grow">
+      <%= f.text_area :body, rows: 2, placeholder: "Type the question…", class: "input" %>
+      <div class="opt-grid">
+        <% opts.each_with_index do |opt, i| %>
+          <label class="opt-input">
+            <span class="letter"><%= Question::LETTERS[i] %></span>
+            <input type="text" name="<%= f.object_name %>[options][]" value="<%= opt %>" placeholder="Option <%= Question::LETTERS[i] %>">
+            <%= f.radio_button :correct_index, i, title: "Mark as correct answer" %>
+          </label>
+        <% end %>
+      </div>
+      <div class="row" style="margin-top:.75rem">
+        <span class="small muted">Marks</span>
+        <%= f.number_field :marks, min: 1, max: 20, class: "input", style: "width:90px;padding:.45rem .7rem" %>
+        <span class="grow"></span>
+        <button type="button" class="btn btn-danger btn-sm" data-action="nested-form#remove"><%= icon("trash") %> Remove</button>
+      </div>
+    </div>
+  </div>
+</div>

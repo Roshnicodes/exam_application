@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%= render "shared/head" %>
+    <meta name="turbo-cache-control" content="no-cache">
+  </head>
+  <body class="exam-body">
+    <%= yield %>
+    <%= render "shared/flash" %>
+  </body>
+</html>

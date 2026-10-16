@@ -1,0 +1,17 @@
+<%# Monitor tile. The camera part stays put (keeps the live video connected);
+    only the info part (#monitor_tile_<id>) is replaced by live broadcasts.
+    locals: invitation:, link: (defaults to the HR page), watch_token: (panelist view) %>
+<% snap = invitation.latest_snapshot_event %>
+<%= link_to local_assigns[:link] || invitation_path(invitation), id: "mon_wrap_#{invitation.id}", class: "mon-tile", data: { turbo_frame: "_top" } do %>
+  <div class="mon-cam">
+    <% if snap&.snapshot&.attached? %>
+      <%= image_tag rails_blob_path(snap.snapshot, disposition: "inline"), alt: "Camera snapshot of #{invitation.candidate_name}", loading: "lazy", class: "mon-snap" %>
+    <% else %>
+      <div class="mon-nocam"><span class="avatar" style="background: <%= gradient_for(invitation.candidate_name) %>"><%= initials_for(invitation.candidate_name) %></span></div>
+    <% end %>
+    <% unless invitation.finished? %>
+      <%= render "shared/live_video", invitation: invitation, watch_token: local_assigns[:watch_token], compact: true %>
+    <% end %>
+  </div>
+  <%= render "monitor/tile_info", invitation: invitation %>
+<% end %>
