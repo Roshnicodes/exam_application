@@ -1,0 +1,22 @@
+<% content_for :title, "#{@round.name} · #{@invitation.candidate_name}" %>
+<%= turbo_stream_from @invitation, :events %>
+<%= render layout: "shared/page_header", locals: {
+      title: "#{@round.name} — #{@invitation.candidate_name}", icon: "video",
+      subtitle: @round.open? ? "Live now — you can see and talk to the candidate and the rest of the panel." : "This round is #{@round.status_label.downcase}. You can join and wait; the candidate appears once HR starts it.",
+      chips: [ ([ "calendar", @round.scheduled_at.strftime("%a %d %b, %-I:%M %p") ] if @round.scheduled_at) ].compact } do %>
+  <%= link_to "Back to candidate", watch_path(params[:watch_token]), class: "btn btn-light" %>
+<% end %>
+
+<% side = capture do %>
+  <%= render "interview_feedbacks/candidate_brief", invitation: @invitation %>
+  <% if @invitation.resume.attached? %>
+    <%= link_to rails_blob_path(@invitation.resume, disposition: "inline"), class: "btn btn-light btn-block", target: "_blank" do %><%= icon("file") %> View resume<% end %>
+  <% end %>
+  <% if @panelists.any? %>
+    <%= render "interview_feedbacks/form", round: @round, feedback: InterviewFeedback.new, url: watch_feedback_path(params[:watch_token], @round), panelists: @panelists %>
+  <% end %>
+  <%= render "invitations/selection_card", invitation: @invitation %>
+<% end %>
+
+<%= render "shared/interview_room", round: @round, watch_token: params[:watch_token], panelists: @panelists,
+      leave_url: watch_path(params[:watch_token]), side: side %>

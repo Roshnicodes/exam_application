@@ -10,8 +10,10 @@
         <nav class="nav">
           <span class="nav-label">Workspace</span>
           <%= nav_link "Dashboard", root_path, "home" %>
+          <%= nav_link "Pipeline", pipeline_path, "activity" %>
           <%= nav_link "Candidates", invitations_path, "users", active: controller_name == "invitations" && action_name != "new" %>
           <%= nav_link "Results", results_path, "award", active: controller_name == "results" %>
+          <%= nav_link "Schedule", schedule_path, "calendar" %>
           <%= nav_link "Invite candidate", new_invitation_path, "send" %>
           <%= nav_link "Bulk invite (batch)", exam_batches_path, "users", active: controller_name == "exam_batches" && action_name != "monitor" %>
           <%= nav_link "Live monitor", live_monitor_path, "video", active: controller_name == "monitor" || action_name == "monitor",
@@ -23,6 +25,9 @@
           <%= nav_link "Departments", departments_path, "building", active: controller_name == "departments" %>
           <%= nav_link "Vacancies", vacancies_path, "briefcase", active: controller_name == "vacancies" %>
           <%= nav_link "Employees", employees_path, "id-card", active: controller_name == "employees" %>
+          <span class="nav-label">Help</span>
+          <%= nav_link "Team", team_path, "users", active: controller_name == "team" %>
+          <%= nav_link "Guide", guide_path, "sparkles" %>
         </nav>
         <div class="sidebar-foot">
           <div class="user-chip">

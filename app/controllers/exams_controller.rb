@@ -101,9 +101,10 @@ class ExamsController < ApplicationController
     redirect_to exam_path(@invitation.token) unless @invitation.finished?
   end
 
-  # Two-way video interview with the panel (after the test, once HR opens the room).
+  # Two-way video interview with the panel: joins whichever round HR has made live.
   def interview
-    redirect_to exam_finished_path(@invitation.token), alert: "The interview room is not open yet." unless @invitation.interview_open?
+    @round = @invitation.current_round
+    redirect_to exam_finished_path(@invitation.token), alert: "No interview round is live right now." unless @round
   end
 
   private

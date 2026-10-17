@@ -1,0 +1,17 @@
+<%# Panelist view of the rounds (no HR actions). locals: invitation:, watch_token: %>
+<div id="rounds_watch_<%= invitation.id %>" class="card">
+  <div class="card-head"><h2><%= icon("video") %> Interview rounds</h2></div>
+  <% if invitation.interview_rounds.any? %>
+    <% invitation.interview_rounds.each do |round| %>
+      <div class="list-item">
+        <span class="rs-dot rs-<%= round.status %>"><%= icon(round.open? ? "video" : (round.completed? ? "check" : "calendar")) %></span>
+        <div class="grow person"><div><b><%= round.name %></b><span><%= round.scheduled_at ? round.scheduled_at.strftime("%a %d %b, %-I:%M %p") : "Not scheduled" %> · <%= round.panelists.map(&:name).join(", ").presence || "Panel not set" %></span></div></div>
+        <% unless round.cancelled? %>
+          <%= link_to watch_round_path(watch_token, round), class: "btn btn-sm #{round.open? ? 'btn-primary' : 'btn-light'}" do %><%= icon(round.open? ? "video" : "award") %> <%= round.open? ? "Join now" : "Open" %><% end %>
+        <% end %>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="card-body small muted">No interview rounds for this candidate.</div>
+  <% end %>
+</div>

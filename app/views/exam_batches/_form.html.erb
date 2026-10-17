@@ -64,6 +64,14 @@
     </div>
   </div>
 
+  <div class="form-section">
+    <div class="form-section-head">
+      <span class="ico"><%= icon("video") %></span>
+      <div><h3>Interview plan</h3><p>Rounds every candidate in this batch gets after the test.</p></div>
+    </div>
+    <%= render "shared/plan_picker", f: f, value: batch.interview_plan %>
+  </div>
+
   <%= render "shared/panel_picker", f: f, selected_ids: @panelist_ids,
         hint: "Panelists for every candidate in this batch. Leave empty to use the vacancy's panel." %>
 

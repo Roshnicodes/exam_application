@@ -139,6 +139,14 @@ module ApplicationHelper
     "Hi #{employee.name}, you are on the interview panel for #{what}. Watch the candidate's live camera here: #{link}"
   end
 
+  def decision_message(invitation)
+    case invitation.decision
+    when "selected" then "Congratulations #{invitation.candidate_name}! 🎉 You have been selected for the #{invitation.vacancy} role. Our HR team will share the next steps shortly."
+    when "on_hold" then "Hi #{invitation.candidate_name}, thank you for interviewing for the #{invitation.vacancy} role. Your application is currently on hold; we will get back to you soon."
+    when "rejected" then "Hi #{invitation.candidate_name}, thank you for your time and interest in the #{invitation.vacancy} role. We will not be moving forward this time, and we wish you all the best."
+    end.to_s
+  end
+
   def initials_for(name)
     name.to_s.split.map(&:first).first(2).join.upcase.presence || "?"
   end

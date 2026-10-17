@@ -7,7 +7,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 // Meet-style interview room: everyone sees and hears everyone (WebRTC mesh, best for up to ~6 people).
 export default class extends Controller {
   static targets = [ "grid", "localVideo", "micBtn", "camBtn", "status", "nameInput", "joinPanel", "room", "count" ]
-  static values = { invitationId: Number, token: String, watchToken: String, name: String, needsName: Boolean, leaveUrl: String }
+  static values = { roundId: Number, token: String, watchToken: String, name: String, needsName: Boolean, leaveUrl: String }
 
   connect() {
     this.peers = new Map() // peerId -> { pc, pending, tile, name, role }
@@ -44,7 +44,7 @@ export default class extends Controller {
 
     const params = { channel: "InterviewChannel", peer_id: this.peerId }
     if (this.tokenValue) params.token = this.tokenValue
-    else Object.assign(params, { invitation_id: this.invitationIdValue, watch_token: this.watchTokenValue, name: this.nameValue })
+    else Object.assign(params, { round_id: this.roundIdValue, watch_token: this.watchTokenValue, name: this.nameValue })
 
     this.subscription = await cable.subscribeTo(params, {
       connected: () => this.setStatus("Connected — waiting for others to join"),

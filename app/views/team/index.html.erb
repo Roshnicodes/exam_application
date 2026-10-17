@@ -1,0 +1,31 @@
+<% content_for :title, "Team" %>
+<%= render layout: "shared/page_header", locals: {
+      title: "HR team", subtitle: "People who can sign in to HireProctor. Public sign-up is closed once the first account exists.", icon: "users",
+      crumbs: [ [ "Dashboard", root_path ] ] } do %>
+<% end %>
+
+<div class="split">
+  <div class="card">
+    <div class="card-head"><h2><%= icon("users") %> Members</h2><span class="tiny muted"><%= @users.size %></span></div>
+    <% @users.each do |u| %>
+      <div class="list-item">
+        <span class="avatar" style="background: <%= gradient_for(u.name) %>"><%= u.initials %></span>
+        <div class="grow person"><div><b><%= u.name %><%= " (you)" if u == Current.user %></b><span><%= u.email_address %> · joined <%= u.created_at.strftime("%d %b %Y") %></span></div></div>
+        <% unless u == Current.user %>
+          <%= render "shared/row_actions", delete_path: team_member_path(u), confirm: "Remove #{u.name}? Their candidates, papers and data will be deleted too." %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <%= form_with model: @user, url: team_path, class: "card" do |f| %>
+    <div class="card-head"><h2><%= icon("plus") %> Add HR member</h2></div>
+    <div class="card-body stack">
+      <%= render "shared/errors", record: @user %>
+      <div class="field"><%= f.label :name %><%= f.text_field :name, required: true, class: "input", placeholder: "Full name" %></div>
+      <div class="field"><%= f.label :email_address, "Email" %><%= f.email_field :email_address, required: true, class: "input", placeholder: "name@company.com" %></div>
+      <div class="field"><%= f.label :password, "Temporary password" %><%= f.password_field :password, required: true, minlength: 6, class: "input", placeholder: "Min 6 characters" %><span class="hint">Share it privately; they can reset it from “Forgot password”.</span></div>
+      <%= f.button class: "btn btn-primary btn-block" do %><%= icon("check") %> Add member<% end %>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,36 @@
+<% content_for :title, "#{@round.name} · #{@invitation.candidate_name}" %>
+<%= turbo_stream_from @invitation, :events %>
+<%= render layout: "shared/page_header", locals: {
+      title: "#{@round.name} — #{@invitation.candidate_name}", icon: "video",
+      subtitle: @round.open? ? "Live. The candidate joins from their exam link; panelists from their watch link." : "This round is #{@round.status_label.downcase}. Start it to let the candidate in.",
+      crumbs: [ [ "Candidates", invitations_path ], [ @invitation.candidate_name, invitation_path(@invitation) ] ],
+      chips: [ ([ "calendar", @round.scheduled_at.strftime("%a %d %b, %-I:%M %p") ] if @round.scheduled_at), [ "users", @round.panelists.map(&:name).join(", ").presence || "No panel" ] ].compact } do %>
+  <% if @round.open? %>
+    <%= button_to complete_invitation_interview_round_path(@invitation, @round), class: "btn btn-light", form: { data: { turbo_confirm: "End #{@round.name} for everyone?" } } do %><%= icon("check") %> End round<% end %>
+  <% elsif !@round.cancelled? %>
+    <%= button_to open_invitation_interview_round_path(@invitation, @round), class: "btn btn-primary" do %><%= icon("play") %> Start round<% end %>
+  <% end %>
+<% end %>
+
+<% side = capture do %>
+  <%= render "interview_feedbacks/candidate_brief", invitation: @invitation, hr: true %>
+  <div class="card" data-controller="clipboard">
+    <div class="card-head"><h2><%= icon("link") %> Invite to the room</h2></div>
+    <div class="card-body stack small">
+      <div>
+        <b>Candidate</b> — same exam link (OTP again on a new device)
+        <div class="row wrap" style="margin-top:.4rem">
+          <input type="hidden" value="<%= exam_url(@invitation.token) %>" data-clipboard-target="source">
+          <button type="button" class="btn btn-light btn-sm" data-action="clipboard#copy"><%= icon("copy") %> <span data-clipboard-target="label">Copy link</span></button>
+          <%= whatsapp_button(@invitation.candidate_phone.presence || @invitation.entered_phone, "Hi #{@invitation.candidate_name}, your #{@round.name} has started. Join here: #{exam_url(@invitation.token)}") %>
+        </div>
+      </div>
+      <div><b>Panelists</b> — share their watch link from the <%= link_to "candidate page", invitation_path(@invitation, anchor: "rounds") %>; it lists every round with a Join button.</div>
+    </div>
+  </div>
+  <%= render "interview_feedbacks/form", round: @round, feedback: @feedback, url: feedback_invitation_interview_round_path(@invitation, @round) %>
+  <%= render "invitations/selection_card", invitation: @invitation %>
+  <%= render "interview_feedbacks/summary", invitation: @invitation %>
+<% end %>
+
+<%= render "shared/interview_room", round: @round, name: Current.user.name, leave_url: invitation_path(@invitation), side: side %>

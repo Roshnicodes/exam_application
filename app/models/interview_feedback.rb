@@ -8,6 +8,7 @@ class InterviewFeedback < ApplicationRecord
   }.freeze
 
   belongs_to :invitation
+  belongs_to :interview_round, optional: true
   belongs_to :employee, optional: true
   belongs_to :user, optional: true
 

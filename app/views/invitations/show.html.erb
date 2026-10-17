@@ -37,6 +37,9 @@
         <div class="card-body"><%= render "shared/live_video", invitation: @invitation %></div>
       </div>
     <% end %>
+    <%= render "interview_rounds/list", invitation: @invitation %>
+    <%= render "interview_feedbacks/summary", invitation: @invitation %>
+
     <div class="card">
       <div class="card-head"><h2><%= icon("bell") %> Proctoring timeline</h2><span class="pill"><span class="live-dot"></span> Live</span></div>
       <ul class="timeline scroll-y" id="events_invitation_<%= @invitation.id %>">
@@ -87,8 +90,13 @@
   <div class="stack">
     <%= render "invitations/live_state", invitation: @invitation %>
     <%= render "invitations/selection_card", invitation: @invitation %>
-    <%= render "invitations/interview_card", invitation: @invitation %>
-    <%= render "interview_feedbacks/summary", invitation: @invitation %>
+    <%= render "invitations/decision_card", invitation: @invitation %>
+    <% if @invitation.resume.attached? %>
+      <div class="card card-pad row between">
+        <span class="row"><span class="avatar soft"><%= icon("file") %></span><span><b class="small">Resume</b><br><span class="tiny muted"><%= @invitation.resume.filename %></span></span></span>
+        <%= link_to rails_blob_path(@invitation.resume, disposition: "inline"), class: "btn btn-light btn-sm", target: "_blank" do %><%= icon("eye") %> Open<% end %>
+      </div>
+    <% end %>
 
     <%= render "shared/panel_card", panelists: @invitation.panelists, invitation: @invitation,
           watch_link: watch_url(@invitation.watch_token), edit_path: edit_invitation_path(@invitation) %>

@@ -1,5 +1,5 @@
 class InvitationsController < ApplicationController
-  before_action :set_invitation, only: %i[show report edit update destroy interview open_interview close_interview feedback]
+  before_action :set_invitation, only: %i[show report edit update destroy decide]
 
   def index
     @invitations = Current.user.invitations.includes(:quiz).recent
@@ -48,8 +48,10 @@ class InvitationsController < ApplicationController
     if @invitation.started_at.nil? && invitation_params[:quiz_id].present?
       @invitation.quiz = Current.user.quizzes.find_by(id: invitation_params[:quiz_id]) || @invitation.quiz
     end
+    plan_changed = @invitation.interview_plan_changed?
     if @invitation.save
-      redirect_to @invitation, notice: "Candidate details updated."
+      note = plan_changed && !@invitation.replan_rounds! ? " Rounds already started, so the interview plan wasn't rebuilt — edit rounds directly." : ""
+      redirect_to @invitation, notice: "Candidate details updated.#{note}"
     else
       load_form_options
       render :edit, status: :unprocessable_entity
@@ -61,33 +63,13 @@ class InvitationsController < ApplicationController
     @events = @invitation.proctor_events.timeline
   end
 
-  # Two-way video interview room (HR view).
-  def interview
-    @feedback = @invitation.interview_feedbacks.find_by(user: Current.user) || InterviewFeedback.new(reviewer_name: Current.user.name)
-  end
+  # Final hiring decision: selected / on hold / rejected (blank clears it).
+  def decide
+    value = params[:decision].presence
+    return redirect_to(@invitation, alert: "Unknown decision.") if value && !Invitation::DECISIONS.key?(value)
 
-  def open_interview
-    @invitation.open_interview!
-    redirect_to interview_invitation_path(@invitation), notice: "Interview room is open. #{@invitation.candidate_name} can join from their exam link."
-  end
-
-  def close_interview
-    @invitation.close_interview!
-    redirect_to invitation_path(@invitation), notice: "Interview ended."
-  end
-
-  def feedback
-    @feedback = @invitation.interview_feedbacks.find_or_initialize_by(user: Current.user)
-    @feedback.assign_attributes(feedback_params.merge(reviewer_name: Current.user.name))
-    saved = @feedback.save
-    respond_to do |format|
-      # replace just the scorecard, so an ongoing video call isn't interrupted
-      format.turbo_stream do
-        render turbo_stream: turbo_stream.replace("feedback_form_#{@invitation.id}", partial: "interview_feedbacks/form",
-                 locals: { invitation: @invitation, feedback: @feedback, url: feedback_invitation_path(@invitation), saved: saved })
-      end
-      format.html { redirect_back_or_to invitation_path(@invitation), saved ? { notice: "Your feedback is saved." } : { alert: @feedback.errors.full_messages.to_sentence } }
-    end
+    @invitation.decide!(value, params[:decision_note])
+    redirect_to @invitation, notice: value ? "Marked as #{@invitation.decision_label}." : "Decision cleared."
   end
 
   def destroy
@@ -98,10 +80,6 @@ class InvitationsController < ApplicationController
   end
 
   private
-    def feedback_params
-      params.expect(interview_feedback: [ :recommendation, :comments, scores: {} ])
-    end
-
     def load_form_options
       @quizzes = Current.user.quizzes.order(:title)
       @vacancies = Current.user.vacancies.open.includes(:department).order(:title)
@@ -118,6 +96,6 @@ class InvitationsController < ApplicationController
     def invitation_params
       params.expect(invitation: [ :candidate_name, :candidate_email, :candidate_phone, :vacancy, :department, :experience,
                                   :interview_date, :interview_mode, :location, :notes, :quiz_id, :vacancy_id, :max_warnings,
-                                  :link_expires_at, :meeting_link, panelist_ids: [] ])
+                                  :link_expires_at, :meeting_link, :interview_plan, :resume, panelist_ids: [] ])
     end
 end

@@ -30,18 +30,29 @@ Rails.application.routes.draw do
   resources :invitations, only: %i[index new create show edit update destroy] do
     member do
       get :report
-      get :interview
-      post :open_interview
-      post :close_interview
-      post :feedback
+      post :decide
+    end
+    resources :interview_rounds, path: "rounds", only: %i[create update destroy] do
+      member do
+        get :room
+        post :open
+        post :complete
+        post :feedback
+      end
     end
   end
+  get "pipeline" => "pipeline#index", as: :pipeline
+  get "schedule" => "schedule#index", as: :schedule
+  get "guide" => "pages#guide", as: :guide
+  get "team" => "team#index", as: :team
+  post "team" => "team#create"
+  delete "team/:id" => "team#destroy", as: :team_member
 
   # Read-only live view for interview panelists (no login, secret link)
   get "watch/batch/:watch_token" => "watch#batch", as: :watch_batch
   get "watch/:watch_token" => "watch#show", as: :watch
-  get "watch/:watch_token/interview" => "watch#interview", as: :watch_interview
-  post "watch/:watch_token/feedback" => "watch#feedback", as: :watch_feedback
+  get "watch/:watch_token/rounds/:round_id" => "watch#round", as: :watch_round
+  post "watch/:watch_token/rounds/:round_id/feedback" => "watch#feedback", as: :watch_feedback
 
   # Public candidate flow, addressed by the shared link token
   scope "exam/:token", controller: :exams, as: :exam do

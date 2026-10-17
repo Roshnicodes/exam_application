@@ -18,6 +18,20 @@
 
 <div class="split">
   <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2><%= icon("activity") %> Hiring funnel</h2><%= link_to "Pipeline", pipeline_path, class: "btn btn-ghost btn-sm" %></div>
+      <div class="card-body funnel">
+        <% top = [ @funnel.first[1], 1 ].max %>
+        <% @funnel.each do |label, count, tone| %>
+          <div class="funnel-row tone-<%= tone %>">
+            <span class="funnel-label"><%= label %></span>
+            <span class="funnel-bar"><span style="width:<%= [ count * 100 / top, count.positive? ? 4 : 0 ].max %>%"></span></span>
+            <b><%= count %></b>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
     <% if @live.any? %>
       <div class="card">
         <div class="card-head"><h2><span class="live-dot" style="background:var(--red);box-shadow:0 0 0 4px rgba(239,68,68,.2)"></span> Live right now</h2></div>

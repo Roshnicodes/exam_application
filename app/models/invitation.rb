@@ -1,6 +1,12 @@
 class Invitation < ApplicationRecord
   STATUSES = %w[pending otp_requested verified in_progress submitted terminated].freeze
   INTERVIEW_MODES = [ "Online", "In-person", "Telephonic" ].freeze
+  INTERVIEW_PLANS = {
+    "separate" => [ "Separate rounds", "Test, then each interview stage (e.g. Technical, HR) as its own round — own date, panel and room" ],
+    "combined" => [ "One combined interview", "Test, then a single panel interview that scores all stages together" ],
+    "none" => [ "Test only", "No interview rounds (you can still add one later)" ]
+  }.freeze
+  DECISIONS = { "selected" => "Selected", "on_hold" => "On hold", "rejected" => "Rejected" }.freeze
   OTP_TTL = 10.minutes
   MAX_OTP_ATTEMPTS = 5
 
@@ -14,7 +20,9 @@ class Invitation < ApplicationRecord
   has_secure_token :token, length: 24
   has_secure_token :watch_token, length: 24 # read-only live view link for panelists
 
+  has_many :interview_rounds, -> { ordered }, dependent: :destroy, inverse_of: :invitation
   has_many :interview_feedbacks, -> { order(:created_at) }, dependent: :destroy
+  has_one_attached :resume
   has_many :invitation_panelists, dependent: :destroy
   has_many :assigned_panelists, through: :invitation_panelists, source: :employee
 
@@ -28,12 +36,16 @@ class Invitation < ApplicationRecord
   validates :candidate_phone, length: { is: 10 }, allow_blank: true
   validates :status, inclusion: { in: STATUSES }
   validates :max_warnings, numericality: { only_integer: true, in: 0..50 }
+  validates :interview_plan, inclusion: { in: INTERVIEW_PLANS.keys }
+  validates :decision, inclusion: { in: DECISIONS.keys }, allow_nil: true
+  validate :resume_is_a_document
   validates :meeting_link, format: { with: %r{\Ahttps?://}i, message: "must start with http:// or https://" }, allow_blank: true
 
   scope :recent, -> { order(created_at: :desc) }
   scope :live, -> { where(status: "in_progress") }
   scope :completed, -> { where(status: %w[submitted terminated]) }
 
+  after_create :build_interview_rounds
   after_update_commit :broadcast_live_state
 
   STATUSES.each do |s|
@@ -216,20 +228,88 @@ class Invitation < ApplicationRecord
     [ self.watch_token, exam_batch&.watch_token ].compact.any? { |t| ActiveSupport::SecurityUtils.secure_compare(t, watch_token.to_s) }
   end
 
-  # ---- Interview room ------------------------------------------------------
+  # ---- Interview rounds ----------------------------------------------------
 
-  DEFAULT_INTERVIEW_PARAMETERS = [ "Communication", "Technical knowledge", "Problem solving", "Attitude & fit" ].freeze
+  DEFAULT_SELECTION = [ { name: "Online test", weight: 40 }, { name: "Technical interview", weight: 40 }, { name: "HR interview", weight: 20 } ].freeze
+
+  def current_round
+    interview_rounds.find(&:open?)
+  end
 
   def interview_open?
-    interview_status == "open"
+    current_round.present?
   end
 
-  def open_interview!
-    update!(interview_status: "open", interview_started_at: interview_started_at || Time.current)
+  # Creates rounds from the interview plan: one per interview stage, one combined round, or none.
+  def build_interview_rounds
+    return if interview_plan == "none" || interview_rounds.exists?
+
+    params = interview_parameters
+    if interview_plan == "combined"
+      interview_rounds.create!(name: "Panel interview", position: 1, parameters: params, meeting_link: meeting_link)
+    else
+      params.each_with_index do |name, i|
+        interview_rounds.create!(name: name, position: i + 1, parameters: [ name ], meeting_link: meeting_link)
+      end
+    end
   end
 
-  def close_interview!
-    update!(interview_status: "closed")
+  # Re-plan only while nothing has happened in the rounds yet.
+  def replan_rounds!
+    return false if interview_rounds.any? { |r| !r.scheduled? } || interview_feedbacks.exists?
+
+    interview_rounds.destroy_all
+    interview_rounds.reset
+    build_interview_rounds
+    true
+  end
+
+  def interview_average
+    vals = interview_feedbacks.filter_map(&:average)
+    vals.any? ? (vals.sum / vals.size).round(1) : nil
+  end
+
+  def broadcast_feedback
+    broadcast_replace_to [ self, :events ], target: "feedback_invitation_#{id}",
+                         partial: "interview_feedbacks/summary", locals: { invitation: self }
+    broadcast_replace_to [ self, :events ], target: "selection_invitation_#{id}",
+                         partial: "invitations/selection_card", locals: { invitation: self }
+    broadcast_rounds
+  end
+
+  # Round list for HR / panelists, and the candidate's "Join interview" prompt.
+  def broadcast_rounds
+    interview_rounds.reset
+    broadcast_replace_to [ self, :events ], target: "rounds_invitation_#{id}",
+                         partial: "interview_rounds/list", locals: { invitation: self }
+    broadcast_replace_to [ self, :events ], target: "rounds_watch_#{id}",
+                         partial: "interview_rounds/watch_list", locals: { invitation: self, watch_token: watch_token }
+    broadcast_replace_to [ self, :candidate ], target: "interview_cta",
+                         partial: "exams/interview_cta", locals: { invitation: self }
+  end
+
+  # ---- Decision & pipeline -------------------------------------------------
+
+  PIPELINE = {
+    "invited" => "Invited", "testing" => "Taking test", "interviews" => "Interviews",
+    "decision" => "Decision pending", "selected" => "Selected", "on_hold" => "On hold", "rejected" => "Rejected"
+  }.freeze
+
+  def decide!(value, note = nil)
+    update!(decision: value.presence, decision_note: note.presence, decided_at: value.present? ? Time.current : nil)
+  end
+
+  def decision_label
+    DECISIONS[decision]
+  end
+
+  def pipeline_stage
+    return decision if decision.present?
+    return "testing" if in_progress?
+    return "invited" unless finished?
+    return "interviews" if interview_rounds.any? { |r| !r.done? }
+
+    "decision"
   end
 
   # A selection parameter is the online test when its name says so; everything else is
@@ -242,13 +322,12 @@ class Invitation < ApplicationRecord
     list = Array(opening&.selection_parameters).filter_map do |p|
       { name: p["name"], weight: p["weight"].to_i } if p["name"].present? && p["weight"].to_i.positive?
     end
-    list.presence || [ { name: "Online test", weight: 50 }, { name: "Interview", weight: 50 } ]
+    list.presence || DEFAULT_SELECTION.map(&:dup)
   end
 
-  # What panelists score: the vacancy's interview stages, else sensible defaults.
+  # Interview stages the panel scores: every non-test selection parameter.
   def interview_parameters
-    names = Array(opening&.selection_parameters).map { |p| p["name"] }.compact_blank.grep_v(TEST_PARAMETER)
-    names.presence || DEFAULT_INTERVIEW_PARAMETERS
+    selection_parameters.map { |p| p[:name] }.grep_v(TEST_PARAMETER)
   end
 
   # Each stage with its score (0-100) once available:
@@ -261,11 +340,7 @@ class Invitation < ApplicationRecord
         score = finished? ? percentage : nil
         source = finished? ? "#{self.score}/#{total_marks} marks" : "Test not taken yet"
       else
-        vals = if param[:name] == "Interview" && opening.nil?
-          feedbacks.filter_map(&:average)
-        else
-          feedbacks.filter_map { |f| f.scores[param[:name]] }
-        end
+        vals = feedbacks.filter_map { |f| f.scores[param[:name]] }
         score = vals.any? ? (vals.sum.to_f / vals.size * 10).round : nil
         source = vals.any? ? "#{(vals.sum.to_f / vals.size).round(1)}/10 from #{vals.size} panelist#{'s' unless vals.size == 1}" : "Not scored yet"
       end
@@ -317,6 +392,13 @@ class Invitation < ApplicationRecord
   end
 
   private
+    def resume_is_a_document
+      return unless resume.attached?
+
+      errors.add(:resume, "must be a PDF or Word file") unless resume.content_type.in?(%w[application/pdf application/msword application/vnd.openxmlformats-officedocument.wordprocessingml.document])
+      errors.add(:resume, "must be smaller than 10 MB") if resume.byte_size > 10.megabytes
+    end
+
     # A vacancy picked from the master fills in the post name and department.
     def copy_opening_details
       return unless opening && (new_record? || will_save_change_to_vacancy_id?)
@@ -330,10 +412,6 @@ class Invitation < ApplicationRecord
     end
 
     def broadcast_live_state
-      if saved_change_to_interview_status?
-        broadcast_replace_to [ self, :candidate ], target: "interview_cta",
-                             partial: "exams/interview_cta", locals: { invitation: self }
-      end
       broadcast_replace_to [ self, :events ], target: "live_state_invitation_#{id}",
                            partial: "invitations/live_state", locals: { invitation: self }
       broadcast_replace_to [ user, :invitations ], target: "invitation_item_#{id}",

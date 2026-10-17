@@ -1,0 +1,21 @@
+<div class="card decision-card decision-<%= invitation.decision || 'none' %>">
+  <div class="card-head">
+    <h2><%= icon("award") %> Final decision</h2>
+    <% if invitation.decision %><span class="badge decision-badge-<%= invitation.decision %>"><%= invitation.decision_label %></span><% end %>
+  </div>
+  <%= form_with url: decide_invitation_path(invitation), class: "card-body stack" do |f| %>
+    <div class="decision-options">
+      <% Invitation::DECISIONS.each do |key, label| %>
+        <label class="dec dec-<%= key %>"><input type="radio" name="decision" value="<%= key %>" <%= "checked" if invitation.decision == key %> required><span><%= icon({ "selected" => "check-circle", "on_hold" => "clock", "rejected" => "x-circle" }[key]) %> <%= label %></span></label>
+      <% end %>
+    </div>
+    <textarea name="decision_note" class="input" rows="2" placeholder="Note (offer details, reason, next steps…)"><%= invitation.decision_note %></textarea>
+    <div class="row wrap">
+      <%= f.button class: "btn btn-primary btn-sm" do %><%= icon("check") %> Save decision<% end %>
+      <% if invitation.decision %>
+        <%= whatsapp_button(invitation.candidate_phone.presence || invitation.entered_phone, decision_message(invitation), label: "Tell candidate") %>
+      <% end %>
+    </div>
+    <% if invitation.decided_at %><p class="tiny muted">Decided <%= nice_time(invitation.decided_at) %></p><% end %>
+  <% end %>
+</div>

@@ -1,0 +1,116 @@
+<%# HR view of a candidate's interview rounds (replaced live via broadcasts). locals: invitation: %>
+<% rounds = invitation.interview_rounds.to_a %>
+<% employees = invitation.user.employees.ordered.to_a %>
+<div id="rounds_invitation_<%= invitation.id %>" class="card rounds-card">
+  <div class="card-head" id="rounds">
+    <h2><%= icon("video") %> Interview rounds</h2>
+    <span class="tiny muted"><%= Invitation::INTERVIEW_PLANS.dig(invitation.interview_plan, 0) %></span>
+  </div>
+
+  <ol class="round-steps">
+    <li class="round-step done-<%= invitation.finished? %>">
+      <span class="rs-dot"><%= icon(invitation.finished? ? "check" : "file") %></span>
+      <div class="rs-body">
+        <div class="row between"><b>Online test</b><span class="badge <%= invitation.finished? ? 'sev-success' : '' %>"><%= invitation.finished? ? "#{invitation.percentage}%" : invitation.status_label %></span></div>
+        <p class="tiny muted"><%= invitation.quiz.title %></p>
+      </div>
+    </li>
+
+    <% rounds.each do |round| %>
+      <li class="round-step rs-<%= round.status %>">
+        <span class="rs-dot"><%= icon(round.completed? ? "check" : (round.open? ? "video" : (round.cancelled? ? "x" : "calendar"))) %></span>
+        <div class="rs-body">
+          <div class="row between" style="align-items:flex-start">
+            <div>
+              <b><%= round.name %></b>
+              <p class="tiny muted">
+                <%= round.scheduled_at ? round.scheduled_at.strftime("%a %d %b, %-I:%M %p") : "Not scheduled" %>
+                · scores: <%= round.score_parameters.join(", ") %>
+              </p>
+            </div>
+            <span class="badge round-badge-<%= round.status %>"><%= round.status_label %></span>
+          </div>
+
+          <div class="row wrap between" style="margin-top:.5rem">
+            <div class="panel-stack" title="<%= round.panelists.map(&:name).join(', ').presence || 'No panelists' %>">
+              <% round.panelists.first(5).each do |p| %><span class="avatar" style="background: <%= gradient_for(p.name) %>"><%= initials_for(p.name) %></span><% end %>
+              <% if round.panelists.empty? %><span class="tiny muted">No panel</span><% end %>
+            </div>
+            <span class="tiny">
+              <% if (avg = round.average) %><b class="rs-score"><%= avg %>/10</b> · <% end %>
+              <%= pluralize(round.interview_feedbacks.size, "scorecard") %>
+            </span>
+          </div>
+
+          <div class="rs-actions">
+            <% if round.open? %>
+              <%= link_to room_invitation_interview_round_path(invitation, round), class: "btn btn-primary btn-sm" do %><%= icon("video") %> Join room<% end %>
+              <%= button_to complete_invitation_interview_round_path(invitation, round), class: "btn btn-light btn-sm", form: { data: { turbo_confirm: "End #{round.name}?" } } do %><%= icon("check") %> End round<% end %>
+            <% elsif !round.cancelled? %>
+              <%= button_to open_invitation_interview_round_path(invitation, round), class: "btn btn-primary btn-sm" do %><%= icon("play") %> <%= round.completed? ? "Re-open" : "Start now" %><% end %>
+              <% if round.completed? %><%= link_to room_invitation_interview_round_path(invitation, round), class: "btn btn-light btn-sm" do %><%= icon("award") %> Scorecard<% end %><% end %>
+            <% end %>
+            <% if round.meeting_link.present? %><a class="btn btn-light btn-sm" href="<%= round.meeting_link %>" target="_blank" rel="noopener"><%= icon("link") %> Meet</a><% end %>
+            <details class="rs-edit">
+              <summary class="act-btn" title="Edit round"><%= icon("edit") %></summary>
+              <%= form_with model: round, url: invitation_interview_round_path(invitation, round), method: :patch, class: "rs-form" do |f| %>
+                <div class="fields">
+                  <div class="field"><%= f.label :name %><%= f.text_field :name, class: "input" %></div>
+                  <div class="field"><%= f.label :scheduled_at, "Date & time" %><%= f.datetime_local_field :scheduled_at, class: "input" %></div>
+                  <div class="field full"><%= f.label :meeting_link, "Meet / Zoom link (optional)" %><%= f.url_field :meeting_link, class: "input", placeholder: "https://meet.google.com/…" %></div>
+                  <div class="field full">
+                    <label>Scores these stages</label>
+                    <div class="chip-checks">
+                      <% invitation.interview_parameters.each do |param| %>
+                        <label><input type="checkbox" name="interview_round[parameters][]" value="<%= param %>" <%= "checked" if round.score_parameters.include?(param) %>><span><%= param %></span></label>
+                      <% end %>
+                      <input type="hidden" name="interview_round[parameters][]" value="">
+                    </div>
+                  </div>
+                  <% if employees.any? %>
+                    <div class="field full" data-controller="combobox" data-combobox-placeholder-value="Panel for this round…">
+                      <label>Panelists for this round</label>
+                      <%= f.select :panelist_ids, options_for_select(employees.map { |e| [ e.name, e.id, { "data-sub" => e.subtitle } ] }, round.assigned_panelists.ids),
+                            {}, multiple: true, class: "input", data: { combobox_target: "select" } %>
+                      <span class="hint">Empty = candidate's panel (<%= invitation.panelists.map(&:name).join(", ").presence || "none" %>)</span>
+                    </div>
+                  <% end %>
+                  <div class="field full">
+                    <%= f.label :status %>
+                    <%= f.select :status, InterviewRound::STATUSES.map { |k, v| [ v, k ] }, {}, class: "input" %>
+                  </div>
+                </div>
+                <div class="row" style="justify-content:space-between;margin-top:.8rem">
+                  <%= f.button class: "btn btn-primary btn-sm" do %><%= icon("check") %> Save round<% end %>
+                </div>
+              <% end %>
+              <%= button_to invitation_interview_round_path(invitation, round), method: :delete, class: "btn btn-danger btn-sm", form: { class: "rs-delete", data: { turbo_confirm: "Delete #{round.name} and its scorecards?" } } do %><%= icon("trash") %> Delete round<% end %>
+            </details>
+          </div>
+        </div>
+      </li>
+    <% end %>
+  </ol>
+
+  <details class="rs-add">
+    <summary class="btn btn-light btn-sm"><%= icon("plus") %> Add a round</summary>
+    <%= form_with url: invitation_interview_rounds_path(invitation), scope: :interview_round, class: "rs-form" do |f| %>
+      <div class="fields">
+        <div class="field"><label>Round name</label><%= f.text_field :name, class: "input", required: true, placeholder: "e.g. Technical interview / Managerial round", list: "round-names-#{invitation.id}" %>
+          <datalist id="round-names-<%= invitation.id %>"><% (invitation.interview_parameters + [ "Managerial round", "Final round" ]).uniq.each do |n| %><option value="<%= n %>"><% end %></datalist>
+        </div>
+        <div class="field"><label>Date & time</label><%= f.datetime_local_field :scheduled_at, class: "input" %></div>
+        <div class="field full">
+          <label>Scores these stages</label>
+          <div class="chip-checks">
+            <% invitation.interview_parameters.each do |param| %>
+              <label><input type="checkbox" name="interview_round[parameters][]" value="<%= param %>"><span><%= param %></span></label>
+            <% end %>
+          </div>
+          <span class="hint">None ticked = the stage with the same name as the round (or all stages).</span>
+        </div>
+      </div>
+      <%= f.button class: "btn btn-primary btn-sm", style: "margin-top:.8rem" do %><%= icon("plus") %> Add round<% end %>
+    <% end %>
+  </details>
+</div>

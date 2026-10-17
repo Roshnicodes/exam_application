@@ -18,4 +18,6 @@
   <%= form.button class: "btn btn-primary btn-lg btn-block" do %>Sign in <%= icon("arrow-right") %><% end %>
 <% end %>
 
-<p class="muted small" style="margin-top:1.5rem;text-align:center">New to HireProctor? <%= link_to "Create an HR account", new_registration_path %></p>
+<% if RegistrationsController.signup_open? %>
+  <p class="muted small" style="margin-top:1.5rem;text-align:center">New to HireProctor? <%= link_to "Create an HR account", new_registration_path %></p>
+<% end %>

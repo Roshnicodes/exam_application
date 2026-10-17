@@ -1,6 +1,6 @@
-<%# Scorecard. locals: invitation:, feedback:, url:, panelists: (panelist view picks a name) %>
-<%= form_with model: feedback, url: url, method: :post, id: "feedback_form_#{invitation.id}", class: "card scorecard" do |f| %>
-  <div class="card-head"><h2><%= icon("award") %> Your scorecard</h2><span class="tiny muted">Out of 10</span></div>
+<%# Scorecard for one round. locals: round:, feedback:, url:, panelists: (panelist view picks a name), saved: %>
+<%= form_with model: feedback, url: url, method: :post, id: "feedback_form_#{round.id}", class: "card scorecard" do |f| %>
+  <div class="card-head"><h2><%= icon("award") %> Your scorecard</h2><span class="tiny muted"><%= round.name %></span></div>
   <div class="card-body stack">
     <% if local_assigns[:saved] %>
       <div class="saved-note"><%= icon("check-circle") %> Saved<%= " — thanks #{feedback.reviewer_name.split.first}" if feedback.reviewer_name.present? %>. You can update it any time.</div>
@@ -13,7 +13,7 @@
       </div>
     <% end %>
     <p class="tiny muted" style="margin:-.3rem 0 0">Score only what you assessed — leave the rest on "Skip".</p>
-    <% invitation.interview_parameters.each do |param| %>
+    <% round.score_parameters.each do |param| %>
       <% value = feedback.scores[param] %>
       <div class="score-row">
         <label><%= param %></label>

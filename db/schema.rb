@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_17_043630) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_17_045816) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -95,6 +95,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_043630) do
     t.string "department"
     t.string "watch_token"
     t.string "meeting_link"
+    t.string "interview_plan", default: "separate", null: false
     t.index ["quiz_id"], name: "index_exam_batches_on_quiz_id"
     t.index ["user_id"], name: "index_exam_batches_on_user_id"
     t.index ["vacancy_id"], name: "index_exam_batches_on_vacancy_id"
@@ -111,11 +112,39 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_043630) do
     t.text "comments"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "interview_round_id"
     t.index ["employee_id"], name: "index_interview_feedbacks_on_employee_id"
-    t.index ["invitation_id", "employee_id"], name: "index_interview_feedbacks_on_invitation_id_and_employee_id", unique: true, where: "(employee_id IS NOT NULL)"
-    t.index ["invitation_id", "user_id"], name: "index_interview_feedbacks_on_invitation_id_and_user_id", unique: true, where: "(user_id IS NOT NULL)"
+    t.index ["interview_round_id", "employee_id"], name: "index_feedbacks_round_employee", unique: true, where: "(employee_id IS NOT NULL)"
+    t.index ["interview_round_id", "user_id"], name: "index_feedbacks_round_user", unique: true, where: "(user_id IS NOT NULL)"
+    t.index ["interview_round_id"], name: "index_interview_feedbacks_on_interview_round_id"
     t.index ["invitation_id"], name: "index_interview_feedbacks_on_invitation_id"
     t.index ["user_id"], name: "index_interview_feedbacks_on_user_id"
+  end
+
+  create_table "interview_round_panelists", force: :cascade do |t|
+    t.bigint "interview_round_id", null: false
+    t.bigint "employee_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["employee_id"], name: "index_interview_round_panelists_on_employee_id"
+    t.index ["interview_round_id", "employee_id"], name: "index_round_panelists_unique", unique: true
+    t.index ["interview_round_id"], name: "index_interview_round_panelists_on_interview_round_id"
+  end
+
+  create_table "interview_rounds", force: :cascade do |t|
+    t.bigint "invitation_id", null: false
+    t.string "name", null: false
+    t.integer "position", default: 1, null: false
+    t.jsonb "parameters", default: [], null: false
+    t.datetime "scheduled_at"
+    t.string "meeting_link"
+    t.string "status", default: "scheduled", null: false
+    t.datetime "started_at"
+    t.datetime "ended_at"
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["invitation_id"], name: "index_interview_rounds_on_invitation_id"
   end
 
   create_table "invitation_panelists", force: :cascade do |t|
@@ -165,6 +194,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_043630) do
     t.string "interview_status"
     t.datetime "interview_started_at"
     t.string "meeting_link"
+    t.string "interview_plan", default: "separate", null: false
+    t.string "decision"
+    t.text "decision_note"
+    t.datetime "decided_at"
     t.index ["exam_batch_id"], name: "index_invitations_on_exam_batch_id"
     t.index ["quiz_id"], name: "index_invitations_on_quiz_id"
     t.index ["token"], name: "index_invitations_on_token", unique: true
@@ -266,8 +299,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_043630) do
   add_foreign_key "exam_batches", "users"
   add_foreign_key "exam_batches", "vacancies"
   add_foreign_key "interview_feedbacks", "employees"
+  add_foreign_key "interview_feedbacks", "interview_rounds"
   add_foreign_key "interview_feedbacks", "invitations"
   add_foreign_key "interview_feedbacks", "users"
+  add_foreign_key "interview_round_panelists", "employees"
+  add_foreign_key "interview_round_panelists", "interview_rounds"
+  add_foreign_key "interview_rounds", "invitations"
   add_foreign_key "invitation_panelists", "employees"
   add_foreign_key "invitation_panelists", "invitations"
   add_foreign_key "invitations", "exam_batches"

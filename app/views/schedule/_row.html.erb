@@ -1,0 +1,7 @@
+<%= link_to invitation_path(r.invitation, anchor: "rounds"), class: "sched-row #{'live' if r.open?}" do %>
+  <span class="sched-time"><%= r.open? ? "LIVE" : (r.scheduled_at ? r.scheduled_at.strftime("%-I:%M %p") : "—") %></span>
+  <span class="avatar" style="background: <%= gradient_for(r.invitation.candidate_name) %>"><%= initials_for(r.invitation.candidate_name) %></span>
+  <span class="cand-main"><b><%= r.invitation.candidate_name %> · <%= r.name %></b><span><%= r.invitation.vacancy %> · Panel: <%= r.panelists.map(&:name).join(", ").presence || "not set" %></span></span>
+  <% if r.meeting_link.present? %><span class="badge"><%= icon("link") %> Meet</span><% end %>
+  <%= icon("chevron-right", css: "cand-chev") %>
+<% end %>

@@ -1,15 +1,24 @@
+<% live = invitation.current_round %>
+<% upcoming = invitation.interview_rounds.select(&:scheduled?) %>
 <div id="interview_cta">
-  <% if invitation.interview_open? %>
+  <% if live %>
     <div class="interview-cta">
       <span class="ring-ico"><%= icon("video") %></span>
-      <div class="grow"><b>Your interview has started</b><p class="small">The panel is waiting for you in the interview room.</p></div>
-      <%= link_to exam_interview_path(invitation.token), class: "btn btn-primary btn-lg", data: { turbo: false } do %><%= icon("video") %> Join interview<% end %>
+      <div class="grow"><b>Your <%= live.name %> has started</b><p class="small">The panel is waiting for you in the interview room.</p></div>
+      <%= link_to exam_interview_path(invitation.token), class: "btn btn-primary btn-lg", data: { turbo: false } do %><%= icon("video") %> Join now<% end %>
     </div>
-  <% elsif invitation.meeting_link.present? && !invitation.interview_status.in?(%w[closed]) %>
-    <div class="interview-cta soft">
-      <span class="ring-ico"><%= icon("link") %></span>
-      <div class="grow"><b>Interview meeting link</b><p class="small">Join at the scheduled time<%= " (#{invitation.interview_date.strftime('%d %b, %-I:%M %p')})" if invitation.interview_date %>.</p></div>
-      <a class="btn btn-light" href="<%= invitation.meeting_link %>" target="_blank" rel="noopener"><%= icon("link") %> Open meeting</a>
+  <% end %>
+  <% if upcoming.any? %>
+    <div class="card card-pad cand-rounds">
+      <b class="small"><%= icon("calendar") %> Your upcoming interview rounds</b>
+      <% upcoming.each do |r| %>
+        <div class="row between small">
+          <span><%= r.name %></span>
+          <span class="muted"><%= r.scheduled_at ? r.scheduled_at.strftime("%a %d %b, %-I:%M %p") : "Time to be shared by HR" %></span>
+          <% if r.meeting_link.present? %><a href="<%= r.meeting_link %>" target="_blank" rel="noopener" class="btn btn-light btn-sm"><%= icon("link") %> Meeting link</a><% end %>
+        </div>
+      <% end %>
+      <p class="tiny muted">Keep this page open at that time — a "Join now" button appears here when the round starts.</p>
     </div>
   <% end %>
 </div>

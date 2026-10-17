@@ -5,7 +5,9 @@
       subtitle: [ @invitation.vacancy, @invitation.department.presence, @invitation.quiz.title ].compact.join(" · "),
       chips: [ [ "clock", "#{@invitation.quiz.duration_minutes} min" ], [ "list", "#{@invitation.quiz.questions.size} questions" ] ] } do %>
   <% if @invitation.meeting_link.present? %><a class="btn btn-light" href="<%= @invitation.meeting_link %>" target="_blank" rel="noopener"><%= icon("link") %> Meet / Zoom</a><% end %>
-  <%= link_to watch_interview_path(params[:watch_token]), class: "btn btn-primary" do %><%= icon("video") %> <%= @invitation.interview_open? ? "Join interview (live now)" : "Interview room" %><% end %>
+  <% if (live = @invitation.current_round) %>
+    <%= link_to watch_round_path(params[:watch_token], live), class: "btn btn-primary" do %><%= icon("video") %> Join <%= live.name %> (live)<% end %>
+  <% end %>
 <% end %>
 
 <div class="split">
@@ -23,6 +25,10 @@
   </div>
   <div class="stack">
     <%= render "invitations/live_state", invitation: @invitation %>
+    <%= render "interview_rounds/watch_list", invitation: @invitation, watch_token: params[:watch_token] %>
+    <% if @invitation.resume.attached? %>
+      <%= link_to rails_blob_path(@invitation.resume, disposition: "inline"), class: "btn btn-light btn-block", target: "_blank" do %><%= icon("file") %> View resume<% end %>
+    <% end %>
     <%= render "invitations/selection_card", invitation: @invitation %>
     <%= render "interview_feedbacks/summary", invitation: @invitation %>
   </div>

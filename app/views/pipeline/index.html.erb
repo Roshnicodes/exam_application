@@ -1,0 +1,49 @@
+<% content_for :title, "Pipeline" %>
+<% totals = @columns.transform_values(&:size) %>
+<%= render layout: "shared/page_header", locals: {
+      title: "Hiring pipeline", subtitle: "Every candidate by stage — from invite to final decision. Click a card to open the candidate.", icon: "activity",
+      crumbs: [ [ "Dashboard", root_path ] ],
+      stats: [
+        { label: "In process", value: totals.values_at("invited", "testing", "interviews", "decision").sum, icon: "users", tone: "violet" },
+        { label: "Interviews pending", value: totals["interviews"], icon: "video", tone: "blue", path: schedule_path },
+        { label: "Awaiting decision", value: totals["decision"], icon: "clock", tone: "amber" },
+        { label: "Selected", value: totals["selected"], icon: "award", tone: "green" }
+      ] } do %>
+  <%= link_to new_invitation_path, class: "btn btn-primary" do %><%= icon("plus") %> Invite candidate<% end %>
+<% end %>
+
+<%= form_with url: pipeline_path, method: :get, class: "card toolbar", data: { controller: "autosubmit" } do |f| %>
+  <%= f.select :vacancy, @vacancies, { include_blank: "All vacancies", selected: params[:vacancy] }, class: "input", style: "max-width:320px", data: { action: "change->autosubmit#submit" } %>
+  <span class="meta"><b><%= totals.values.sum %></b> candidates</span>
+<% end %>
+
+<div class="kanban">
+  <% Invitation::PIPELINE.each do |key, label| %>
+    <section class="kb-col kb-<%= key %>">
+      <header><span class="kb-dot"></span><b><%= label %></b><span class="kb-count"><%= totals[key] %></span></header>
+      <div class="kb-cards">
+        <% @columns[key].each do |inv| %>
+          <% final = inv.final_score %>
+          <% next_round = inv.interview_rounds.find { |r| !r.done? } %>
+          <%= link_to invitation_path(inv), class: "kb-card" do %>
+            <div class="row" style="gap:.6rem">
+              <span class="avatar" style="background: <%= gradient_for(inv.candidate_name) %>"><%= initials_for(inv.candidate_name) %></span>
+              <div class="cand-main"><b><%= inv.candidate_name %></b><span><%= inv.vacancy %></span></div>
+            </div>
+            <div class="kb-meta">
+              <% if inv.finished? %><span class="<%= inv.passed? ? 'ok' : 'bad' %>"><%= icon("file") %> Test <%= inv.percentage %>%</span><% end %>
+              <% if final[:percent] && final[:done] > 1 %><span class="ok"><%= icon("target") %> Final <%= final[:percent] %>%</span><% end %>
+              <% if inv.warnings_count.positive? %><span class="bad"><%= icon("alert") %> <%= inv.warnings_count %></span><% end %>
+            </div>
+            <% if next_round && key == "interviews" %>
+              <div class="kb-next <%= 'live' if next_round.open? %>"><%= icon(next_round.open? ? "video" : "calendar") %> <%= next_round.name %> · <%= next_round.open? ? "LIVE" : (next_round.scheduled_at&.strftime("%d %b, %-I:%M %p") || "not scheduled") %></div>
+            <% elsif inv.decision_note.present? %>
+              <div class="kb-next"><%= truncate(inv.decision_note, length: 60) %></div>
+            <% end %>
+          <% end %>
+        <% end %>
+        <% if @columns[key].empty? %><p class="kb-empty">No one here</p><% end %>
+      </div>
+    </section>
+  <% end %>
+</div>
