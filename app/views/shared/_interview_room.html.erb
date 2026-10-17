@@ -46,6 +46,7 @@
         <div class="tc-head"><span class="rec-dot"></span> <b>Video call with HR</b><button type="button" class="tc-min" data-action="interview-room#minimize" title="Minimise">—</button></div>
       <% end %>
       <div class="it-alerts" data-interview-room-target="alerts"></div>
+      <div class="it-switch-note hidden" data-interview-room-target="switchNote"></div>
       <div class="it-grid" data-interview-room-target="grid" data-count="1">
         <div class="it-tile it-self connected">
           <video data-interview-room-target="localVideo" autoplay muted playsinline></video>
@@ -60,6 +61,15 @@
           <button type="button" class="it-btn" data-interview-room-target="micBtn" data-action="interview-room#toggleMic"><%= icon("mic") %><span>Mute</span></button>
           <button type="button" class="it-btn" data-interview-room-target="camBtn" data-action="interview-room#toggleCam"><%= icon("video") %><span>Stop video</span></button>
         <% end %>
+        <% unless local_assigns[:token] %>
+          <button type="button" class="it-btn" data-interview-room-target="presentBtn" data-action="interview-room#togglePresent" title="Share your screen with everyone"><%= icon("monitor") %><span>Present</span></button>
+        <% end %>
+        <% unless test_call %>
+          <button type="button" class="it-btn" data-interview-room-target="codeBtn" data-action="interview-room#toggleCode" title="Shared code editor"><%= icon("code") %><span>Code</span></button>
+        <% end %>
+        <% unless test_call || local_assigns[:token] %>
+          <button type="button" class="it-btn" data-interview-room-target="switchBtn" data-action="interview-room#toggleSwitch" title="Let the candidate open another app or website (e.g. an online editor) without warnings"><%= icon("unlock") %><span>Allow switching apps</span></button>
+        <% end %>
         <button type="button" class="it-btn it-chat-btn" data-interview-room-target="chatBtn" data-action="interview-room#toggleChat"><%= icon("message") %><span>Chat</span><b class="it-unread hidden" data-interview-room-target="unread">0</b></button>
         <span class="it-count" data-interview-room-target="count">1 in the room</span>
         <% if round&.meeting_link.present? %>
@@ -69,6 +79,20 @@
           <button type="button" class="it-btn leave" data-action="interview-room#leave"><%= icon("x") %><span><%= test_call ? "Leave call" : "Leave" %></span></button>
         <% end %>
       </div>
+      <% unless test_call %>
+        <section class="it-code hidden" data-interview-room-target="code">
+          <header>
+            <b><%= icon("code") %> Code pad</b>
+            <select class="it-code-lang" data-interview-room-target="codeLang" data-action="change->interview-room#codeChanged" aria-label="Language">
+              <% CodePad::LANGUAGES.each do |key, label| %><option value="<%= key %>"><%= label %></option><% end %>
+            </select>
+            <span class="it-code-by" data-interview-room-target="codeBy"><%= local_assigns[:token] ? "Write your code here — the panel sees it live" : "Everyone sees and can edit this live" %></span>
+            <button type="button" class="it-chat-x" data-action="interview-room#toggleCode" aria-label="Close code pad">×</button>
+          </header>
+          <textarea class="it-code-input" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="// write your code here" data-interview-room-target="codeInput"
+                    data-action="input->interview-room#codeChanged keydown->interview-room#codeKey"></textarea>
+        </section>
+      <% end %>
       <section class="it-chat hidden" data-interview-room-target="chat">
         <header><b><%= icon("message") %> <%= local_assigns[:token] ? "Chat with the panel" : "Chat with everyone" %></b><button type="button" class="it-chat-x" data-action="interview-room#toggleChat" aria-label="Close chat">×</button></header>
         <ol class="it-msgs" data-interview-room-target="messages">

@@ -1700,3 +1700,23 @@ a:hover { color: var(--brand); }
 .test-call-dock .chat-open .it-tile { aspect-ratio: 16 / 9; }
 .test-call-dock .chat-open .it-grid { max-height: 24vh; }
 .test-call-dock .chat-open .it-chat { max-height: 38vh; }
+
+/* ---------- Present, code pad, allow switching ---------- */
+.it-btn.active { background: #22c55e; }
+.it-present { grid-column: 1 / -1; aspect-ratio: 16 / 9; border-color: rgba(74, 222, 128, .6); }
+.it-present video { object-fit: contain; background: #000; }
+.it-switch-note { margin: 0 0 .7rem; padding: .6rem .9rem; border-radius: 12px; background: rgba(34, 197, 94, .18); border: 1px solid rgba(74, 222, 128, .5); color: #dcfce7; font-size: .85rem; font-weight: 600; }
+.it-code { margin-top: 1rem; border-radius: 16px; overflow: hidden; background: #0b1220; border: 1px solid rgba(255, 255, 255, .12); }
+.it-code header { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; padding: .55rem .8rem; background: rgba(255, 255, 255, .06); color: #e2e8f0; }
+.it-code header b { display: inline-flex; align-items: center; gap: .4rem; font-size: .88rem; }
+.it-code header .it-chat-x { color: #94a3b8; margin-left: auto; }
+.it-code-lang { font: inherit; font-size: .8rem; padding: .3rem .5rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, .2); background: #111827; color: #e2e8f0; }
+.it-code-by { font-size: .75rem; color: #94a3b8; }
+.it-code-input {
+  display: block; width: 100%; min-height: 320px; resize: vertical; border: 0; outline: 0; padding: .9rem 1rem; tab-size: 2;
+  font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #e2e8f0; background: #0b1220; caret-color: #4ade80;
+}
+.code-review { padding: .8rem 1.15rem 1rem; border-bottom: 1px solid var(--line); }
+.code-review:last-child { border-bottom: 0; }
+.code-review pre { margin: .5rem 0 0; max-height: 360px; overflow: auto; padding: .8rem 1rem; border-radius: 12px; background: #0b1220; color: #e2e8f0; font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; }
+@media (min-width: 900px) { .it-room.chat-open:not(.test-call) .it-stage { padding-right: calc(330px + 1.2rem); } }

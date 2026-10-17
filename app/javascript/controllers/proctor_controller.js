@@ -51,6 +51,9 @@ export default class extends Controller {
     // video call with HR during the test: talking is expected, so the noise check pauses
     this.onCall = (e) => { this.inCall = e.detail.active; if (!this.inCall) this.callEndedAt = Date.now() }
     window.addEventListener("proctor:call", this.onCall)
+    // the panel allowed using another app (e.g. an online editor); the screen is still shared
+    this.onAllowSwitch = (e) => { this.switchAllowed = e.detail.on; this.checkFullscreen() }
+    window.addEventListener("proctor:allow-switch", this.onAllowSwitch)
     if (this.interview) {
       this.onReady = () => this.begin()
       window.addEventListener("interview:ready", this.onReady, { once: true })
@@ -157,6 +160,7 @@ export default class extends Controller {
     window.removeEventListener("proctor:picking", this.onPicking)
     window.removeEventListener("proctor:picked", this.onPicking)
     window.removeEventListener("proctor:call", this.onCall)
+    window.removeEventListener("proctor:allow-switch", this.onAllowSwitch)
     window.removeEventListener("interview:ready", this.onReady)
     this.broadcaster?.stop()
     this.active = false
@@ -247,7 +251,8 @@ export default class extends Controller {
   checkFullscreen(changed = false) {
     if (this.interview && !document.documentElement.requestFullscreen) return // e.g. iPhone Safari
     const inFs = !!document.fullscreenElement
-    this.fullscreenGateTarget.classList.toggle("hidden", inFs || !this.active)
+    this.fullscreenGateTarget.classList.toggle("hidden", inFs || !this.active || !!this.switchAllowed)
+    if (this.switchAllowed) return
     if (changed && !inFs) this.violation("fullscreen_exit")
   }
 
@@ -521,6 +526,7 @@ export default class extends Controller {
   violation(kind, detail, { overlay = true } = {}) {
     if (!this.active || this.active === "terminated") return
     if (this.picking && [ "window_blur", "tab_switch", "fullscreen_exit" ].includes(kind)) return
+    if (this.switchAllowed && [ "window_blur", "tab_switch", "fullscreen_exit", "window_resize" ].includes(kind)) return
     const now = Date.now()
     if (now - (this.lastFired[kind] || 0) < (COOLDOWN[kind] || COOLDOWN.default)) return
     this.lastFired[kind] = now

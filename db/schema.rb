@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_17_093201) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_17_100252) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -52,6 +52,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_093201) do
     t.datetime "updated_at", null: false
     t.index ["interview_round_id"], name: "index_call_messages_on_interview_round_id"
     t.index ["invitation_id"], name: "index_call_messages_on_invitation_id"
+  end
+
+  create_table "code_pads", force: :cascade do |t|
+    t.bigint "invitation_id", null: false
+    t.bigint "interview_round_id"
+    t.string "language", default: "plaintext", null: false
+    t.text "content", default: "", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["interview_round_id"], name: "index_code_pads_on_interview_round_id"
+    t.index ["invitation_id", "interview_round_id"], name: "index_code_pads_on_invitation_id_and_interview_round_id", unique: true
+    t.index ["invitation_id"], name: "index_code_pads_on_invitation_id"
   end
 
   create_table "departments", force: :cascade do |t|
@@ -305,6 +317,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_093201) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "call_messages", "interview_rounds"
   add_foreign_key "call_messages", "invitations"
+  add_foreign_key "code_pads", "interview_rounds"
+  add_foreign_key "code_pads", "invitations"
   add_foreign_key "departments", "users"
   add_foreign_key "employees", "users"
   add_foreign_key "exam_batch_panelists", "employees"

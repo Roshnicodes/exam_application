@@ -16,6 +16,7 @@ class Invitation < ApplicationRecord
   belongs_to :opening, class_name: "Vacancy", foreign_key: :vacancy_id, optional: true, inverse_of: :invitations
   has_many :proctor_events, dependent: :destroy
   has_many :call_messages, -> { chronological }, dependent: :destroy
+  has_many :code_pads, dependent: :destroy
   has_many_attached :recordings
 
   has_secure_token :token, length: 24

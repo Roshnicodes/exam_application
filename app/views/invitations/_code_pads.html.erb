@@ -1,0 +1,13 @@
+<%# Code written in the calls' shared code pad, for HR to review. locals: invitation: %>
+<% pads = invitation.code_pads.includes(:interview_round).where.not(content: "").order(:created_at) %>
+<% if pads.any? %>
+  <div class="card">
+    <div class="card-head"><h2><%= icon("code") %> Code from interviews</h2><span class="tiny muted"><%= pluralize(pads.size, "code pad") %></span></div>
+    <% pads.each do |pad| %>
+      <div class="code-review">
+        <div class="row between tiny muted"><b><%= pad.interview_round&.name || "Online test call" %> · <%= pad.language_name %></b><span>Last edit <%= pad.updated_at.strftime("%d %b, %-I:%M %p") %></span></div>
+        <pre><%= pad.content %></pre>
+      </div>
+    <% end %>
+  </div>
+<% end %>

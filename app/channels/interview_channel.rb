@@ -58,9 +58,31 @@ class InterviewChannel < ApplicationCable::Channel
     ActionCable.server.broadcast(room, { type: "chat", message: message.as_chat, from: @peer_id })
   end
 
-  # Mic / camera on-off so others can show the right icons.
+  # Mic / camera / presenting on-off so others can show the right icons and the presented screen.
   def media_state(data)
-    ActionCable.server.broadcast(room, { type: "media-state", peer_id: @peer_id, mic: data["mic"] == true, cam: data["cam"] == true })
+    ActionCable.server.broadcast(room, { type: "media-state", peer_id: @peer_id, mic: data["mic"] == true, cam: data["cam"] == true,
+                                         screen: data["screen"] == true })
+  end
+
+  # Panel lets the candidate leave the room window (e.g. to code in an online editor) without
+  # tab-switch / full-screen warnings. Their screen stays shared, so the panel still sees it.
+  def allow_switch(data)
+    return if @role == "candidate"
+
+    on = data["on"] == true
+    Rails.cache.write(switch_key, on, expires_in: 12.hours)
+    ActionCable.server.broadcast(room, { type: "allow-switch", on: on, by: @name })
+    @invitation.proctor_events.create!(kind: on ? "switching_allowed" : "switching_blocked", message: "By #{@name}",
+                                       metadata: { round_id: @round&.id }.compact)
+  end
+
+  # Shared code editor: the whole text is sent (debounced) and saved for HR to review later.
+  def code(data)
+    pad = CodePad.find_or_initialize_by(invitation: @invitation, interview_round: @round)
+    pad.content = data["content"].to_s.first(CodePad::MAX_LENGTH)
+    pad.language = data["language"].to_s if CodePad::LANGUAGES.key?(data["language"].to_s)
+    pad.save!
+    ActionCable.server.broadcast(room, { type: "code", content: pad.content, language: pad.language, from: @peer_id, by: @name })
   end
 
   private
@@ -86,14 +108,32 @@ class InterviewChannel < ApplicationCable::Channel
     def enter
       stream_from room
       stream_from peer_stream(@peer_id)
+      transmit({ type: "welcome", key: identity })
       ActionCable.server.broadcast(room, { type: "peer-joined", peer: me })
+      transmit({ type: "allow-switch", on: true, by: nil }) if Rails.cache.read(switch_key)
+      pad = CodePad.find_by(invitation: @invitation, interview_round: @round)
+      transmit({ type: "code", content: pad.content, language: pad.language, from: nil, by: nil }) if pad&.content.present?
       history = @invitation.call_messages.where(interview_round: @round).last(100)
       mine = ->(m) { m.sender_name == @name && m.sender_role == @role }
       transmit({ type: "chat-history", messages: history.map { |m| m.as_chat.merge(mine: mine.(m)) } })
     end
 
     def me
-      { id: @peer_id, name: @name, role: @role }
+      { id: @peer_id, name: @name, role: @role, key: identity }
+    end
+
+    # Same person joining again (refresh, second tab): the others replace the old tile instead of
+    # showing them twice. Guest panelists share a name, so they are never merged.
+    def identity
+      case @role
+      when "candidate" then "candidate"
+      when "hr" then "hr:#{current_user.id}"
+      else @name == "Guest panelist" ? nil : "panelist:#{@name.downcase}"
+      end
+    end
+
+    def switch_key
+      "allow_switch:#{room}"
     end
 
     def room
