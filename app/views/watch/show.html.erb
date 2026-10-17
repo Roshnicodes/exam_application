@@ -16,6 +16,12 @@
       <div class="card-head"><h2><%= icon("video") %> Live camera</h2><span class="tiny muted">Video + audio, straight from the candidate</span></div>
       <div class="card-body"><%= render "shared/live_video", invitation: @invitation, watch_token: params[:watch_token] %></div>
     </div>
+    <% unless @invitation.finished? %>
+      <div class="card" id="test-call">
+        <div class="card-head"><h2><%= icon("users") %> Video call during the test</h2><span class="tiny muted">Everyone in the call sees and hears each other</span></div>
+        <div class="card-body"><%= render "shared/interview_room", invitation: @invitation, test_call: true, watch_token: params[:watch_token], panelists: @invitation.panelists %></div>
+      </div>
+    <% end %>
     <div class="card">
       <div class="card-head"><h2><%= icon("bell") %> Proctoring timeline</h2><span class="pill"><span class="live-dot"></span> Live</span></div>
       <ul class="timeline scroll-y" id="events_invitation_<%= @invitation.id %>">

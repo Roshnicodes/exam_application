@@ -48,8 +48,9 @@ export default class extends Controller {
     }
     window.addEventListener("proctor:picking", this.onPicking)
     window.addEventListener("proctor:picked", this.onPicking)
-    this.onHrTalking = (e) => this.hrTalking(e.detail.talking)
-    window.addEventListener("proctor:hr-talking", this.onHrTalking)
+    // video call with HR during the test: talking is expected, so the noise check pauses
+    this.onCall = (e) => { this.inCall = e.detail.active; if (!this.inCall) this.callEndedAt = Date.now() }
+    window.addEventListener("proctor:call", this.onCall)
     if (this.interview) {
       this.onReady = () => this.begin()
       window.addEventListener("interview:ready", this.onReady, { once: true })
@@ -155,9 +156,8 @@ export default class extends Controller {
     window.removeEventListener("proctor:violation", this.onExternalViolation)
     window.removeEventListener("proctor:picking", this.onPicking)
     window.removeEventListener("proctor:picked", this.onPicking)
-    window.removeEventListener("proctor:hr-talking", this.onHrTalking)
+    window.removeEventListener("proctor:call", this.onCall)
     window.removeEventListener("interview:ready", this.onReady)
-    this.talkPill?.remove()
     this.broadcaster?.stop()
     this.active = false
     this.unbindListeners()
@@ -434,23 +434,6 @@ export default class extends Controller {
     el.querySelector("span").textContent = text
   }
 
-  // HR / panelist pressed "Talk": show it, and don't count the conversation as noise.
-  hrTalking(talking) {
-    this.talkingNow = talking
-    if (!talking) this.talkEndedAt = Date.now()
-    if (!this.talkPill) {
-      this.talkPill = document.createElement("div")
-      this.talkPill.className = "hr-talk-pill"
-      this.talkPill.innerHTML = "<span class=\"rec-dot\"></span> HR is speaking to you — you can reply"
-      document.body.append(this.talkPill)
-    }
-    this.talkPill.classList.toggle("show", talking)
-  }
-
-  get conversationActive() {
-    return this.talkingNow || Date.now() - (this.talkEndedAt || 0) < 15000
-  }
-
   // ---------------------------------------------------------------- noise
   startNoiseMonitor() {
     if (!this.stream.getAudioTracks().length) return
@@ -466,7 +449,7 @@ export default class extends Controller {
         analyser.getFloatTimeDomainData(buf)
         const rms = Math.sqrt(buf.reduce((s, v) => s + v * v, 0) / buf.length)
         loud = rms > 0.12 ? loud + 1 : Math.max(0, loud - 1)
-        if (this.conversationActive) loud = 0 // talking with HR is not cheating
+        if (this.inCall || Date.now() - (this.callEndedAt || 0) < 15000) loud = 0 // talking with HR
         if (loud >= 8) { loud = 0; this.violation("noise") } // ~2s of sustained sound
       }, 250)
     } catch (e) {

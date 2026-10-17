@@ -1154,12 +1154,12 @@ a.stat-card:hover .sc-go { opacity: 1; transform: translateX(3px); }
 .it-join-ico { width: 64px; height: 64px; margin: 0 auto; border-radius: 20px; display: grid; place-items: center; font-size: 1.6rem; color: #fff; background: var(--grad); }
 .it-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 1rem; align-items: start; }
 .it-layout.no-side { grid-template-columns: 1fr; }
-.it-stage { border-radius: 24px; padding: 1rem; background: linear-gradient(160deg, #13123a, #241f5e 60%, #3b1a63); box-shadow: 0 30px 60px -30px rgba(30, 27, 75, .7); position: sticky; top: 76px; }
+.it-stage { border-radius: 24px; padding: 1rem; background: linear-gradient(160deg, #04241a, #083d2b 60%, #0f5132); box-shadow: 0 30px 60px -30px rgba(6, 46, 34, .7); position: sticky; top: 76px; }
 .it-grid { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .it-grid[data-count="1"] { grid-template-columns: minmax(0, 720px); justify-content: center; }
 .it-grid[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .it-tile { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; background: #062e22; border: 2px solid rgba(255, 255, 255, .08); }
-.it-tile video { width: 100%; height: 100%; object-fit: cover; background: #0f0d2e; }
+.it-tile video { width: 100%; height: 100%; object-fit: cover; background: #03271c; }
 .it-self video { transform: scaleX(-1); }
 .it-tile.role-candidate { border-color: rgba(45, 212, 191, .6); }
 .it-placeholder { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: .5rem; color: #bbf7d0; font-size: .8rem; }
@@ -1638,15 +1638,22 @@ a:hover { color: var(--brand); }
 @media (max-width: 960px) { .shell { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .tc-head small { overflow-wrap: anywhere; } .dh-chips .dh-chip { font-size: .72rem; } }
 
-/* ---------- Talk to the candidate (live view) ---------- */
-.lv-controls { position: absolute; right: .7rem; bottom: .7rem; z-index: 2; display: flex; gap: .4rem; }
-.lv-controls .lv-sound { position: static; }
-.live-video.has-screen .lv-controls { right: auto; left: .7rem; }
-.live-video:not([data-live-state="live"]) .lv-controls { display: none; }
-.lv-talk { background: rgba(22, 163, 74, .9) !important; }
-.live-video.talking .lv-talk { background: #ef4444 !important; animation: pulse-bg 1.4s infinite; }
-.hr-talk-pill {
-  position: fixed; left: 50%; bottom: 1.2rem; z-index: 950; display: none; align-items: center; gap: .5rem; transform: translateX(-50%);
-  padding: .6rem 1.1rem; border-radius: 99px; background: #15803d; color: #fff; font-weight: 700; font-size: .88rem; box-shadow: 0 14px 30px -12px rgba(21, 128, 61, .9);
-}
-.hr-talk-pill.show { display: inline-flex; }
+/* ---------- Video call during the online test ---------- */
+.test-call .it-join { margin: 0 auto; padding: 1.2rem; box-shadow: none; background: transparent; border: 0; }
+.test-call .it-stage { position: static; }
+.test-call .it-grid[data-count="1"] { grid-template-columns: minmax(0, 420px); }
+.it-tap { display: block; margin: .6rem auto 0; border: 0; cursor: pointer; padding: .55rem 1rem; border-radius: 99px; background: #22c55e; color: #fff; font: inherit; font-weight: 700; font-size: .85rem; }
+/* candidate: a floating call window over the exam */
+.test-call-dock { position: fixed; right: 1rem; bottom: 1rem; z-index: 800; width: min(420px, calc(100vw - 2rem)); }
+.test-call-dock .it-stage { padding: .7rem; border-radius: 20px; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .55); }
+.test-call-dock .it-grid { gap: .5rem; grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 55vh; overflow-y: auto; }
+.test-call-dock .it-grid[data-count="2"] .it-self { display: none; } /* one-to-one: just show HR big */
+.test-call-dock .it-grid[data-count="2"] { grid-template-columns: 1fr; }
+.test-call-dock .it-controls { margin-top: .5rem; }
+.test-call-dock .it-count { color: #bbf7d0; font-size: .78rem; }
+.tc-head { display: flex; align-items: center; gap: .5rem; color: #fff; font-size: .88rem; padding: 0 .2rem .55rem; }
+.tc-head b { flex: 1; }
+.tc-min { border: 0; cursor: pointer; width: 28px; height: 28px; border-radius: 8px; background: rgba(255, 255, 255, .15); color: #fff; font-weight: 800; }
+.test-call.minimized .it-grid, .test-call.minimized .it-controls, .test-call.minimized .it-status { display: none; }
+.test-call.minimized .tc-head { padding-bottom: 0; }
+@media (max-width: 640px) { .test-call-dock { right: .5rem; left: .5rem; bottom: .5rem; width: auto; } }

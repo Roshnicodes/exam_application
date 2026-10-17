@@ -136,4 +136,7 @@
       <p>Uploading your final recording. Please don't close this window.</p>
     </div>
   </div>
+
+  <%# video call with HR / panelists: opens by itself when one of them joins %>
+  <div class="test-call-dock"><%= render "shared/interview_room", invitation: @invitation, test_call: true, token: @invitation.token %></div>
 </div>

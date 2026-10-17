@@ -5,10 +5,15 @@
 #   candidate: { token:, peer_id: }                                 verified exam session; joins the live round
 #   HR:        { round_id:, peer_id: }                              logged-in owner
 #   panelist:  { round_id:, peer_id:, watch_token:, name: }         holds the candidate's / batch's watch link
+#
+# With { test: true } the same room runs as a video call during the online test, one per candidate:
+#   candidate: { test: true, token:, peer_id: }                     while the exam is in progress
+#   HR / panelist: { test: true, invitation_id:, peer_id:, watch_token:, name: }
 class InterviewChannel < ApplicationCable::Channel
   def subscribed
     @peer_id = params[:peer_id].to_s.first(64)
     return reject if @peer_id.blank?
+    return subscribe_test_call if params[:test].present?
 
     if params[:token].present?
       invitation = Invitation.find_by(token: params[:token].to_s)
@@ -27,13 +32,12 @@ class InterviewChannel < ApplicationCable::Channel
       @name = @role == "hr" ? current_user.name : params[:name].to_s.squish.first(60).presence || "Panelist"
     end
 
-    stream_from room
-    stream_from peer_stream(@peer_id)
-    ActionCable.server.broadcast(room, { type: "peer-joined", peer: me })
+    @room = "interview_round:#{@round.id}"
+    enter
   end
 
   def unsubscribed
-    ActionCable.server.broadcast(room, { type: "peer-left", peer_id: @peer_id }) if @round && @peer_id
+    ActionCable.server.broadcast(room, { type: "peer-left", peer_id: @peer_id }) if @room && @peer_id
   end
 
   # Relays an SDP description or ICE candidate to one participant.
@@ -50,16 +54,40 @@ class InterviewChannel < ApplicationCable::Channel
   end
 
   private
+    def subscribe_test_call
+      if params[:token].present?
+        invitation = Invitation.find_by(token: params[:token].to_s)
+        return reject unless invitation&.in_progress? && candidate_verified?(invitation)
+
+        @role = "candidate"
+        @name = invitation.candidate_name
+      else
+        invitation = Invitation.find_by(id: params[:invitation_id])
+        return reject unless invitation && invitation.watchable_with?(user: current_user, watch_token: params[:watch_token])
+
+        @role = params[:watch_token].blank? ? "hr" : "panelist"
+        @name = @role == "hr" ? current_user.name : params[:name].to_s.squish.first(60).presence || "Panelist"
+      end
+      @room = "test_call:#{invitation.id}"
+      enter
+    end
+
+    def enter
+      stream_from room
+      stream_from peer_stream(@peer_id)
+      ActionCable.server.broadcast(room, { type: "peer-joined", peer: me })
+    end
+
     def me
       { id: @peer_id, name: @name, role: @role }
     end
 
     def room
-      "interview_round:#{@round.id}"
+      @room
     end
 
     def peer_stream(peer_id)
-      "interview_round:#{@round.id}:peer:#{peer_id}"
+      "#{@room}:peer:#{peer_id}"
     end
 
     def candidate_verified?(invitation)

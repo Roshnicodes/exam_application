@@ -1,6 +1,5 @@
-// Live camera over WebRTC: the candidate's browser sends its camera to every viewer
-// (HR / panelist) directly; Action Cable (LiveVideoChannel) only relays set-up messages.
-// A viewer can also press "Talk" to send their voice back to the candidate.
+// One-way live camera over WebRTC: the candidate's browser sends its camera to every
+// viewer (HR / panelist) directly; Action Cable (LiveVideoChannel) only relays set-up messages.
 import { cable } from "@hotwired/turbo-rails"
 
 // STUN + (when configured on the server) our TURN relay, from <meta name="ice-servers">.
@@ -20,8 +19,6 @@ export class Broadcaster {
     this.token = token
     this.peers = new Map() // viewer_id -> { pc, pending: [] }
     this.frameViewers = new Set() // viewers on the backup (frames) view
-    this.voices = new Map() // viewer_id -> <audio> playing that viewer's voice
-    this.talkers = new Set() // viewers currently talking to the candidate
   }
 
   async start(stream, screen = null) {
@@ -96,9 +93,6 @@ export class Broadcaster {
     this.stream.getTracks().forEach((track) => pc.addTrack(track, this.stream))
     const screenTrack = this.screen?.getVideoTracks().find((t) => t.readyState === "live")
     if (screenTrack) pc.addTrack(screenTrack, this.screen)
-    // the viewer's voice comes back on the audio line (one is added even without a candidate mic)
-    if (!this.stream.getAudioTracks().length) pc.addTransceiver("audio", { direction: "recvonly" })
-    pc.ontrack = (e) => { if (e.track.kind === "audio") this.playVoice(viewerId, e.track) }
     pc.onicecandidate = (e) => e.candidate && this.send(viewerId, { candidate: e.candidate.toJSON() })
     pc.onconnectionstatechange = () => { if ([ "failed", "closed" ].includes(pc.connectionState)) this.close(viewerId) }
 
@@ -108,7 +102,6 @@ export class Broadcaster {
   }
 
   async signal(viewerId, data) {
-    if (data && "talk" in data) return this.setTalking(viewerId, !!data.talk)
     const peer = this.peers.get(viewerId)
     if (!peer || !data) return
     if (data.sdp) {
@@ -134,37 +127,9 @@ export class Broadcaster {
     this.subscription?.perform("signal", { to, data })
   }
 
-  // ---- viewer's voice (HR talking to the candidate) ----
-  playVoice(viewerId, track) {
-    this.stopVoice(viewerId)
-    const audio = new Audio()
-    audio.srcObject = new MediaStream([ track ])
-    this.voices.set(viewerId, audio)
-    // browsers may block sound until the page is clicked once; retry on the next click / key
-    audio.play().catch(() => {
-      const retry = () => audio.play().catch(() => {})
-      window.addEventListener("pointerdown", retry, { once: true })
-      window.addEventListener("keydown", retry, { once: true })
-    })
-  }
-
-  stopVoice(viewerId) {
-    const audio = this.voices.get(viewerId)
-    if (audio) { audio.pause(); audio.srcObject = null }
-    this.voices.delete(viewerId)
-  }
-
-  setTalking(viewerId, talking) {
-    if (talking) this.talkers.add(viewerId)
-    else this.talkers.delete(viewerId)
-    window.dispatchEvent(new CustomEvent("proctor:hr-talking", { detail: { talking: this.talkers.size > 0 } }))
-  }
-
   close(viewerId) {
     this.peers.get(viewerId)?.pc.close()
     this.peers.delete(viewerId)
-    this.stopVoice(viewerId)
-    if (this.talkers.has(viewerId)) this.setTalking(viewerId, false)
   }
 
   stop() {

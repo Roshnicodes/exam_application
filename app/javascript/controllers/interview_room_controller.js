@@ -7,14 +7,21 @@ import { warningBeep } from "lib/sound"
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
 
 // Meet-style interview room: everyone sees and hears everyone (WebRTC mesh, best for up to ~6 people).
+// With test: true it is the video call during the online test: HR / panelists press "Join", the
+// candidate's exam page is always waiting in the room and the call pops up as soon as someone joins.
 export default class extends Controller {
   static targets = [ "grid", "localVideo", "micBtn", "camBtn", "status", "nameInput", "joinPanel", "room", "count",
-                     "screenGate", "screenError", "alerts" ]
-  static values = { roundId: Number, token: String, watchToken: String, name: String, needsName: Boolean, leaveUrl: String }
+                     "screenGate", "screenError", "alerts", "tap" ]
+  static values = { roundId: Number, invitationId: Number, test: Boolean, token: String, watchToken: String, name: String,
+                    needsName: Boolean, leaveUrl: String }
 
   connect() {
     this.peers = new Map() // peerId -> { pc, pending, tile, name, role, screenStreamId, screenTile }
     this.peerId = newViewerId()
+    if (this.testValue) {
+      if (this.candidate) this.join() // waits quietly; the call opens when HR / a panelist joins
+      return
+    }
     if (this.candidate && this.screenShareSupported) {
       const existing = getScreenStream() // still sharing from the test in this tab
       if (existing) return this.useScreen(existing)
@@ -74,16 +81,22 @@ export default class extends Controller {
   // Panelists pick who they are before joining.
   joinAs(event) {
     event.preventDefault()
-    const name = this.nameInputTarget.value.trim()
-    if (!name) return this.nameInputTarget.focus()
-    try { localStorage.setItem("panelist-name", name) } catch {}
-    this.nameValue = name
+    if (this.hasNameInputTarget) {
+      const name = this.nameInputTarget.value.trim()
+      if (!name) return this.nameInputTarget.focus()
+      try { localStorage.setItem("panelist-name", name) } catch {}
+      this.nameValue = name
+    }
     this.joinPanelTarget.classList.add("hidden")
     this.join()
   }
 
+  get waitingCandidate() {
+    return this.testValue && this.candidate
+  }
+
   async join() {
-    this.roomTarget.classList.remove("hidden")
+    if (!this.waitingCandidate) this.roomTarget.classList.remove("hidden")
     this.setStatus("Starting camera…")
     try {
       this.stream = this.candidate ? await getStream()
@@ -97,14 +110,17 @@ export default class extends Controller {
     this.updateButtons()
 
     const params = { channel: "InterviewChannel", peer_id: this.peerId }
+    if (this.testValue) params.test = true
     if (this.tokenValue) params.token = this.tokenValue
+    else if (this.testValue) Object.assign(params, { invitation_id: this.invitationIdValue, watch_token: this.watchTokenValue, name: this.nameValue })
     else Object.assign(params, { round_id: this.roundIdValue, watch_token: this.watchTokenValue, name: this.nameValue })
 
-    if (this.candidate) window.dispatchEvent(new Event("interview:ready")) // start proctoring now that we're in
+    // start proctoring now that we're in (the online test's proctoring is already running)
+    if (this.candidate && !this.testValue) window.dispatchEvent(new Event("interview:ready"))
 
     this.subscription = await cable.subscribeTo(params, {
-      connected: () => this.setStatus("Connected — waiting for others to join"),
-      rejected: () => this.setStatus("The interview room is not open"),
+      connected: () => this.setStatus(this.testValue ? "Connected — waiting for the candidate (they join automatically while in the test)" : "Connected — waiting for others to join"),
+      rejected: () => this.setStatus(this.testValue ? "The call is available while the candidate is taking the test" : "The interview room is not open"),
       received: (m) => this.received(m)
     })
   }
@@ -147,7 +163,7 @@ export default class extends Controller {
       if (peer.screenStreamId && e.streams[0]?.id === peer.screenStreamId) return this.showScreen(peer, e.streams[0])
       const video = peer.tile.querySelector("video")
       if (video.srcObject !== e.streams[0]) video.srcObject = e.streams[0]
-      video.play().catch(() => {})
+      video.play().catch(() => this.needTap())
       peer.tile.classList.add("connected")
     }
     pc.onicecandidate = (e) => e.candidate && this.send(info.id, { candidate: e.candidate.toJSON() })
@@ -249,6 +265,25 @@ export default class extends Controller {
     this.subscription?.perform("signal", { to, data })
   }
 
+  // Browsers can block sound until the page is clicked; offer a button and retry on the next click / key.
+  needTap() {
+    if (this.hasTapTarget) this.tapTarget.classList.remove("hidden")
+    if (this.tapWaiting) return
+    this.tapWaiting = true
+    const retry = () => { this.tapWaiting = false; this.playAll() }
+    window.addEventListener("pointerdown", retry, { once: true })
+    window.addEventListener("keydown", retry, { once: true })
+  }
+
+  playAll() {
+    this.gridTarget.querySelectorAll("video").forEach((v) => v.play().catch(() => {}))
+    if (this.hasTapTarget) this.tapTarget.classList.add("hidden")
+  }
+
+  minimize() {
+    this.element.classList.toggle("minimized")
+  }
+
   toggleMic() {
     this.stream?.getAudioTracks().forEach((t) => (t.enabled = !t.enabled))
     this.updateButtons()
@@ -268,6 +303,7 @@ export default class extends Controller {
   }
 
   updateButtons() {
+    if (!this.hasMicBtnTarget) return
     const mic = this.stream?.getAudioTracks().some((t) => t.enabled)
     const cam = this.stream?.getVideoTracks().some((t) => t.enabled)
     this.micBtnTarget.classList.toggle("off", !mic)
@@ -282,6 +318,13 @@ export default class extends Controller {
     if (this.hasCountTarget) this.countTarget.textContent = `${n} in the room`
     this.gridTarget.dataset.count = n
     if (this.peers.size) this.setStatus("")
+    if (this.waitingCandidate) {
+      // the candidate's call panel opens while someone from the panel is in the call
+      const inCall = this.peers.size > 0
+      this.roomTarget.classList.toggle("hidden", !inCall)
+      if (!inCall) this.element.classList.remove("minimized")
+      window.dispatchEvent(new CustomEvent("proctor:call", { detail: { active: inCall } }))
+    }
   }
 
   leave(redirect = true) {
@@ -291,6 +334,13 @@ export default class extends Controller {
     if (!this.candidate) this.stream?.getTracks().forEach((t) => t.stop()) // the candidate's camera is shared with proctoring
     this.screenStream?.getTracks().forEach((t) => t.stop())
     this.screenStream = null
+    if (this.testValue && !this.candidate) {
+      // back to the "Join video call" button
+      this.stream = null
+      this.roomTarget.classList.add("hidden")
+      if (this.hasJoinPanelTarget) this.joinPanelTarget.classList.remove("hidden")
+      return
+    }
     if (redirect && this.leaveUrlValue) window.Turbo.visit(this.leaveUrlValue)
   }
 
