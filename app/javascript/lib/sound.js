@@ -1,4 +1,5 @@
-// Synthesised alert sounds (Web Audio) so no audio files are needed.
+// Synthesised alert sounds (Web Audio), so no audio files are needed.
+// All of them are soft bell-like tones: noticeable, but never harsh.
 let ctx
 
 export function audioContext() {
@@ -12,67 +13,68 @@ export async function unlockAudio() {
   return c.state === "running"
 }
 
-function tone(freqs, start, duration, { type = "sine", volume = 0.18 } = {}) {
+function ready() {
   const c = audioContext()
-  const gain = c.createGain()
-  gain.gain.setValueAtTime(0, start)
-  gain.gain.linearRampToValueAtTime(volume, start + 0.02)
-  gain.gain.setValueAtTime(volume, start + duration - 0.04)
-  gain.gain.linearRampToValueAtTime(0, start + duration)
-  gain.connect(c.destination)
-  ;[].concat(freqs).forEach((f) => {
+  if (c.state !== "running") c.resume()
+  return c
+}
+
+// A bell-like note: quick soft attack, natural fade-out, plus a quiet overtone for warmth.
+function bell(freq, start, { duration = 0.6, volume = 0.16, type = "sine" } = {}) {
+  const c = audioContext()
+  const out = c.createGain()
+  out.gain.setValueAtTime(0.0001, start)
+  out.gain.exponentialRampToValueAtTime(volume, start + 0.015)
+  out.gain.exponentialRampToValueAtTime(0.0001, start + duration)
+  out.connect(c.destination)
+
+  ;[ [ freq, type, 1 ], [ freq * 2, "sine", 0.25 ] ].forEach(([ f, wave, level ]) => {
     const osc = c.createOscillator()
-    osc.type = type
+    const gain = c.createGain()
+    osc.type = wave
     osc.frequency.value = f
-    osc.connect(gain)
+    gain.gain.value = level
+    osc.connect(gain).connect(out)
     osc.start(start)
-    osc.stop(start + duration)
+    osc.stop(start + duration + 0.05)
   })
 }
 
-// Short triple beep for the candidate when a warning fires.
+// Candidate warning: a gentle two-note "ding-dong".
 export function warningBeep() {
-  const c = audioContext()
-  if (c.state !== "running") c.resume()
+  const c = ready()
   const t = c.currentTime + 0.02
-  for (let i = 0; i < 3; i++) tone(988, t + i * 0.22, 0.14, { type: "square", volume: 0.12 })
+  bell(1318.5, t, { duration: 0.45, volume: 0.18, type: "triangle" }) // E6
+  bell(1046.5, t + 0.28, { duration: 0.7, volume: 0.16, type: "triangle" }) // C6
 }
 
-// Classic two-tone telephone ring for HR (two rings, ~2.6s).
+// OTP request / normal alert for HR: a soft modern phone ring (two short trills).
 export function phoneRing({ times = 2 } = {}) {
-  const c = audioContext()
-  if (c.state !== "running") c.resume()
+  const c = ready()
   let t = c.currentTime + 0.02
   for (let r = 0; r < times; r++) {
-    tone([ 440, 480 ], t, 0.4, { volume: 0.22 })
-    tone([ 440, 480 ], t + 0.6, 0.4, { volume: 0.22 })
-    t += 1.6
+    for (let i = 0; i < 4; i++) {
+      bell(i % 2 ? 1108.7 : 880, t + i * 0.11, { duration: 0.22, volume: 0.12 }) // A5 / C#6 trill
+    }
+    t += 1.1
   }
 }
 
-// Rising siren for critical events (multiple faces, camera off, termination).
+// Serious alert for HR (two faces, camera off, phone, termination):
+// a rising three-note chime played twice — urgent, but not a siren.
 export function siren() {
-  const c = audioContext()
-  if (c.state !== "running") c.resume()
+  const c = ready()
   const t = c.currentTime + 0.02
-  const osc = c.createOscillator()
-  const gain = c.createGain()
-  osc.type = "sawtooth"
-  gain.gain.value = 0.08
-  for (let i = 0; i < 4; i++) {
-    osc.frequency.setValueAtTime(600, t + i * 0.5)
-    osc.frequency.linearRampToValueAtTime(1200, t + i * 0.5 + 0.45)
+  const notes = [ 784, 1046.5, 1318.5 ] // G5 C6 E6
+  for (let round = 0; round < 2; round++) {
+    notes.forEach((f, i) => bell(f, t + round * 0.75 + i * 0.13, { duration: 0.5, volume: 0.15, type: "triangle" }))
   }
-  osc.connect(gain).connect(c.destination)
-  osc.start(t)
-  osc.stop(t + 2)
 }
 
-// Soft chime for informational events.
+// Informational events (exam started / submitted, sound switched on).
 export function chime() {
-  const c = audioContext()
-  if (c.state !== "running") c.resume()
+  const c = ready()
   const t = c.currentTime + 0.02
-  tone(660, t, 0.18, { volume: 0.12 })
-  tone(880, t + 0.16, 0.28, { volume: 0.12 })
+  bell(880, t, { duration: 0.5, volume: 0.1 })
+  bell(1318.5, t + 0.15, { duration: 0.8, volume: 0.09 })
 }
