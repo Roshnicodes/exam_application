@@ -29,6 +29,7 @@
     </div>
   </div>
   <%= render "interview_feedbacks/form", invitation: @invitation, feedback: @feedback, url: feedback_invitation_path(@invitation) %>
+  <%= render "invitations/selection_card", invitation: @invitation %>
   <%= render "interview_feedbacks/summary", invitation: @invitation %>
 <% end %>
 

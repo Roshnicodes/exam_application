@@ -1,5 +1,5 @@
 <% content_for :title, "Results" %>
-<% filters = params.permit(:quiz_id, :vacancy, :result, :q).to_h %>
+<% filters = params.permit(:quiz_id, :vacancy, :result, :q, :sort).to_h %>
 <%= render layout: "shared/page_header", locals: {
       title: "Results", subtitle: "Scores, ranks and pass / fail for every completed exam. Ranks are within each question paper.", icon: "award",
       crumbs: [ [ "Dashboard", root_path ] ],
@@ -17,6 +17,7 @@
   <%= f.select :quiz_id, @quizzes.map { |q| [ q.title, q.id ] }, { include_blank: "All question papers", selected: params[:quiz_id] }, class: "input", data: { action: "change->autosubmit#submit" } %>
   <%= f.select :vacancy, @vacancies, { include_blank: "All vacancies", selected: params[:vacancy] }, class: "input", data: { action: "change->autosubmit#submit" } %>
   <%= f.select :result, [ [ "Pass & fail", "" ], [ "Passed only", "pass" ], [ "Failed only", "fail" ] ], { selected: params[:result] }, class: "input", data: { action: "change->autosubmit#submit" } %>
+  <%= f.select :sort, [ [ "Rank by test score", "test" ], [ "Rank by final score (test + interviews)", "final" ] ], { selected: @sort }, class: "input", data: { action: "change->autosubmit#submit" } %>
   <div class="search"><%= icon("search") %><%= f.search_field :q, value: params[:q], placeholder: "Search candidate…", class: "input" %></div>
   <% if filters.values.any?(&:present?) %><%= link_to "Clear", results_path, class: "btn btn-ghost btn-sm" %><% end %>
 <% end %>
@@ -24,7 +25,7 @@
 <% if @results.any? %>
   <div class="card result-list">
     <div class="result-head">
-      <span>Rank</span><span>Candidate</span><span class="hide-md">Paper</span><span>Score</span><span>Result</span><span class="hide-md">Warnings</span><span class="hide-md">Time</span><span></span>
+      <span>Rank</span><span>Candidate</span><span class="hide-md">Paper</span><span>Test score</span><span>Result / final</span><span class="hide-md">Warnings</span><span class="hide-md">Time</span><span></span>
     </div>
     <% @results.each do |i| %>
       <% rank = @ranks[i.id] %>
@@ -43,6 +44,8 @@
           <span class="result-badge <%= i.passed? ? 'pass' : 'fail' %>"><%= icon(i.passed? ? "check-circle" : "x-circle") %> <%= i.result_label %></span>
           <% if i.terminated? %><small class="term">Terminated</small><% end %>
           <% if (avg = i.interview_average) %><small class="iv-score" title="Interview average from <%= pluralize(i.interview_feedbacks.size, 'panelist') %>">🎤 <%= avg %>/10</small><% end %>
+          <% fin = @finals[i.id] %>
+          <% if fin[:percent] && fin[:done] > 1 %><small class="final-score" title="Weighted: <%= fin[:done] %> of <%= fin[:total] %> stages done">🎯 Final <%= fin[:percent] %>%<%= " (so far)" unless fin[:complete] %></small><% end %>
         </span>
         <span class="hide-md"><% if i.warnings_count.positive? %><span class="warn-pill"><%= icon("alert") %> <%= i.warnings_count %></span><% else %><span class="muted small">0</span><% end %></span>
         <span class="hide-md small"><%= duration_between(i.started_at, i.submitted_at) %></span>

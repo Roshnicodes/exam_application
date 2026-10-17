@@ -11,6 +11,7 @@
   <% if @panelists.any? %>
     <%= render "interview_feedbacks/form", invitation: @invitation, feedback: InterviewFeedback.new, url: watch_feedback_path(params[:watch_token]), panelists: @panelists %>
   <% end %>
+  <%= render "invitations/selection_card", invitation: @invitation %>
   <%= render "interview_feedbacks/summary", invitation: @invitation %>
 <% end %>
 

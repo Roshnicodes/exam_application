@@ -1,0 +1,29 @@
+<% stages = invitation.selection_breakdown %>
+<% final = invitation.final_score %>
+<div id="selection_invitation_<%= invitation.id %>" class="card selection-card">
+  <div class="card-head">
+    <h2><%= icon("target") %> Selection score</h2>
+    <span class="tiny muted"><%= final[:done] %>/<%= final[:total] %> stages done</span>
+  </div>
+  <div class="card-body">
+    <div class="sel-final">
+      <div class="score-ring" style="--p: <%= final[:percent] || 0 %>"><div><div><b><%= final[:percent] ? "#{final[:percent]}%" : "—" %></b><span><%= final[:complete] ? "Final" : "So far" %></span></div></div></div>
+      <p class="small muted"><%= final[:complete] ? "Weighted total of all stages." : "Weighted over the stages finished so far — updates as panelists score." %></p>
+    </div>
+    <div class="sel-stages">
+      <% stages.each_with_index do |st, i| %>
+        <div class="sel-stage <%= 'pending' unless st[:score] %>">
+          <div class="row between">
+            <b><span class="sel-dot" style="background:<%= param_color(i) %>"></span><%= st[:name] %></b>
+            <span class="sel-weight"><%= st[:weight] %>%</span>
+          </div>
+          <div class="sel-bar"><span style="width:<%= st[:score] || 0 %>%;background:<%= param_color(i) %>"></span></div>
+          <div class="row between tiny">
+            <span class="muted"><%= icon(st[:test] ? "file" : "users") %> <%= st[:source] %></span>
+            <span><%= st[:score] ? "#{st[:score]}% → #{st[:points]} pts" : "Pending" %></span>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

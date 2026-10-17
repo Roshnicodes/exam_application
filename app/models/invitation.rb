@@ -232,11 +232,57 @@ class Invitation < ApplicationRecord
     update!(interview_status: "closed")
   end
 
-  # What panelists score: the vacancy's selection parameters (minus the online test), else sensible defaults.
+  # A selection parameter is the online test when its name says so; everything else is
+  # scored by the interview panel.
+  TEST_PARAMETER = /\b(test|exam|assessment|aptitude|written|mcq)\b/i
+
+  # The vacancy's selection stages with weightage, e.g. Online test 30 / Technical 50 / HR 20.
+  # Without a vacancy: online test and interview count half each.
+  def selection_parameters
+    list = Array(opening&.selection_parameters).filter_map do |p|
+      { name: p["name"], weight: p["weight"].to_i } if p["name"].present? && p["weight"].to_i.positive?
+    end
+    list.presence || [ { name: "Online test", weight: 50 }, { name: "Interview", weight: 50 } ]
+  end
+
+  # What panelists score: the vacancy's interview stages, else sensible defaults.
   def interview_parameters
-    names = Array(opening&.selection_parameters).map { |p| p["name"] }.compact_blank
-    names = names.reject { |n| n.match?(/\b(test|exam|assessment|aptitude|written)\b/i) }
+    names = Array(opening&.selection_parameters).map { |p| p["name"] }.compact_blank.grep_v(TEST_PARAMETER)
     names.presence || DEFAULT_INTERVIEW_PARAMETERS
+  end
+
+  # Each stage with its score (0-100) once available:
+  # online test -> test percentage; interview stage -> panel average for that parameter x 10
+  # (a generic "Interview" stage uses the overall panel average).
+  def selection_breakdown
+    feedbacks = interview_feedbacks.select(&:persisted?)
+    selection_parameters.map do |param|
+      if param[:name].match?(TEST_PARAMETER)
+        score = finished? ? percentage : nil
+        source = finished? ? "#{self.score}/#{total_marks} marks" : "Test not taken yet"
+      else
+        vals = if param[:name] == "Interview" && opening.nil?
+          feedbacks.filter_map(&:average)
+        else
+          feedbacks.filter_map { |f| f.scores[param[:name]] }
+        end
+        score = vals.any? ? (vals.sum.to_f / vals.size * 10).round : nil
+        source = vals.any? ? "#{(vals.sum.to_f / vals.size).round(1)}/10 from #{vals.size} panelist#{'s' unless vals.size == 1}" : "Not scored yet"
+      end
+      param.merge(test: param[:name].match?(TEST_PARAMETER), score: score, source: source,
+                  points: score && (score * param[:weight] / 100.0).round(1))
+    end
+  end
+
+  # Weighted final score over the stages done so far.
+  # => { percent:, done:, total:, complete: }
+  def final_score
+    stages = selection_breakdown
+    done = stages.select { |s| s[:score] }
+    total_weight = stages.sum { |s| s[:weight] }
+    done_weight = done.sum { |s| s[:weight] }
+    percent = done_weight.positive? ? (done.sum { |s| s[:score] * s[:weight] }.to_f / done_weight).round : nil
+    { percent: percent, done: done.size, total: stages.size, complete: done.size == stages.size && total_weight.positive? }
   end
 
   def interview_average
@@ -247,6 +293,8 @@ class Invitation < ApplicationRecord
   def broadcast_feedback
     broadcast_replace_to [ self, :events ], target: "feedback_invitation_#{id}",
                          partial: "interview_feedbacks/summary", locals: { invitation: self }
+    broadcast_replace_to [ self, :events ], target: "selection_invitation_#{id}",
+                         partial: "invitations/selection_card", locals: { invitation: self }
   end
 
   # Live monitor grid tile (also refreshed on every proctoring event / snapshot).

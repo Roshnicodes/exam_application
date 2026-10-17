@@ -1,7 +1,7 @@
 class ResultsController < ApplicationController
   HEADERS = [ "Rank", "Candidate", "Email", "Mobile", "Vacancy", "Department", "Question paper", "Score", "Total marks",
               "Percentage", "Pass mark %", "Result", "Exam status", "Warnings", "Time taken (min)", "Submitted at",
-              "Interview avg (/10)", "Panel recommendations" ].freeze
+              "Interview avg (/10)", "Panel recommendations", "Final selection score %", "Stages done" ].freeze
 
   def index
     load_results
@@ -14,9 +14,10 @@ class ResultsController < ApplicationController
         i.quiz.title, i.score, i.total_marks, "#{i.percentage}%", "#{i.quiz.pass_percentage}%", i.result_label,
         i.terminated? ? "Terminated (#{i.termination_reason})" : "Submitted", i.warnings_count,
         i.time_taken ? (i.time_taken / 60.0).round(1) : "", i.submitted_at&.strftime("%d-%m-%Y %I:%M %p"),
-        i.interview_average, i.interview_feedbacks.map { |f| "#{f.reviewer_name}: #{f.recommendation_label}" }.join("; ") ].map(&:to_s)
+        i.interview_average, i.interview_feedbacks.map { |f| "#{f.reviewer_name}: #{f.recommendation_label}" }.join("; "),
+        @finals[i.id][:percent], "#{@finals[i.id][:done]}/#{@finals[i.id][:total]}" ].map(&:to_s)
     end
-    send_xlsx Spreadsheet.build("Results", HEADERS, rows, widths: [ 7, 24, 28, 14, 26, 18, 26, 8, 11, 11, 11, 9, 28, 10, 14, 20, 14, 40 ], highlight: [ 9, 11, 16 ]),
+    send_xlsx Spreadsheet.build("Results", HEADERS, rows, widths: [ 7, 24, 28, 14, 26, 18, 26, 8, 11, 11, 11, 9, 28, 10, 14, 20, 14, 40, 16, 10 ], highlight: [ 9, 11, 16, 18 ]),
               "exam-results-#{Date.current}.xlsx"
   end
 
@@ -38,11 +39,17 @@ class ResultsController < ApplicationController
       results.select!(&:passed?) if params[:result] == "pass"
       results.reject!(&:passed?) if params[:result] == "fail"
 
-      # rank within each question paper (higher % first, then faster)
+      # rank within each question paper, by test score or by the weighted final score
+      @sort = params[:sort] == "final" ? "final" : "test"
+      @finals = all.to_a.index_by(&:id).transform_values(&:final_score)
+      order = lambda do |i|
+        primary = @sort == "final" ? (@finals[i.id][:percent] || -1) : i.percentage
+        [ -primary, i.time_taken || Float::INFINITY ]
+      end
       @ranks = all.to_a.group_by(&:quiz_id).flat_map do |_, list|
-        list.sort_by { |i| [ -i.percentage, i.time_taken || Float::INFINITY ] }.each_with_index.map { |i, idx| [ i.id, idx + 1 ] }
+        list.sort_by(&order).each_with_index.map { |i, idx| [ i.id, idx + 1 ] }
       end.to_h
-      @results = results.sort_by { |i| [ -i.percentage, i.time_taken || Float::INFINITY ] }
+      @results = results.sort_by(&order)
 
       @summary = {
         total: results.size,

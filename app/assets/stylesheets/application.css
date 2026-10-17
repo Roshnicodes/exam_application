@@ -1209,3 +1209,27 @@ a.stat-card:hover .sc-go { opacity: 1; transform: translateX(3px); }
   .interview-cta { flex-wrap: wrap; }
 }
 .saved-note { display: flex; align-items: center; gap: .45rem; padding: .6rem .8rem; border-radius: 12px; background: var(--green-soft); color: #047857; font-weight: 700; font-size: .85rem; }
+
+/* ---------- Selection score + scorecard pills ---------- */
+.sel-final { display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+.sel-final .score-ring { width: 110px; height: 110px; margin: 0; }
+.sel-final .score-ring > div { width: 86px; height: 86px; }
+.sel-stages { display: grid; gap: .75rem; }
+.sel-stage { display: grid; gap: .3rem; }
+.sel-stage b { display: inline-flex; align-items: center; gap: .45rem; font-size: .88rem; }
+.sel-stage.pending { opacity: .7; }
+.sel-dot { width: 10px; height: 10px; border-radius: 3px; }
+.sel-weight { font-size: .75rem; font-weight: 800; color: var(--muted); background: var(--surface-2); padding: .1rem .5rem; border-radius: 99px; }
+.sel-bar { height: 8px; border-radius: 99px; background: #eceef6; overflow: hidden; }
+.sel-bar span { display: block; height: 100%; border-radius: 99px; transition: width .4s; }
+.score-pills { display: flex; flex-wrap: wrap; gap: .3rem; }
+.score-pills label { cursor: pointer; }
+.score-pills input { position: absolute; opacity: 0; pointer-events: none; }
+.score-pills span { display: grid; place-items: center; min-width: 30px; height: 30px; padding: 0 .35rem; border-radius: 9px; font-size: .8rem; font-weight: 800; border: 1.5px solid var(--line); background: #fff; color: var(--ink-2); transition: .12s; }
+.score-pills label:hover span { border-color: var(--brand); }
+.score-pills .pill-skip span { color: var(--muted); font-weight: 700; }
+.score-pills .lo input:checked + span { background: #ef4444; border-color: #ef4444; color: #fff; }
+.score-pills .mid input:checked + span { background: #f59e0b; border-color: #f59e0b; color: #fff; }
+.score-pills .hi input:checked + span { background: #10b981; border-color: #10b981; color: #fff; }
+.score-pills .pill-skip input:checked + span { background: var(--surface-2); border-color: var(--muted); color: var(--ink); }
+.final-score { display: block; font-size: .72rem; font-weight: 800; color: #047857; margin-top: .15rem; }

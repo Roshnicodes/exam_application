@@ -12,12 +12,17 @@
         <%= select_tag :employee_id, options_for_select(panelists.map { |p| [ p.name, p.id ] }, feedback.employee_id), prompt: "Choose your name", class: "input", required: true %>
       </div>
     <% end %>
+    <p class="tiny muted" style="margin:-.3rem 0 0">Score only what you assessed — leave the rest on "Skip".</p>
     <% invitation.interview_parameters.each do |param| %>
       <% value = feedback.scores[param] %>
-      <div class="score-row" data-controller="score">
-        <div class="row between"><label><%= param %></label><b data-score-target="out"><%= value || "–" %></b></div>
-        <input type="range" min="0" max="10" step="1" name="interview_feedback[scores][<%= param %>]" value="<%= value || 5 %>"
-               data-action="input->score#show" data-score-target="input" class="score-range">
+      <div class="score-row">
+        <label><%= param %></label>
+        <div class="score-pills">
+          <label class="pill-skip"><input type="radio" name="interview_feedback[scores][<%= param %>]" value="" <%= "checked" if value.nil? %>><span>Skip</span></label>
+          <% (1..10).each do |n| %>
+            <label class="<%= n <= 4 ? 'lo' : (n <= 7 ? 'mid' : 'hi') %>"><input type="radio" name="interview_feedback[scores][<%= param %>]" value="<%= n %>" <%= "checked" if value == n %>><span><%= n %></span></label>
+          <% end %>
+        </div>
       </div>
     <% end %>
     <div class="field">
