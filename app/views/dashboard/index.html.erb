@@ -129,7 +129,7 @@
         </ul>
         <%= link_to live_monitor_path, class: "rt-box" do %>
           <%= icon("activity") %>
-          <div><b>Monitoring in real-time</b><small><%= @alerts_today.zero? ? "AI-powered proctoring for fair & secure exams" : "#{pluralize(@alerts_today, 'warning')} today" %></small></div>
+          <div><b>Monitoring in real-time</b><small><%= @alerts_today.zero? ? "Proctoring for fair & secure exams" : "#{pluralize(@alerts_today, 'warning')} today" %></small></div>
           <span class="rt-shield"><%= icon("shield") %></span>
         <% end %>
       </div>

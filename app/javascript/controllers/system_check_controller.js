@@ -37,7 +37,7 @@ export default class extends Controller {
   }
 
   async watchFace() {
-    this.set("faceCheck", null, "Loading AI…")
+    this.set("faceCheck", null, "Loading face check…")
     const detector = await loadFaceDetector()
     if (!detector) {
       this.state.face = true
