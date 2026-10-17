@@ -8,6 +8,9 @@
   <video data-live-video-target="video" autoplay muted playsinline></video>
   <span class="lv-badge"><span class="rec-dot"></span> <span data-live-video-target="status">Connecting…</span></span>
   <% unless compact %>
-    <button type="button" class="lv-sound" data-live-video-target="sound" data-action="live-video#toggleSound">🔇 Unmute</button>
+    <div class="lv-controls">
+      <button type="button" class="lv-sound" data-live-video-target="sound" data-action="live-video#toggleSound">🔇 Unmute</button>
+      <button type="button" class="lv-sound lv-talk" data-live-video-target="talk" data-action="live-video#toggleTalk" title="Speak to the candidate">🎙️ Talk</button>
+    </div>
   <% end %>
 </div>

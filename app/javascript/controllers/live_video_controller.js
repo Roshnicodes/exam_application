@@ -2,9 +2,10 @@ import { Controller } from "@hotwired/stimulus"
 import { cable } from "@hotwired/turbo-rails"
 import { ICE_SERVERS, newViewerId } from "lib/live_video"
 
-// Viewer side (HR / panelist): shows the candidate's live camera, like a video call.
+// Viewer side (HR / panelist): shows the candidate's live camera, like a video call,
+// and "Talk" sends the viewer's microphone to the candidate.
 export default class extends Controller {
-  static targets = [ "video", "status", "sound", "frame", "screen" ]
+  static targets = [ "video", "status", "sound", "frame", "screen", "talk" ]
   static values = { invitationId: Number, watchToken: String }
 
   async connect() {
@@ -24,6 +25,7 @@ export default class extends Controller {
   disconnect() {
     clearTimeout(this.offlineTimer)
     clearTimeout(this.fallbackTimer)
+    this.stopTalking()
     this.closePeer()
     this.subscription?.unsubscribe()
   }
@@ -75,8 +77,16 @@ export default class extends Controller {
       }
       await pc.setRemoteDescription(data.sdp)
       for (const c of this.pending.splice(0)) await pc.addIceCandidate(c).catch(() => {})
+      // open the audio line both ways so "Talk" can start later without reconnecting
+      const audio = pc.getTransceivers().find((t) => t.receiver.track?.kind === "audio")
+      if (audio) {
+        audio.direction = "sendrecv"
+        this.voiceSender = audio.sender
+        if (this.mic) await audio.sender.replaceTrack(this.mic.getAudioTracks()[0])
+      }
       await pc.setLocalDescription(await pc.createAnswer())
       this.subscription.perform("signal", { data: { sdp: pc.localDescription.toJSON() } })
+      if (this.mic) this.subscription.perform("signal", { data: { talk: true } })
     } else if (data?.candidate) {
       if (this.pc?.remoteDescription) await this.pc.addIceCandidate(data.candidate).catch(() => {})
       else this.pending.push(data.candidate)
@@ -115,6 +125,37 @@ export default class extends Controller {
     if (this.hasSoundTarget) this.soundTarget.textContent = this.videoTarget.muted ? "🔇 Unmute" : "🔊 Mute"
   }
 
+  async toggleTalk() {
+    if (this.mic) return this.stopTalking()
+    if (!this.voiceSender || !this.pc) return this.setTalkLabel("Talk works once the live video connects")
+    try {
+      this.mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+    } catch {
+      return this.setTalkLabel("Allow the microphone to talk")
+    }
+    await this.voiceSender.replaceTrack(this.mic.getAudioTracks()[0])
+    this.subscription.perform("signal", { data: { talk: true } })
+    if (this.videoTarget.muted) this.toggleSound() // a conversation needs both sides
+    this.element.classList.add("talking")
+    this.setTalkLabel("🔴 Stop talking")
+  }
+
+  stopTalking() {
+    if (!this.mic) return
+    this.voiceSender?.replaceTrack(null).catch(() => {})
+    this.mic.getTracks().forEach((t) => t.stop())
+    this.mic = null
+    this.subscription?.perform("signal", { data: { talk: false } })
+    this.element.classList.remove("talking")
+    this.setTalkLabel("🎙️ Talk")
+  }
+
+  setTalkLabel(text) {
+    if (!this.hasTalkTarget) return
+    this.talkTarget.textContent = text
+    if (!this.mic && text !== "🎙️ Talk") setTimeout(() => { if (!this.mic) this.talkTarget.textContent = "🎙️ Talk" }, 3000)
+  }
+
   // The candidate's shared screen: shown big, with the camera as a small inset.
   showScreen(stream) {
     if (!this.hasScreenTarget) return // compact monitor tiles show the camera only
@@ -132,6 +173,7 @@ export default class extends Controller {
     this.element.classList.remove("has-screen")
     this.pc?.close()
     this.pc = null
+    this.voiceSender = null
     this.live = false
     this.pending = []
     if (this.hasVideoTarget) this.videoTarget.srcObject = null
