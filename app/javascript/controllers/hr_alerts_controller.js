@@ -72,6 +72,7 @@ export default class extends Controller {
     // Sound only for things HR must act on: a cheating warning, an OTP request, a terminated exam.
     // Everything else (exam started, submitted, verified…) is a silent toast.
     const important = data.violation || data.kind === "otp_requested" || data.kind === "exam_terminated"
+    if (data.violation) this.bumpBell()
     if (this.soundOn && important && this.mayPlaySound()) {
       if (data.kind === "otp_requested") phoneRing({ times: 2 })
       else if (data.severity === "critical" || data.kind === "exam_terminated") siren()
@@ -202,6 +203,13 @@ export default class extends Controller {
       </div>
       ${data.snapshot_url ? `<img class="t-snap" src="${esc(data.snapshot_url)}" alt="">` : ""}`
     feed.prepend(li)
+  }
+
+  bumpBell() {
+    const count = document.getElementById("bell-count")
+    if (!count) return
+    count.textContent = (parseInt(count.textContent, 10) || 0) + 1
+    count.classList.remove("hidden")
   }
 
   bumpTitle() {

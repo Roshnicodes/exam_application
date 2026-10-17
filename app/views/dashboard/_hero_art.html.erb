@@ -1,0 +1,45 @@
+<%# Illustration for the dashboard banner: a laptop on a video interview, with plants. %>
+<svg class="dh-art" viewBox="0 0 420 220" aria-hidden="true">
+  <defs>
+    <linearGradient id="dh-screen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8f5ee"/><stop offset="1" stop-color="#c9e7d6"/></linearGradient>
+    <linearGradient id="dh-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1f5f9"/><stop offset="1" stop-color="#94a3b8"/></linearGradient>
+    <linearGradient id="dh-shirt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f3b57"/><stop offset="1" stop-color="#0f2236"/></linearGradient>
+    <linearGradient id="dh-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4ade80"/><stop offset="1" stop-color="#15803d"/></linearGradient>
+    <clipPath id="dh-clip"><rect x="92" y="28" width="196" height="124" rx="6"/></clipPath>
+  </defs>
+  <!-- plants behind -->
+  <g fill="url(#dh-leaf)" opacity=".9">
+    <path d="M338 168c-6-40 8-74 34-96-4 34-12 64-34 96z"/>
+    <path d="M346 170c10-34 34-52 62-58-16 26-36 46-62 58z"/>
+    <path d="M332 170c-22-24-28-52-20-80 16 22 22 48 20 80z"/>
+    <path d="M58 170c-4-30 6-56 26-72-2 26-10 50-26 72z"/>
+    <path d="M50 172c-18-16-24-38-20-60 14 16 20 36 20 60z"/>
+  </g>
+  <!-- laptop -->
+  <rect x="82" y="18" width="216" height="144" rx="12" fill="#1e293b"/>
+  <rect x="92" y="28" width="196" height="124" rx="6" fill="url(#dh-screen)"/>
+  <g clip-path="url(#dh-clip)">
+    <rect x="92" y="28" width="196" height="124" fill="#dff0e6"/>
+    <rect x="232" y="40" width="44" height="60" rx="4" fill="#bfe3cc"/>
+    <path d="M244 100c0-22 8-36 14-44 4 14 4 30-2 44z" fill="#4ade80" opacity=".7"/>
+    <!-- person -->
+    <path d="M140 152c4-30 22-44 50-44s46 14 50 44z" fill="url(#dh-shirt)"/>
+    <path d="M176 110h28l-4 16h-20z" fill="#e7b48f"/>
+    <ellipse cx="190" cy="82" rx="22" ry="26" fill="#f1c6a3"/>
+    <path d="M166 84c-4-30 12-46 28-46 20 0 32 16 28 44-4-14-12-22-26-26-10 8-20 14-30 28z" fill="#2b1b14"/>
+    <path d="M166 84c-6 22-2 40 6 50l6-26z" fill="#2b1b14"/>
+    <path d="M214 84c6 22 2 40-6 50l-6-26z" fill="#2b1b14"/>
+    <path d="M182 96q8 6 16 0" stroke="#b7735a" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </g>
+  <!-- call controls -->
+  <circle cx="176" cy="140" r="7" fill="#16a34a"/><path d="M173 140h6M176 137v6" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+  <circle cx="204" cy="140" r="7" fill="#ef4444"/><path d="M200 141c3-2 5-2 8 0" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <!-- REC pill -->
+  <rect x="100" y="36" width="34" height="13" rx="6.5" fill="#ef4444"/><circle cx="108" cy="42.5" r="2.3" fill="#fff"/>
+  <text x="113" y="46" font-size="7.5" font-weight="700" fill="#fff" font-family="sans-serif">REC</text>
+  <!-- base -->
+  <path d="M52 162h276l-14 16H66z" fill="url(#dh-body)"/>
+  <rect x="166" y="162" width="48" height="5" rx="2.5" fill="#64748b"/>
+  <!-- pot -->
+  <path d="M330 168h40l-6 30h-28z" fill="#e2e8f0"/>
+</svg>

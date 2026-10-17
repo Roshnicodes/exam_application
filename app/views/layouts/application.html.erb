@@ -8,46 +8,59 @@
       <aside class="sidebar">
         <%= link_to root_path do %><%= render "shared/brand" %><% end %>
         <nav class="nav">
-          <span class="nav-label">Workspace</span>
           <%= nav_link "Dashboard", root_path, "home" %>
-          <%= nav_link "Pipeline", pipeline_path, "activity" %>
           <%= nav_link "Candidates", invitations_path, "users", active: controller_name == "invitations" && action_name != "new" %>
-          <%= nav_link "Results", results_path, "award", active: controller_name == "results" %>
-          <%= nav_link "Schedule", schedule_path, "calendar" %>
-          <%= nav_link "Invite candidate", new_invitation_path, "send" %>
-          <%= nav_link "Bulk invite (batch)", exam_batches_path, "users", active: controller_name == "exam_batches" && action_name != "monitor" %>
-          <%= nav_link "Live monitor", live_monitor_path, "video", active: controller_name == "monitor" || action_name == "monitor",
+          <%= nav_link "Jobs / Vacancies", vacancies_path, "briefcase", active: controller_name == "vacancies" %>
+          <%= nav_link "Interviews", schedule_path, "calendar", active: controller_name.in?(%w[schedule interview_rounds]) %>
+          <%= nav_link "Pipeline", pipeline_path, "activity" %>
+          <%= nav_link "Question Bank", quizzes_path, "file", active: controller_name == "quizzes" %>
+          <%= nav_link "Reports", results_path, "award", active: controller_name == "results" %>
+          <%= nav_link "Live Monitoring", live_monitor_path, "eye", active: controller_name == "monitor" || action_name == "monitor",
                 count: Current.user.invitations.live.count %>
-          <span class="nav-label">Assessments</span>
-          <%= nav_link "Question papers", quizzes_path, "file", active: controller_name == "quizzes" && action_name != "new" %>
-          <%= nav_link "New paper", new_quiz_path, "plus" %>
+          <%= nav_link "Bulk Invite", exam_batches_path, "send", active: controller_name == "exam_batches" && action_name != "monitor" %>
           <span class="nav-label">Masters</span>
           <%= nav_link "Departments", departments_path, "building", active: controller_name == "departments" %>
-          <%= nav_link "Vacancies", vacancies_path, "briefcase", active: controller_name == "vacancies" %>
           <%= nav_link "Employees", employees_path, "id-card", active: controller_name == "employees" %>
-          <span class="nav-label">Help</span>
-          <%= nav_link "Team", team_path, "users", active: controller_name == "team" %>
-          <%= nav_link "Guide", guide_path, "sparkles" %>
+          <%= nav_link "Team", team_path, "key", active: controller_name == "team" %>
+          <span class="nav-label">Quick Links</span>
+          <%= link_to guide_path, class: "nav-quick #{'active' if current_page?(guide_path)}" do %><%= icon("sparkles") %> User Guide<% end %>
         </nav>
         <div class="sidebar-foot">
-          <div class="user-chip">
-            <span class="avatar"><%= Current.user.initials %></span>
-            <div class="grow"><b><%= Current.user.name %></b><span><%= Current.user.email_address %></span></div>
-            <%= button_to session_path, method: :delete, title: "Sign out", form: { data: { turbo_confirm: "Sign out of HireProctor?" } } do %><%= icon("logout") %><% end %>
-          </div>
+          <p class="sidebar-quote">Better Hiring<br>Brighter <span>Future</span> <%= icon("leaf") %></p>
         </div>
       </aside>
 
       <div class="main">
         <header class="topbar">
           <button class="btn btn-light icon-btn menu-btn" data-action="nav#toggle" aria-label="Menu"><%= icon("menu") %></button>
-          <div class="grow">
-            <span class="pill"><span class="live-dot off" id="live-indicator"></span><span id="live-label">Connecting to live alerts…</span></span>
+          <%= form_with url: invitations_path, method: :get, class: "top-search", data: { turbo_frame: "_top" } do %>
+            <%= icon("search") %>
+            <input type="search" name="q" value="<%= params[:q] if controller_name == "invitations" %>" placeholder="Search candidates, jobs, mobile…" aria-label="Search candidates">
+          <% end %>
+          <span class="top-live" title="Live alerts connection"><span class="live-dot off" id="live-indicator"></span><span id="live-label" class="hide-md">Connecting…</span></span>
+          <div class="top-date hide-sm">
+            <%= icon("calendar") %>
+            <span><small><%= Date.current.strftime("%a, %d %b %Y") %></small><b data-controller="clock"><%= Time.current.strftime("%-I:%M %p") %></b></span>
           </div>
-          <button class="btn btn-light btn-sm sound-toggle" id="sound-toggle">
-            <%= icon("volume-off") %><span>Enable sound alerts</span>
-          </button>
-          <%= link_to new_invitation_path, class: "btn btn-primary btn-sm" do %><%= icon("plus") %><span class="hide-sm">Invite</span><% end %>
+          <%= link_to live_monitor_path, class: "top-icon", title: "Live alerts" do %>
+            <%= icon("bell") %>
+            <% alerts = ProctorEvent.violations.where(invitation: Current.user.invitations, created_at: Time.current.all_day).count %>
+            <span class="top-count <%= 'hidden' if alerts.zero? %>" id="bell-count"><%= alerts %></span>
+          <% end %>
+          <button type="button" class="top-icon sound-toggle" id="sound-toggle" title="Sound alerts"><%= icon("volume-off") %><span>Enable sound alerts</span></button>
+          <details class="top-user" data-controller="dropdown">
+            <summary>
+              <span class="avatar"><%= Current.user.initials %></span>
+              <span class="hide-sm"><b><%= Current.user.name %></b><small>HR Admin</small></span>
+              <%= icon("chevron-down", css: "hide-sm") %>
+            </summary>
+            <div class="top-menu">
+              <div class="tm-head"><b><%= Current.user.name %></b><small><%= Current.user.email_address %></small></div>
+              <%= link_to team_path do %><%= icon("users") %> Team<% end %>
+              <%= link_to guide_path do %><%= icon("sparkles") %> User guide<% end %>
+              <%= button_to session_path, method: :delete, form: { data: { turbo_confirm: "Sign out of HireProctor?" } } do %><%= icon("logout") %> Sign out<% end %>
+            </div>
+          </details>
         </header>
 
         <main class="content">

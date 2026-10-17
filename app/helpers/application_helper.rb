@@ -55,7 +55,14 @@ module ApplicationHelper
     "id-card" => '<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M14 10h4M14 14h4"/>',
     "graduation" => '<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>',
     "target" => '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
-    "key" => '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/>'
+    "key" => '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/>',
+    "leaf" => '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
+    "chevron-down" => '<path d="m6 9 6 6 6-6"/>',
+    "arrow-up" => '<path d="M12 19V5M5 12l7-7 7 7"/>',
+    "arrow-down" => '<path d="M12 5v14M19 12l-7 7-7-7"/>',
+    "trending-up" => '<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+    "trending-down" => '<path d="m22 17-8.5-8.5-5 5L2 7"/><path d="M16 17h6v-6"/>',
+    "more" => '<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>'
   }.freeze
 
   def icon(name, css: nil)
@@ -84,6 +91,18 @@ module ApplicationHelper
   def nav_link(label, path, icon_name, active: current_page?(path), count: nil)
     link_to path, class: ("active" if active) do
       safe_join([ icon(icon_name), label, (tag.span(count, class: "count") if count.to_i.positive?) ].compact)
+    end
+  end
+
+  # Small trend line (with a soft filled area) for the dashboard stat cards.
+  def sparkline(values, width: 96, height: 36)
+    max = [ values.max.to_i, 1 ].max
+    step = width.to_f / [ values.size - 1, 1 ].max
+    points = values.each_with_index.map { |v, i| [ (i * step).round(1), (height - 3 - v.to_f / max * (height - 8)).round(1) ] }
+    line = points.map { |x, y| "#{x},#{y}" }.join(" ")
+    area = "0,#{height} #{line} #{width},#{height}"
+    tag.svg(class: "spark", viewBox: "0 0 #{width} #{height}", preserveAspectRatio: "none", "aria-hidden": true) do
+      tag.polygon(points: area, class: "spark-area") + tag.polyline(points: line, class: "spark-line")
     end
   end
 

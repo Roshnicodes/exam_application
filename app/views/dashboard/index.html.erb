@@ -1,58 +1,88 @@
 <% content_for :title, "Dashboard" %>
 <%= turbo_stream_from Current.user, :invitations %>
-
 <% hour = Time.current.hour %>
-<%= render layout: "shared/page_header", locals: {
-      title: "#{hour < 12 ? "Good morning" : (hour < 17 ? "Good afternoon" : "Good evening")}, #{Current.user.first_name} 👋",
-      subtitle: "Invite candidates, share the secure link and watch every exam live.",
-      icon: "home", crumbs: [ [ Date.current.strftime("%A, %d %B"), root_path ] ],
-      stats: [
-        { label: "Total candidates", value: @stats[:total], icon: "users", tone: "violet", path: invitations_path },
-        { label: "Live exams now", value: @stats[:live], icon: "video", tone: "red", path: invitations_path(status: "in_progress") },
-        { label: "Exams completed", value: @stats[:completed], icon: "check-circle", tone: "green", path: invitations_path(status: "submitted") },
-        { label: "Alerts today", value: @stats[:alerts_today], icon: "alert", tone: "amber" }
-      ] } do %>
-  <%= link_to new_quiz_path, class: "btn btn-light" do %><%= icon("file") %> New paper<% end %>
-  <%= link_to new_invitation_path, class: "btn btn-primary" do %><%= icon("send") %> Invite candidate<% end %>
-<% end %>
 
-<div class="split">
-  <div class="stack">
-    <div class="card">
-      <div class="card-head"><h2><%= icon("activity") %> Hiring funnel</h2><%= link_to "Pipeline", pipeline_path, class: "btn btn-ghost btn-sm" %></div>
-      <div class="card-body funnel">
-        <% top = [ @funnel.first[1], 1 ].max %>
-        <% @funnel.each do |label, count, tone| %>
-          <div class="funnel-row tone-<%= tone %>">
-            <span class="funnel-label"><%= label %></span>
-            <span class="funnel-bar"><span style="width:<%= [ count * 100 / top, count.positive? ? 4 : 0 ].max %>%"></span></span>
-            <b><%= count %></b>
+<div class="dash">
+  <div class="dash-main">
+    <section class="dash-hero">
+      <div class="dh-copy">
+        <h1><%= hour < 12 ? "Good Morning" : (hour < 17 ? "Good Afternoon" : "Good Evening") %>, <%= Current.user.first_name %> 👋</h1>
+        <p>Manage your interviews, track candidates and ensure a smooth &amp; fair hiring process.</p>
+        <div class="dh-chips">
+          <span class="dh-chip"><span class="dh-dot"></span> System Online</span>
+          <span class="dh-chip"><%= icon("calendar") %> Today, <%= Date.current.strftime("%d %b %Y") %></span>
+        </div>
+      </div>
+      <%= render "dashboard/hero_art" %>
+      <span class="dh-script">Right People<br>Build<br>Great Teams</span>
+    </section>
+
+    <div class="trend-cards">
+      <% @cards.each do |c| %>
+        <%= link_to c[:path], class: "trend-card tone-#{c[:tone]}" do %>
+          <div class="tc-head"><span class="tc-ico"><%= icon(c[:icon]) %></span><small><%= c[:label] %></small></div>
+          <div class="tc-foot">
+            <div>
+              <div class="tc-row">
+                <b><%= c[:value].to_s.rjust(2, "0") %></b>
+                <% if c[:change].nonzero? %>
+                  <span class="tc-change <%= c[:change].positive? ? 'up' : 'down' %>"><%= icon(c[:change].positive? ? "arrow-up" : "arrow-down") %><%= c[:change].abs %>%</span>
+                <% end %>
+              </div>
+              <em><%= c[:note] %></em>
+            </div>
+            <%= sparkline(c[:spark]) %>
           </div>
         <% end %>
-      </div>
+      <% end %>
     </div>
 
-    <% if @live.any? %>
-      <div class="card">
-        <div class="card-head"><h2><span class="live-dot" style="background:var(--red);box-shadow:0 0 0 4px rgba(239,68,68,.2)"></span> Live right now</h2></div>
-        <% @live.each do |inv| %>
-          <%= link_to invitation_path(inv), class: "list-item" do %>
-            <span class="avatar"><%= initials_for(inv.candidate_name) %></span>
-            <div class="grow person"><div><b><%= inv.candidate_name %></b><span><%= inv.vacancy %> · <%= inv.quiz.title %></span></div></div>
-            <span class="badge sev-medium"><%= icon("alert") %> <%= inv.warnings_count %> warnings</span>
-            <span class="btn btn-dark btn-sm"><%= icon("eye") %> Watch</span>
-          <% end %>
-        <% end %>
-      </div>
-    <% end %>
-
-    <div class="card">
+    <section class="card">
       <div class="card-head">
-        <h2><%= icon("users") %> Recent candidates</h2>
-        <%= link_to "View all", invitations_path, class: "btn btn-ghost btn-sm" %>
+        <h2><%= icon("calendar") %> <%= @schedule_title %></h2>
+        <%= link_to schedule_path, class: "view-all" do %>View all <%= icon("arrow-right") %><% end %>
+      </div>
+      <% if @schedule.any? %>
+        <div class="sched-strip">
+          <% @schedule.each_with_index do |r, i| %>
+            <%= link_to invitation_path(r.invitation, anchor: "rounds"), class: "sched-card tone-#{%w[green blue violet blue teal][i]} #{'is-live' if r.open?}" do %>
+              <div class="row between"><b class="sc-time"><%= r.open? ? "Live now" : r.scheduled_at&.strftime(r.scheduled_at.today? ? "%I:%M %p" : "%d %b, %I:%M %p") %></b><% if r.open? %><span class="dh-dot"></span><% end %></div>
+              <b class="sc-name"><%= r.invitation.candidate_name %></b>
+              <small><%= r.invitation.vacancy %> · <%= r.name %></small>
+              <div class="row sc-foot">
+                <span class="avatar xs" style="background: <%= gradient_for(r.invitation.candidate_name) %>"><%= initials_for(r.invitation.candidate_name) %></span>
+                <span class="state-pill <%= r.open? ? 'green' : 'blue' %>"><%= r.open? ? "In Progress" : "Upcoming" %></span>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="card-body muted small">No interviews scheduled. Set a date on a candidate's interview round and it shows up here.</div>
+      <% end %>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2><%= icon("users") %> Recent Candidates</h2>
+        <%= link_to invitations_path, class: "view-all" do %>View all <%= icon("arrow-right") %><% end %>
       </div>
       <% if @recent.any? %>
-        <div class="cand-list"><%= render partial: "invitations/item", collection: @recent, as: :invitation %></div>
+        <div class="table-wrap">
+          <table class="table dash-table">
+            <thead><tr><th>Name</th><th>Position</th><th class="hide-sm">Invited On</th><th>Status</th><th class="hide-sm">Action</th></tr></thead>
+            <tbody>
+              <% @recent.each do |inv| %>
+                <tr>
+                  <td><%= link_to invitation_path(inv), class: "person" do %><span class="avatar xs" style="background: <%= gradient_for(inv.candidate_name) %>"><%= initials_for(inv.candidate_name) %></span><b><%= inv.candidate_name %></b><% end %></td>
+                  <td class="muted"><%= inv.vacancy %></td>
+                  <td class="muted hide-sm"><%= inv.created_at.strftime("%d %b %Y, %I:%M %p") %></td>
+                  <td><%= status_badge(inv) %></td>
+                  <td class="hide-sm"><%= link_to invitation_path(inv), class: "view-all" do %>View <%= icon("arrow-right") %><% end %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
       <% else %>
         <div class="empty">
           <div class="ico"><%= icon("send") %></div>
@@ -61,34 +91,63 @@
           <%= link_to new_invitation_path, class: "btn btn-primary" do %><%= icon("plus") %> Invite candidate<% end %>
         </div>
       <% end %>
-    </div>
-    <div class="card">
-      <div class="card-head"><h2><%= icon("calendar") %> Upcoming interviews</h2></div>
-      <% if @upcoming.any? %>
-        <% @upcoming.each do |inv| %>
-          <%= link_to invitation_path(inv), class: "list-item" do %>
-            <span class="avatar soft"><%= icon("calendar") %></span>
-            <div class="grow person"><div><b><%= inv.candidate_name %></b><span><%= inv.vacancy %></span></div></div>
-            <span class="tiny muted" style="text-align:right"><%= inv.interview_date.strftime("%d %b") %><br><%= inv.interview_date.strftime("%-I:%M %p") %></span>
-          <% end %>
-        <% end %>
-      <% else %>
-        <div class="card-body muted small">No interviews scheduled.</div>
-      <% end %>
-    </div>
+    </section>
   </div>
 
-  <div class="stack">
-    <div class="card">
-      <div class="card-head"><h2><%= icon("activity") %> Live activity</h2><span class="tiny muted">Auto-updating</span></div>
-      <ul class="timeline scroll-y" id="dashboard-feed" style="max-height:440px">
-        <% if @feed.any? %>
-          <%= render partial: "proctor_events/proctor_event", collection: @feed, locals: { show_candidate: true } %>
+  <aside class="dash-side">
+    <div class="quick-actions">
+      <%= link_to new_vacancy_path, class: "qa qa-violet" do %><span><%= icon("plus") %></span><div><b>New Job / Vacancy</b><small>Create a new position</small></div><%= icon("arrow-right") %><% end %>
+      <%= link_to new_invitation_path, class: "qa qa-green" do %><span><%= icon("mail") %></span><div><b>Invite Candidate</b><small>Send link via WhatsApp / Email</small></div><%= icon("arrow-right") %><% end %>
+      <%= link_to live_monitor_path, class: "qa qa-orange" do %><span><%= icon("video") %></span><div><b>Start Interview</b><small>Monitor &amp; evaluate</small></div><%= icon("arrow-right") %><% end %>
+    </div>
+
+    <section class="card live-card">
+      <div class="card-head">
+        <h2><span class="dh-dot"></span> Live Interview Activity</h2>
+        <span class="state-pill <%= @live ? 'green' : '' %>"><%= @live ? "Live" : "Idle" %></span>
+      </div>
+      <div class="card-body">
+        <% if @live %>
+          <div class="live-now">
+            <%= render "shared/live_video", invitation: @live, compact: true %>
+            <div>
+              <b><%= @live.candidate_name %></b>
+              <small><%= @live.vacancy %></small>
+              <span class="state-pill green">• In Progress</span>
+              <%= link_to "Watch", invitation_path(@live), class: "btn btn-light btn-sm" %>
+            </div>
+          </div>
         <% else %>
-          <li class="muted small" id="feed-empty">Activity from candidates will stream here.</li>
+          <div class="live-idle"><%= icon("video") %><span>No candidate is live right now. Live exams and interviews appear here.</span></div>
         <% end %>
-      </ul>
-    </div>
+        <ul class="timeline live-feed" id="dashboard-feed">
+          <% if @feed.any? %>
+            <%= render partial: "proctor_events/proctor_event", collection: @feed, locals: { show_candidate: true } %>
+          <% else %>
+            <li class="muted small" id="feed-empty">Activity from candidates will stream here.</li>
+          <% end %>
+        </ul>
+        <%= link_to live_monitor_path, class: "rt-box" do %>
+          <%= icon("activity") %>
+          <div><b>Monitoring in real-time</b><small><%= @alerts_today.zero? ? "AI-powered proctoring for fair & secure exams" : "#{pluralize(@alerts_today, 'warning')} today" %></small></div>
+          <span class="rt-shield"><%= icon("shield") %></span>
+        <% end %>
+      </div>
+    </section>
 
-  </div>
+    <section class="sunset-card" aria-hidden="true">
+      <svg viewBox="0 0 300 150" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="ss-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8ec5e8"/><stop offset=".55" stop-color="#fde2b0"/><stop offset="1" stop-color="#fbbf77"/></linearGradient>
+          <radialGradient id="ss-sun" cx=".7" cy=".62" r=".35"><stop offset="0" stop-color="#fff7d6"/><stop offset=".25" stop-color="#ffe29a" stop-opacity=".9"/><stop offset="1" stop-color="#ffe29a" stop-opacity="0"/></radialGradient>
+        </defs>
+        <rect width="300" height="150" fill="url(#ss-sky)"/>
+        <rect width="300" height="150" fill="url(#ss-sun)"/>
+        <path d="M0 100 60 70l40 18 50-34 46 30 40-20 64 30v56H0z" fill="#6b8f9e" opacity=".55"/>
+        <path d="M0 116 50 96l46 14 58-26 52 24 40-12 54 20v34H0z" fill="#3f6b5a" opacity=".8"/>
+        <path d="M0 132c60-14 120-18 180-10s90 8 120 2v26H0z" fill="#24493b"/>
+      </svg>
+      <span>Great Interviews<br>Build<br>Great Careers</span>
+    </section>
+  </aside>
 </div>
