@@ -56,14 +56,38 @@ function beep(freq, start, { duration = 0.14, volume = 0.16 } = {}) {
   osc.stop(start + duration + 0.01)
 }
 
-// Warning alarm (candidate + HR / panel): the original triple "beep-beep-beep".
+// A quick rising "whoop": urgent like the old siren, but short and smooth instead of a wailing siren.
+function whoop(start, { from = 620, to = 1180, duration = 0.28, volume = 0.2 } = {}) {
+  const c = audioContext()
+  const gain = c.createGain()
+  gain.gain.setValueAtTime(0, start)
+  gain.gain.linearRampToValueAtTime(volume, start + 0.02)
+  gain.gain.setValueAtTime(volume, start + duration - 0.05)
+  gain.gain.linearRampToValueAtTime(0, start + duration)
+  gain.connect(c.destination)
+  ;[ [ "triangle", 1 ], [ "sine", 2 ] ].forEach(([ type, mult ]) => {
+    const osc = c.createOscillator()
+    const level = c.createGain()
+    osc.type = type
+    osc.frequency.setValueAtTime(from * mult, start)
+    osc.frequency.exponentialRampToValueAtTime(to * mult, start + duration)
+    level.gain.value = mult === 1 ? 1 : 0.2 // a little overtone so it cuts through
+    osc.connect(level).connect(gain)
+    osc.start(start)
+    osc.stop(start + duration + 0.02)
+  })
+}
+
+// Warning alarm (candidate + HR / panel): "whoop-whoop-beep", under a second.
 // Serious warnings play it twice.
 export function alarm({ rounds = 1 } = {}) {
   const c = ready()
   let t = c.currentTime + 0.02
   for (let r = 0; r < rounds; r++) {
-    for (let i = 0; i < 3; i++) beep(988, t + i * 0.22) // B5
-    t += 0.9
+    whoop(t)
+    whoop(t + 0.32)
+    beep(1175, t + 0.66, { duration: 0.16, volume: 0.14 }) // D6
+    t += 1.1
   }
 }
 
