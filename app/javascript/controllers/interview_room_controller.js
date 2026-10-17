@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 import { cable } from "@hotwired/turbo-rails"
 import { ICE_SERVERS, newViewerId } from "lib/live_video"
 import { getStream, screenShareSupported, getScreenStream, requestScreen } from "lib/media"
-import { warningBeep, chime } from "lib/sound"
+import { alarm, chime } from "lib/sound"
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
 
@@ -268,7 +268,7 @@ export default class extends Controller {
 
   // Proctoring alert from the candidate's browser: banner + beep + red flash on their tile.
   showAlert(alert) {
-    warningBeep()
+    alarm({ rounds: alert.severity === "critical" ? 2 : 1 })
     const item = document.createElement("div")
     item.className = `it-alert sev-${alert.severity}`
     item.innerHTML = `<b>⚠ ${esc(alert.title)}</b>${alert.message ? `<span>${esc(alert.message)}</span>` : ""}${alert.snapshot_url ? `<img src="${esc(alert.snapshot_url)}" alt="">` : ""}`

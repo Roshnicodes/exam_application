@@ -40,12 +40,38 @@ function bell(freq, start, { duration = 0.6, volume = 0.16, type = "sine" } = {}
   })
 }
 
-// Candidate warning: a gentle two-note "ding-dong".
-export function warningBeep() {
+// A short, loud electronic beep (square wave, softened by a filter so it is clear but not piercing).
+function beep(freq, start, { duration = 0.16, volume = 0.32 } = {}) {
+  const c = audioContext()
+  const osc = c.createOscillator()
+  const filter = c.createBiquadFilter()
+  const gain = c.createGain()
+  osc.type = "square"
+  osc.frequency.value = freq
+  filter.type = "lowpass"
+  filter.frequency.value = 2600
+  gain.gain.setValueAtTime(0.0001, start)
+  gain.gain.exponentialRampToValueAtTime(volume, start + 0.01)
+  gain.gain.setValueAtTime(volume, start + duration - 0.03)
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration)
+  osc.connect(filter).connect(gain).connect(c.destination)
+  osc.start(start)
+  osc.stop(start + duration + 0.02)
+}
+
+// Warning alarm: a clear "beep-beep-beep" that can't be missed (candidate + HR / panel).
+export function alarm({ rounds = 1 } = {}) {
   const c = ready()
-  const t = c.currentTime + 0.02
-  bell(1318.5, t, { duration: 0.45, volume: 0.18, type: "triangle" }) // E6
-  bell(1046.5, t + 0.28, { duration: 0.7, volume: 0.16, type: "triangle" }) // C6
+  let t = c.currentTime + 0.02
+  for (let r = 0; r < rounds; r++) {
+    for (let i = 0; i < 3; i++) beep(i === 2 ? 1175 : 988, t + i * 0.22) // B5 B5 D6
+    t += 0.95
+  }
+}
+
+// Candidate warning (kept as a name used across the app).
+export function warningBeep() {
+  alarm()
 }
 
 // OTP request / normal alert for HR: a soft modern phone ring (two short trills).

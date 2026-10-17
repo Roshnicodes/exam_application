@@ -1720,3 +1720,10 @@ a:hover { color: var(--brand); }
 .code-review:last-child { border-bottom: 0; }
 .code-review pre { margin: .5rem 0 0; max-height: 360px; overflow: auto; padding: .8rem 1rem; border-radius: 12px; background: #0b1220; color: #e2e8f0; font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; }
 @media (min-width: 900px) { .it-room.chat-open:not(.test-call) .it-stage { padding-right: calc(330px + 1.2rem); } }
+
+/* call card on the candidate / watch page: an ordinary block, never sticky over the next cards */
+.it-room.test-call .it-stage { position: relative; top: auto; }
+.it-room.test-call:not(.chat-open) .it-grid[data-count="1"] { grid-template-columns: minmax(0, 340px); }
+.it-room.test-call .it-controls { gap: .45rem; }
+.it-room.test-call .it-btn { padding: .6rem .9rem; font-size: .8rem; }
+#test-call .card-body { padding: .8rem; }

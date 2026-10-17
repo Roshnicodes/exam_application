@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { cable } from "@hotwired/turbo-rails"
-import { phoneRing, siren, chime, unlockAudio } from "lib/sound"
+import { phoneRing, chime, unlockAudio, alarm } from "lib/sound"
 
 const ICONS = {
   alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/>',
@@ -26,10 +26,12 @@ export default class extends Controller {
     })
     this.onClick = (e) => { if (e.target.closest("#sound-toggle")) this.toggleSound() }
     this.onLoad = () => { this.renderToggle(); this.setLive(this.live) }
+    // browsers only allow sound after a click / key press on the page: unlock on the first one
     this.unlockOnce = () => { if (this.soundOn) unlockAudio() }
     document.addEventListener("click", this.onClick)
     document.addEventListener("turbo:load", this.onLoad)
-    document.addEventListener("pointerdown", this.unlockOnce, { once: true })
+    document.addEventListener("pointerdown", this.unlockOnce)
+    document.addEventListener("keydown", this.unlockOnce)
     this.renderToggle()
   }
 
@@ -37,6 +39,8 @@ export default class extends Controller {
     this.subscription?.then?.((s) => s.unsubscribe())
     document.removeEventListener("click", this.onClick)
     document.removeEventListener("turbo:load", this.onLoad)
+    document.removeEventListener("pointerdown", this.unlockOnce)
+    document.removeEventListener("keydown", this.unlockOnce)
   }
 
   async toggleSound() {
@@ -51,7 +55,7 @@ export default class extends Controller {
   }
 
   readPref() {
-    try { return localStorage.getItem("hr-sound") === "1" } catch { return false }
+    try { return localStorage.getItem("hr-sound") !== "0" } catch { return true } // on unless HR turned it off
   }
 
   renderToggle() {
@@ -75,8 +79,7 @@ export default class extends Controller {
     if (data.violation) this.bumpBell()
     if (this.soundOn && important && this.mayPlaySound()) {
       if (data.kind === "otp_requested") phoneRing({ times: 2 })
-      else if (data.severity === "critical" || data.kind === "exam_terminated") siren()
-      else phoneRing({ times: 1 })
+      else alarm({ rounds: data.severity === "critical" || data.kind === "exam_terminated" ? 2 : 1 })
     }
 
     if (data.kind === "otp_requested") this.showOtp(data)

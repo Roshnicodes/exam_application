@@ -26,6 +26,8 @@ const MESSAGES = {
 }
 const COOLDOWN = { eyes_away: 10000, phone_detected: 15000, looking_away: 10000, face_movement: 10000, no_face: 12000, noise: 45000, multiple_faces: 12000, window_blur: 8000, default: 6000 }
 const SEGMENT_MS = 60_000
+const GLANCE_MS = 3_000 // looking away (any direction) longer than this = a warning
+const AWAY_TOTAL_MS = 30_000 // or looking away this long in total within a minute (many short glances)
 const SNAPSHOT_MS = 30_000
 
 // Watches the candidate: camera recording, face detection, focus / full screen / keyboard activity.
@@ -345,20 +347,31 @@ export default class extends Controller {
     let away = null
     if (yaw !== null) {
       const dy = yaw - base.yaw
-      if (Math.abs(dy) > 0.3) away = dy > 0 ? "Head turned left" : "Head turned right" // camera image is not mirrored
+      if (Math.abs(dy) > 0.22) away = dy > 0 ? "Head turned left" : "Head turned right" // camera image is not mirrored
     }
     if (!away && pitch !== null) {
       const dp = pitch - base.pitch
-      if (dp > 0.2) away = "Looking down"
-      else if (dp < -0.2) away = "Looking up"
+      if (dp > 0.16) away = "Looking down"
+      else if (dp < -0.16) away = "Looking up"
     }
-    p.awayStreak = away ? p.awayStreak + 1 : 0
-    if (p.awayStreak >= 3) this.violation("looking_away", away) // ~2s
 
-    // 2b. eyes looking down / sideways / closed while the head stays still (e.g. a phone in the lap)
+    // 2b. eyes looking down / left / right / up / closed while the head stays still (e.g. a phone in the lap)
     const eyes = !away && face.gaze ? this.checkGaze(face.gaze, p.baseline) : null
-    p.gazeStreak = eyes ? p.gazeStreak + 1 : 0
-    if (p.gazeStreak >= 3) this.violation("eyes_away", eyes) // ~2s
+    const now = Date.now()
+
+    // a look away lasting longer than GLANCE_MS is a warning (repeats while it continues, see COOLDOWN)
+    p.awaySince = away ? (p.awaySince || now) : null
+    p.eyesSince = eyes ? (p.eyesSince || now) : null
+    if (away && now - p.awaySince >= GLANCE_MS) this.violation("looking_away", `${away} for ${Math.round((now - p.awaySince) / 1000)}s`)
+    if (eyes && now - p.eyesSince >= GLANCE_MS) this.violation("eyes_away", `${eyes} for ${Math.round((now - p.eyesSince) / 1000)}s`)
+
+    // many short glances add up: AWAY_TOTAL_MS of looking away within the last minute
+    p.awayTicks = (p.awayTicks || []).filter((t) => now - t < 60_000)
+    if (away || eyes) p.awayTicks.push(now)
+    if (p.awayTicks.length * 700 >= AWAY_TOTAL_MS) {
+      p.awayTicks = []
+      this.violation("looking_away", "Looked away from the screen for 30+ seconds in the last minute")
+    }
 
     // 3. face leaving the frame
     const atEdge = b.x < 0.01 || b.y < 0.01 || b.x + b.w > 0.99 || b.y + b.h > 0.99 || Math.abs(cx - 0.5) > 0.3
@@ -366,7 +379,6 @@ export default class extends Controller {
     if (p.edgeStreak >= 3) this.violation("face_movement", "Moving out of the camera frame")
 
     // 4. lots of sudden movement (3 big jumps within 6s)
-    const now = Date.now()
     if (p.last) {
       const jump = Math.hypot(cx - p.last.cx, cy - p.last.cy) + Math.abs(b.w - p.last.w)
       if (jump > 0.09) p.moves.push(now)
@@ -392,10 +404,10 @@ export default class extends Controller {
     }
     if (g.closed > 0.6 && g.down > 0.25) return "Eyes looking down"
     if (g.closed > 0.75) return "Eyes closed"
-    if (g.down > 0.45 && g.down - base("down") > 0.22) return "Eyes looking down"
-    if (g.left > 0.5 && g.left - base("left") > 0.25) return "Eyes looking left"
-    if (g.right > 0.5 && g.right - base("right") > 0.25) return "Eyes looking right"
-    if (g.up > 0.55 && g.up - base("up") > 0.25) return "Eyes looking up"
+    if (g.down > 0.4 && g.down - base("down") > 0.2) return "Eyes looking down"
+    if (g.left > 0.32 && g.left - base("left") > 0.18) return "Eyes looking left"
+    if (g.right > 0.32 && g.right - base("right") > 0.18) return "Eyes looking right"
+    if (g.up > 0.35 && g.up - base("up") > 0.18) return "Eyes looking up"
     return null
   }
 
