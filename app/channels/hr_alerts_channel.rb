@@ -11,6 +11,7 @@ class HrAlertsChannel < ApplicationCable::Channel
       id: event.id,
       kind: event.kind,
       severity: event.severity,
+      violation: event.violation?,
       title: event.label,
       message: event.message,
       candidate: invitation.candidate_name,

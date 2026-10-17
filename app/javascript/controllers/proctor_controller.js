@@ -207,7 +207,7 @@ export default class extends Controller {
     if (!this.active) return
     if (!detector) {
       this.setFace("idle", "Face detection unavailable")
-      return this.report("detector_unavailable")
+      return this.reportDetectorOnce()
     }
 
     let noFaceSince = null
@@ -220,7 +220,7 @@ export default class extends Controller {
         this.detectFailures = (this.detectFailures || 0) + 1
         if (this.detectFailures === 5) {
           this.setFace("idle", "Face detection error")
-          this.report("detector_unavailable", "Detection keeps failing on this device")
+          this.reportDetectorOnce("Detection keeps failing on this device")
         }
         return
       }
@@ -361,6 +361,13 @@ export default class extends Controller {
         busy = false
       }
     }, 1500)
+  }
+
+  // Tell HR (once per page) that this device can't run face detection.
+  reportDetectorOnce(message) {
+    if (this.detectorReported) return
+    this.detectorReported = true
+    this.report("detector_unavailable", message)
   }
 
   setFace(state, text) {

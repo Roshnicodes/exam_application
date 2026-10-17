@@ -8,8 +8,10 @@ development:
 test:
   adapter: test
 
+# One Puma process serves everything, so in-memory "async" is fastest and keeps live-video
+# frames out of the database. Set CABLE_ADAPTER=solid_cable when running several processes.
 production:
-  adapter: solid_cable
+  adapter: <%= ENV.fetch("CABLE_ADAPTER", "async") %>
   connects_to:
     database:
       writing: cable

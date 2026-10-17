@@ -147,6 +147,24 @@ module ApplicationHelper
     end.to_s
   end
 
+  # WebRTC servers for live video / interviews. Public STUN always; our TURN relay when configured:
+  #   TURN_URLS="turn:64.227.162.55:3478,turn:64.227.162.55:3478?transport=tcp"
+  #   TURN_SECRET=<coturn static-auth-secret>  -> short-lived credentials (12 h), or
+  #   TURN_USERNAME / TURN_PASSWORD             -> fixed credentials
+  def ice_servers
+    servers = [ { urls: %w[stun:stun.l.google.com:19302 stun:stun.cloudflare.com:3478] } ]
+    urls = ENV["TURN_URLS"].to_s.split(",").map(&:strip).compact_blank
+    return servers if urls.empty?
+
+    if ENV["TURN_SECRET"].present?
+      username = "#{12.hours.from_now.to_i}:hireproctor"
+      credential = Base64.strict_encode64(OpenSSL::HMAC.digest("sha1", ENV["TURN_SECRET"], username))
+      servers << { urls: urls, username: username, credential: credential }
+    else
+      servers << { urls: urls, username: ENV["TURN_USERNAME"], credential: ENV["TURN_PASSWORD"] }
+    end
+  end
+
   def initials_for(name)
     name.to_s.split.map(&:first).first(2).join.upcase.presence || "?"
   end

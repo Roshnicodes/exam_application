@@ -2,7 +2,15 @@
 // viewer (HR / panelist) directly; Action Cable (LiveVideoChannel) only relays set-up messages.
 import { cable } from "@hotwired/turbo-rails"
 
-export const ICE_SERVERS = [ { urls: [ "stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302", "stun:stun.cloudflare.com:3478" ] } ]
+// STUN + (when configured on the server) our TURN relay, from <meta name="ice-servers">.
+// TURN lets video through networks that block direct connections (mobile data, offices).
+export const ICE_SERVERS = (() => {
+  try {
+    const list = JSON.parse(document.querySelector("meta[name='ice-servers']")?.content || "[]")
+    if (list.length) return list
+  } catch {}
+  return [ { urls: [ "stun:stun.l.google.com:19302", "stun:stun.cloudflare.com:3478" ] } ]
+})()
 const VIDEO_BITRATE = 400_000 // keeps the candidate's upload light even with several viewers
 
 // Candidate side: answers every viewer that joins with an offer carrying the camera + mic.
@@ -10,6 +18,7 @@ export class Broadcaster {
   constructor(token) {
     this.token = token
     this.peers = new Map() // viewer_id -> { pc, pending: [] }
+    this.frameViewers = new Set() // viewers on the backup (frames) view
   }
 
   async start(stream) {
@@ -31,8 +40,41 @@ export class Broadcaster {
 
   received(message) {
     if (message.type === "viewer-joined") this.offer(message.viewer_id)
-    else if (message.type === "viewer-left") this.close(message.viewer_id)
+    else if (message.type === "viewer-left") { this.close(message.viewer_id); this.stopFramesFor(message.viewer_id) }
     else if (message.type === "signal") this.signal(message.viewer_id, message.data)
+    else if (message.type === "frames-on") this.startFramesFor(message.viewer_id)
+  }
+
+  // ---- backup view: ~1 JPEG per second while someone can't get direct video ----
+  startFramesFor(viewerId) {
+    this.frameViewers.add(viewerId)
+    if (this.frameTimer) return
+    this.frameVideo = document.createElement("video")
+    this.frameVideo.muted = true
+    this.frameVideo.playsInline = true
+    this.frameVideo.srcObject = this.stream
+    this.frameVideo.play().catch(() => {})
+    this.frameCanvas = document.createElement("canvas")
+    this.frameTimer = setInterval(() => this.sendFrame(), 1000)
+  }
+
+  stopFramesFor(viewerId) {
+    this.frameViewers.delete(viewerId)
+    if (this.frameViewers.size === 0 && this.frameTimer) {
+      clearInterval(this.frameTimer)
+      this.frameTimer = null
+    }
+  }
+
+  sendFrame() {
+    const v = this.frameVideo
+    if (!v || v.readyState < 2 || !this.subscription) return
+    const w = 320
+    const h = Math.round(w * (v.videoHeight / v.videoWidth || 0.75))
+    this.frameCanvas.width = w
+    this.frameCanvas.height = h
+    this.frameCanvas.getContext("2d").drawImage(v, 0, 0, w, h)
+    this.subscription.perform("frame", { image: this.frameCanvas.toDataURL("image/jpeg", 0.55) })
   }
 
   async offer(viewerId) {
@@ -82,6 +124,8 @@ export class Broadcaster {
   }
 
   stop() {
+    clearInterval(this.frameTimer)
+    this.frameTimer = null
     this.peers.forEach((_, id) => this.close(id))
     this.subscription?.unsubscribe()
     this.subscription = null

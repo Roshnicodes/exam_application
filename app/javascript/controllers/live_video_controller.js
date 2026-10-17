@@ -4,7 +4,7 @@ import { ICE_SERVERS, newViewerId } from "lib/live_video"
 
 // Viewer side (HR / panelist): shows the candidate's live camera, like a video call.
 export default class extends Controller {
-  static targets = [ "video", "status", "sound" ]
+  static targets = [ "video", "status", "sound", "frame" ]
   static values = { invitationId: Number, watchToken: String }
 
   async connect() {
@@ -23,6 +23,7 @@ export default class extends Controller {
 
   disconnect() {
     clearTimeout(this.offlineTimer)
+    clearTimeout(this.fallbackTimer)
     this.closePeer()
     this.subscription?.unsubscribe()
   }
@@ -36,11 +37,13 @@ export default class extends Controller {
   }
 
   received(message) {
+    if (message.type === "frame") return this.showFrame(message.image)
     if (message.type === "candidate-ready") {
       this.subscription.perform("hello")
       this.waitForCandidate()
     } else if (message.type === "candidate-left") {
       this.closePeer()
+      this.hideFrame()
       this.setStatus("offline", "Candidate left the exam")
     } else if (message.type === "signal") {
       this.signal(message.data)
@@ -52,15 +55,19 @@ export default class extends Controller {
       this.closePeer()
       const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS })
       this.pc = pc
+      // no direct video within 10s (blocked network) -> switch to the backup frames
+      clearTimeout(this.fallbackTimer)
+      this.fallbackTimer = setTimeout(() => { if (!this.live) this.useFrames() }, 10000)
       pc.ontrack = (e) => {
         this.videoTarget.srcObject = e.streams[0]
         this.videoTarget.play().catch(() => {})
         this.live = true
+        this.hideFrame()
         this.setStatus("live", "LIVE")
       }
       pc.onicecandidate = (e) => e.candidate && this.subscription.perform("signal", { data: { candidate: e.candidate.toJSON() } })
       pc.onconnectionstatechange = () => {
-        if (pc.connectionState === "failed") this.setStatus("offline", "Connection failed — the network may be blocking video")
+        if (pc.connectionState === "failed") { this.live = false; this.useFrames() }
         if (pc.connectionState === "disconnected") this.setStatus("connecting", "Reconnecting…")
         if (pc.connectionState === "connected") this.setStatus("live", "LIVE")
       }
@@ -72,6 +79,33 @@ export default class extends Controller {
       if (this.pc?.remoteDescription) await this.pc.addIceCandidate(data.candidate).catch(() => {})
       else this.pending.push(data.candidate)
     }
+  }
+
+  // Backup view over the websocket: works on any network, ~1 picture per second, no audio.
+  useFrames() {
+    if (this.usingFrames) return
+    this.usingFrames = true
+    this.subscription?.perform("want_frames")
+    this.setStatus("connecting", "Switching to backup view…")
+  }
+
+  showFrame(image) {
+    if (this.live || !this.usingFrames) return
+    if (!this.hasFrameTarget) {
+      const img = document.createElement("img")
+      img.className = "lv-frame"
+      img.alt = "Candidate camera (backup view)"
+      img.dataset.liveVideoTarget = "frame"
+      this.element.prepend(img)
+    }
+    this.frameTarget.src = image
+    this.frameTarget.hidden = false
+    this.setStatus("live", "LIVE · backup view")
+  }
+
+  hideFrame() {
+    this.usingFrames = false
+    if (this.hasFrameTarget) this.frameTarget.hidden = true
   }
 
   toggleSound() {

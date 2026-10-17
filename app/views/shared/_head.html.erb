@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <meta name="action-cable-url" content="<%= request.script_name %>/cable">
+<meta name="ice-servers" content="<%= ice_servers.to_json %>">
 <link rel="icon" href="<%= request.script_name %>/icon.svg" type="image/svg+xml">
 <link rel="icon" href="<%= request.script_name %>/icon.png" type="image/png">
 <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>

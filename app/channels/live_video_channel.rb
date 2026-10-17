@@ -43,6 +43,19 @@ class LiveVideoChannel < ApplicationCable::Channel
     to_candidate(type: "viewer-joined", viewer_id: @viewer_id) if @role == "viewer"
   end
 
+  # Viewer couldn't get a direct video connection: ask the candidate for backup frames.
+  def want_frames(_data = nil)
+    to_candidate(type: "frames-on", viewer_id: @viewer_id) if @role == "viewer"
+  end
+
+  # Backup live view: one small JPEG per second from the candidate, relayed over this websocket.
+  def frame(data)
+    image = data["image"].to_s
+    return unless @role == "candidate" && image.start_with?("data:image/jpeg;base64,") && image.bytesize < 200_000
+
+    to_viewers(type: "frame", image: image)
+  end
+
   # Relays an SDP description or ICE candidate to the other side.
   def signal(data)
     payload = data["data"]

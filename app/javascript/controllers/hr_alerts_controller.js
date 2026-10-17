@@ -69,24 +69,33 @@ export default class extends Controller {
   }
 
   received(data) {
-    const critical = [ "critical", "high" ].includes(data.severity)
-    if (this.soundOn) {
+    // Sound only for things HR must act on: a cheating warning, an OTP request, a terminated exam.
+    // Everything else (exam started, submitted, verified…) is a silent toast.
+    const important = data.violation || data.kind === "otp_requested" || data.kind === "exam_terminated"
+    if (this.soundOn && important && this.mayPlaySound()) {
       if (data.kind === "otp_requested") phoneRing({ times: 2 })
       else if (data.severity === "critical" || data.kind === "exam_terminated") siren()
-      else if (critical || data.severity === "medium") phoneRing({ times: 1 })
-      else chime()
+      else phoneRing({ times: 1 })
     }
 
     if (data.kind === "otp_requested") this.showOtp(data)
     else this.toast(data)
 
-    this.browserNotify(data)
+    if (important) this.browserNotify(data)
     this.prependFeed(data)
     this.flashTile(data)
     this.bumpTitle()
   }
 
   // One popup that collects every pending OTP, newest on top, so a whole batch can be read out.
+  // At most one alert sound every 4 seconds, so a burst of events doesn't keep ringing.
+  mayPlaySound() {
+    const now = Date.now()
+    if (now - (this.lastSound || 0) < 4000) return false
+    this.lastSound = now
+    return true
+  }
+
   showOtp(data) {
     let el = document.getElementById("otp-modal")
     if (!el) {
