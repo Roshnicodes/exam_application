@@ -43,6 +43,7 @@
     <% end %>
     <%= render "interview_rounds/list", invitation: @invitation %>
     <%= render "interview_feedbacks/summary", invitation: @invitation %>
+    <%= render "invitations/call_chat", invitation: @invitation %>
 
     <div class="card">
       <div class="card-head"><h2><%= icon("bell") %> Proctoring timeline</h2><span class="pill"><span class="live-dot"></span> Live</span></div>

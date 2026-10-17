@@ -58,6 +58,7 @@ module ApplicationHelper
     "key" => '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/>',
     "leaf" => '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
     "chevron-down" => '<path d="m6 9 6 6 6-6"/>',
+    "message" => '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
     "arrow-up" => '<path d="M12 19V5M5 12l7-7 7 7"/>',
     "arrow-down" => '<path d="M12 5v14M19 12l-7 7-7-7"/>',
     "trending-up" => '<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',

@@ -60,6 +60,7 @@
           <button type="button" class="it-btn" data-interview-room-target="micBtn" data-action="interview-room#toggleMic"><%= icon("mic") %><span>Mute</span></button>
           <button type="button" class="it-btn" data-interview-room-target="camBtn" data-action="interview-room#toggleCam"><%= icon("video") %><span>Stop video</span></button>
         <% end %>
+        <button type="button" class="it-btn it-chat-btn" data-interview-room-target="chatBtn" data-action="interview-room#toggleChat"><%= icon("message") %><span>Chat</span><b class="it-unread hidden" data-interview-room-target="unread">0</b></button>
         <span class="it-count" data-interview-room-target="count">1 in the room</span>
         <% if round&.meeting_link.present? %>
           <a class="it-btn" href="<%= round.meeting_link %>" target="_blank" rel="noopener" title="Open the external meeting link"><%= icon("link") %><span>Meet / Zoom</span></a>
@@ -68,6 +69,16 @@
           <button type="button" class="it-btn leave" data-action="interview-room#leave"><%= icon("x") %><span><%= test_call ? "Leave call" : "Leave" %></span></button>
         <% end %>
       </div>
+      <section class="it-chat hidden" data-interview-room-target="chat">
+        <header><b><%= icon("message") %> <%= local_assigns[:token] ? "Chat with the panel" : "Chat with everyone" %></b><button type="button" class="it-chat-x" data-action="interview-room#toggleChat" aria-label="Close chat">×</button></header>
+        <ol class="it-msgs" data-interview-room-target="messages">
+          <li class="it-msg-empty"><%= local_assigns[:token] ? "Questions from the panel appear here. Type your answer below." : "Type a question — the candidate sees it instantly and can answer here." %></li>
+        </ol>
+        <form class="it-chat-form" data-action="submit->interview-room#sendChat">
+          <textarea rows="1" maxlength="2000" placeholder="<%= local_assigns[:token] ? 'Type your answer…' : 'Type a question or message…' %>" data-interview-room-target="chatInput" data-action="keydown->interview-room#chatKey"></textarea>
+          <button class="it-send" aria-label="Send"><%= icon("send") %></button>
+        </form>
+      </section>
     </div>
     <% if local_assigns[:side] %><aside class="it-side"><%= side %></aside><% end %>
     <%= local_assigns[:extra] %>

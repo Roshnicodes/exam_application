@@ -8,6 +8,7 @@ class InterviewRound < ApplicationRecord
   has_many :interview_round_panelists, dependent: :destroy
   has_many :assigned_panelists, through: :interview_round_panelists, source: :employee
   has_many :interview_feedbacks, -> { order(:created_at) }, dependent: :destroy
+  has_many :call_messages, -> { chronological }, dependent: :destroy
 
   normalizes :name, with: ->(v) { v.to_s.squish }
 

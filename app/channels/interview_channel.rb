@@ -32,6 +32,7 @@ class InterviewChannel < ApplicationCable::Channel
       @name = @role == "hr" ? current_user.name : params[:name].to_s.squish.first(60).presence || "Panelist"
     end
 
+    @invitation = @round.invitation
     @room = "interview_round:#{@round.id}"
     enter
   end
@@ -46,6 +47,15 @@ class InterviewChannel < ApplicationCable::Channel
     return if to.blank? || !data["data"].is_a?(Hash)
 
     ActionCable.server.broadcast(peer_stream(to), { type: "signal", from: me, data: data["data"] })
+  end
+
+  # Chat in the call (questions typed by the panel, answers from the candidate). Saved for HR to review.
+  def chat(data)
+    body = data["body"].to_s.strip.first(2000)
+    return if body.blank?
+
+    message = @invitation.call_messages.create!(interview_round: @round, sender_name: @name, sender_role: @role, body: body)
+    ActionCable.server.broadcast(room, { type: "chat", message: message.as_chat, from: @peer_id })
   end
 
   # Mic / camera on-off so others can show the right icons.
@@ -68,6 +78,7 @@ class InterviewChannel < ApplicationCable::Channel
         @role = params[:watch_token].blank? ? "hr" : "panelist"
         @name = @role == "hr" ? current_user.name : params[:name].to_s.squish.first(60).presence || "Panelist"
       end
+      @invitation = invitation
       @room = "test_call:#{invitation.id}"
       enter
     end
@@ -76,6 +87,9 @@ class InterviewChannel < ApplicationCable::Channel
       stream_from room
       stream_from peer_stream(@peer_id)
       ActionCable.server.broadcast(room, { type: "peer-joined", peer: me })
+      history = @invitation.call_messages.where(interview_round: @round).last(100)
+      mine = ->(m) { m.sender_name == @name && m.sender_role == @role }
+      transmit({ type: "chat-history", messages: history.map { |m| m.as_chat.merge(mine: mine.(m)) } })
     end
 
     def me

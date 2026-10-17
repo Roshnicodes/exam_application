@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 import { cable } from "@hotwired/turbo-rails"
 import { ICE_SERVERS, newViewerId } from "lib/live_video"
 import { getStream, screenShareSupported, getScreenStream, requestScreen } from "lib/media"
-import { warningBeep } from "lib/sound"
+import { warningBeep, chime } from "lib/sound"
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
 
@@ -11,13 +11,14 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 // candidate's exam page is always waiting in the room and the call pops up as soon as someone joins.
 export default class extends Controller {
   static targets = [ "grid", "localVideo", "micBtn", "camBtn", "status", "nameInput", "joinPanel", "room", "count",
-                     "screenGate", "screenError", "alerts", "tap" ]
+                     "screenGate", "screenError", "alerts", "tap", "chat", "chatBtn", "unread", "messages", "chatInput" ]
   static values = { roundId: Number, invitationId: Number, test: Boolean, token: String, watchToken: String, name: String,
                     needsName: Boolean, leaveUrl: String }
 
   connect() {
     this.peers = new Map() // peerId -> { pc, pending, tile, name, role, screenStreamId, screenTile }
     this.peerId = newViewerId()
+    this.unread = 0
     if (this.testValue) {
       if (this.candidate) this.join() // waits quietly; the call opens when HR / a panelist joins
       return
@@ -126,6 +127,8 @@ export default class extends Controller {
   }
 
   received(message) {
+    if (message.type === "chat-history") return this.showHistory(message.messages)
+    if (message.type === "chat") return this.addMessage(message.message, message.from === this.peerId, true)
     if (message.type === "peer-joined" && message.peer.id !== this.peerId) {
       if (this.candidate) this.connectTo(message.peer, true) // the candidate always calls
       else if (message.peer.role === "candidate") this.send(message.peer.id, { hello: true }) // ask the candidate to call us
@@ -263,6 +266,67 @@ export default class extends Controller {
 
   send(to, data) {
     this.subscription?.perform("signal", { to, data })
+  }
+
+  // ---- Chat: the panel types questions, the candidate answers ---------------
+  toggleChat(force) {
+    const open = typeof force === "boolean" ? force : this.chatTarget.classList.contains("hidden")
+    this.chatTarget.classList.toggle("hidden", !open)
+    this.chatBtnTarget.classList.toggle("active", open)
+    this.element.classList.toggle("chat-open", open)
+    if (open) {
+      this.setUnread(0)
+      this.scrollChat()
+      if (typeof force !== "boolean") this.chatInputTarget.focus({ preventScroll: true }) // opened by hand
+    }
+  }
+
+  chatKey(event) {
+    if (event.key === "Enter" && !event.shiftKey) this.sendChat(event)
+  }
+
+  sendChat(event) {
+    event.preventDefault()
+    const body = this.chatInputTarget.value.trim()
+    if (!body || !this.subscription) return
+    this.subscription.perform("chat", { body })
+    this.chatInputTarget.value = ""
+  }
+
+  showHistory(messages) {
+    this.messagesTarget.querySelectorAll(".it-msg").forEach((li) => li.remove())
+    messages.forEach((m) => this.addMessage(m, m.mine, false))
+  }
+
+  addMessage(m, mine, live) {
+    this.messagesTarget.querySelector(".it-msg-empty")?.remove()
+    const li = document.createElement("li")
+    li.className = `it-msg role-${m.role} ${mine ? "mine" : ""}`
+    const time = new Date(m.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    const role = { candidate: "Candidate", hr: "HR", panelist: "Panelist" }[m.role] || ""
+    li.innerHTML = `<div class="it-msg-meta"><b>${esc(mine ? "You" : m.name)}</b><em>${esc(role)}</em><span>${esc(time)}</span></div><p>${esc(m.body)}</p>`
+    this.messagesTarget.append(li)
+    this.scrollChat()
+    if (!live || mine) return
+    if (this.candidate) {
+      // a question for the candidate: open the call window and the chat so it can't be missed
+      this.element.classList.remove("minimized")
+      this.toggleChat(true)
+      chime()
+    } else if (this.chatTarget.classList.contains("hidden")) {
+      this.setUnread(this.unread + 1)
+      chime()
+    }
+  }
+
+  setUnread(n) {
+    this.unread = n
+    this.unreadTarget.textContent = n
+    this.unreadTarget.classList.toggle("hidden", n === 0)
+  }
+
+  scrollChat() {
+    this.messagesTarget.scrollTop = this.messagesTarget.scrollHeight
   }
 
   // Browsers can block sound until the page is clicked; offer a button and retry on the next click / key.

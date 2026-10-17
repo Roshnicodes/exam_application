@@ -1,0 +1,18 @@
+<%# Chat typed in the video calls (online test + interview rounds), for HR to review. locals: invitation: %>
+<% messages = invitation.call_messages.includes(:interview_round).to_a %>
+<% if messages.any? %>
+  <div class="card">
+    <div class="card-head"><h2><%= icon("message") %> Call chat</h2><span class="tiny muted"><%= pluralize(messages.size, "message") %></span></div>
+    <div class="chat-log scroll-y" style="max-height:420px">
+      <% messages.group_by(&:interview_round).each do |round, list| %>
+        <div class="chat-log-round"><%= round ? round.name : "Online test call" %></div>
+        <% list.each do |m| %>
+          <div class="it-msg role-<%= m.sender_role %>">
+            <div class="it-msg-meta"><b><%= m.sender_name %></b><em><%= CallMessage::ROLES[m.sender_role] %></em><span><%= m.created_at.strftime("%d %b, %-I:%M %p") %></span></div>
+            <p><%= m.body %></p>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+<% end %>
