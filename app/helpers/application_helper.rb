@@ -112,7 +112,8 @@ module ApplicationHelper
     GRADIENTS[Zlib.crc32(text.to_s.downcase) % GRADIENTS.size].first
   end
 
-  # Opens WhatsApp straight on the person's chat (api.whatsapp.com works on desktop + phone).
+  # Opens WhatsApp straight on the person's chat: WhatsApp Web in one reused tab on a computer,
+  # the WhatsApp app on a phone (see whatsapp_controller.js).
   # Indian 10-digit numbers get the 91 prefix. Without a number the button asks for one.
   def whatsapp_button(phone, text, label: "WhatsApp", css: "btn btn-light btn-sm", title: nil)
     digits = phone.to_s.gsub(/\D/, "")
@@ -120,7 +121,8 @@ module ApplicationHelper
     content = safe_join([ icon("whatsapp"), (" #{label}" if label.present?) ].compact)
     if digits.length >= 11
       link_to content, "https://api.whatsapp.com/send?#{{ phone: digits, text: text }.to_query}",
-              class: css, target: "_blank", rel: "noopener", title: title || "WhatsApp +#{digits}"
+              class: css, target: "_blank", rel: "noopener", title: title || "WhatsApp +#{digits}",
+              data: { controller: "whatsapp", action: "whatsapp#open", whatsapp_text_value: text, whatsapp_phone_value: digits }
     else
       button_tag content, type: "button", class: css, title: title || "WhatsApp (asks for the number)",
                  data: { controller: "whatsapp", action: "whatsapp#open", whatsapp_text_value: text }
