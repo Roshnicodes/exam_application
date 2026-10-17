@@ -70,7 +70,7 @@ module ApplicationHelper
 
   EVENT_ICONS = {
     "tab_switch" => "monitor", "window_blur" => "eye", "fullscreen_exit" => "maximize", "no_face" => "user",
-    "multiple_faces" => "users", "looking_away" => "eye", "eyes_away" => "eye", "phone_detected" => "phone", "face_movement" => "activity", "camera_off" => "camera", "copy_paste" => "copy", "right_click" => "lock",
+    "multiple_faces" => "users", "looking_away" => "eye", "eyes_away" => "eye", "phone_detected" => "phone", "screen_share_stopped" => "monitor", "screen_not_entire" => "monitor", "face_movement" => "activity", "camera_off" => "camera", "copy_paste" => "copy", "right_click" => "lock",
     "devtools" => "alert", "screenshot" => "camera", "window_resize" => "monitor", "noise" => "mic",
     "multiple_displays" => "monitor", "otp_requested" => "key", "otp_failed" => "x-circle", "verified" => "shield",
     "exam_started" => "play", "exam_submitted" => "check-circle", "exam_terminated" => "x-circle",

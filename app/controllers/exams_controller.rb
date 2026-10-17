@@ -67,10 +67,16 @@ class ExamsController < ApplicationController
 
   def events
     return head :forbidden unless candidate_verified?
-    return render json: { status: @invitation.status, terminated: true } if @invitation.finished?
 
     kind = params[:kind].to_s
     return head :unprocessable_entity unless ProctorEvent::KINDS.key?(kind)
+
+    if @invitation.finished?
+      round = @invitation.current_round
+      return render json: { status: @invitation.status, terminated: true } unless round
+
+      return render json: record_interview_event(round, kind)
+    end
 
     @invitation.record_event!(kind, message: params[:message].to_s.first(250).presence, snapshot: params[:snapshot])
     @invitation.reload
@@ -87,8 +93,9 @@ class ExamsController < ApplicationController
     return head :forbidden unless candidate_verified?
     return head :unprocessable_entity unless params[:segment].respond_to?(:content_type)
 
+    prefix = @invitation.finished? && @invitation.current_round ? "#{@invitation.current_round.name.parameterize}-" : ""
     @invitation.recordings.attach(io: params[:segment].tempfile, content_type: params[:segment].content_type,
-                                  filename: "segment-#{params[:index].to_i.to_s.rjust(3, "0")}-#{Time.current.to_i}#{File.extname(params[:segment].original_filename.to_s).presence || ".webm"}")
+                                  filename: "#{prefix}segment-#{params[:index].to_i.to_s.rjust(3, "0")}-#{Time.current.to_i}#{File.extname(params[:segment].original_filename.to_s).presence || ".webm"}")
     head :created
   end
 
@@ -108,6 +115,23 @@ class ExamsController < ApplicationController
   end
 
   private
+    # Proctoring during a live interview round: logged with the round, the panel is alerted
+    # in the room; it never ends the (already finished) exam.
+    def record_interview_event(round, kind)
+      message = params[:message].to_s.first(250).presence
+      event = @invitation.proctor_events.create!(kind: kind, message: [ "[#{round.name}]", message ].compact.join(" "),
+                                                 snapshot: params[:snapshot], metadata: { round_id: round.id })
+      if event.violation?
+        ActionCable.server.broadcast("interview_round:#{round.id}", {
+          type: "proctor-alert", title: event.label, message: message, severity: event.severity,
+          snapshot_url: (rails_blob_path(event.snapshot, only_path: true) if event.snapshot.attached?)
+        })
+        @invitation.broadcast_rounds # live warning count on the HR page
+      end
+      warnings = @invitation.proctor_events.for_round(round).violations.count
+      { status: "interview", warnings: warnings, max_warnings: 0, terminated: false }
+    end
+
     def set_invitation
       @invitation = Invitation.includes(:quiz, :user).find_by!(token: params[:token])
     end

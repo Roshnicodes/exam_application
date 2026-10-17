@@ -1,18 +1,66 @@
 import { Controller } from "@hotwired/stimulus"
 import { cable } from "@hotwired/turbo-rails"
 import { ICE_SERVERS, newViewerId } from "lib/live_video"
+import { getStream } from "lib/media"
+import { warningBeep } from "lib/sound"
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
 
 // Meet-style interview room: everyone sees and hears everyone (WebRTC mesh, best for up to ~6 people).
 export default class extends Controller {
-  static targets = [ "grid", "localVideo", "micBtn", "camBtn", "status", "nameInput", "joinPanel", "room", "count" ]
+  static targets = [ "grid", "localVideo", "micBtn", "camBtn", "status", "nameInput", "joinPanel", "room", "count",
+                     "screenGate", "screenError", "alerts" ]
   static values = { roundId: Number, token: String, watchToken: String, name: String, needsName: Boolean, leaveUrl: String }
 
   connect() {
-    this.peers = new Map() // peerId -> { pc, pending, tile, name, role }
+    this.peers = new Map() // peerId -> { pc, pending, tile, name, role, screenStreamId, screenTile }
     this.peerId = newViewerId()
+    if (this.candidate && this.screenShareSupported) return this.screenGateTarget.classList.remove("hidden")
     if (!this.needsNameValue) this.join()
+  }
+
+  get candidate() {
+    return this.hasTokenValue && this.tokenValue !== ""
+  }
+
+  // Phones / tablets can't share their screen; desktops must.
+  get screenShareSupported() {
+    return !!navigator.mediaDevices?.getDisplayMedia && !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+  }
+
+  // ---- Candidate: share the entire screen before joining -------------------
+  async shareScreen() {
+    this.screenErrorTarget.textContent = ""
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor", frameRate: 5 }, audio: false, monitorTypeSurfaces: "include", selfBrowserSurface: "exclude" })
+      const track = stream.getVideoTracks()[0]
+      const surface = track.getSettings().displaySurface
+      if (surface && surface !== "monitor") {
+        stream.getTracks().forEach((t) => t.stop())
+        this.screenErrorTarget.textContent = "Please choose “Entire screen” (not a window or a tab)."
+        window.dispatchEvent(new CustomEvent("proctor:violation", { detail: { kind: "screen_not_entire", message: `Picked a ${surface}` } }))
+        return
+      }
+      track.addEventListener("ended", () => this.screenStopped())
+      const first = !this.screenStream
+      this.screenStream = stream
+      this.screenGateTarget.classList.add("hidden")
+      document.documentElement.requestFullscreen?.({ navigationUI: "hide" }).catch(() => {})
+      if (first) {
+        await this.join()
+      } else {
+        // re-shared after stopping: swap the track in every connection, no reconnect needed
+        this.peers.forEach((peer) => peer.screenSender?.replaceTrack(track))
+      }
+    } catch (e) {
+      this.screenErrorTarget.textContent = "Screen sharing is required to join. Click the button and choose “Entire screen”."
+    }
+  }
+
+  screenStopped() {
+    if (!this.subscription) return
+    window.dispatchEvent(new CustomEvent("proctor:violation", { detail: { kind: "screen_share_stopped", message: "Screen sharing was turned off" } }))
+    this.screenGateTarget.classList.remove("hidden")
   }
 
   disconnect() {
@@ -34,7 +82,9 @@ export default class extends Controller {
     this.roomTarget.classList.remove("hidden")
     this.setStatus("Starting camera…")
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: { echoCancellation: true, noiseSuppression: true } })
+      this.stream = this.candidate ? await getStream()
+        : await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: { echoCancellation: true, noiseSuppression: true } })
+      if (!this.candidate && !this.screenShareSupported) this.stream.getVideoTracks()[0]?.applyConstraints?.({ facingMode: "user" })
     } catch {
       this.stream = new MediaStream() // join without camera / mic (can still see and hear others)
       this.setStatus("Camera / mic blocked — you can still watch and listen")
@@ -46,6 +96,8 @@ export default class extends Controller {
     if (this.tokenValue) params.token = this.tokenValue
     else Object.assign(params, { round_id: this.roundIdValue, watch_token: this.watchTokenValue, name: this.nameValue })
 
+    if (this.candidate) window.dispatchEvent(new Event("interview:ready")) // start proctoring now that we're in
+
     this.subscription = await cable.subscribeTo(params, {
       connected: () => this.setStatus("Connected — waiting for others to join"),
       rejected: () => this.setStatus("The interview room is not open"),
@@ -55,7 +107,11 @@ export default class extends Controller {
 
   received(message) {
     if (message.type === "peer-joined" && message.peer.id !== this.peerId) {
-      this.connectTo(message.peer, true) // existing members call the newcomer
+      if (this.candidate) this.connectTo(message.peer, true) // the candidate always calls
+      else if (message.peer.role === "candidate") this.send(message.peer.id, { hello: true }) // ask the candidate to call us
+      else this.connectTo(message.peer, true) // between panel members, existing ones call the newcomer
+    } else if (message.type === "proctor-alert") {
+      if (!this.candidate) this.showAlert(message)
     } else if (message.type === "peer-left") {
       this.drop(message.peer_id)
     } else if (message.type === "signal") {
@@ -78,10 +134,13 @@ export default class extends Controller {
     peer = { pc, pending: [], name: info.name, role: info.role, tile: this.addTile(info) }
     this.peers.set(info.id, peer)
     this.stream.getTracks().forEach((t) => pc.addTrack(t, this.stream))
+    const screenTrack = this.screenStream?.getVideoTracks()[0]
+    if (screenTrack) peer.screenSender = pc.addTrack(screenTrack, this.screenStream)
     if (!this.stream.getAudioTracks().length) pc.addTransceiver("audio", { direction: "recvonly" })
     if (!this.stream.getVideoTracks().length) pc.addTransceiver("video", { direction: "recvonly" })
 
     pc.ontrack = (e) => {
+      if (peer.screenStreamId && e.streams[0]?.id === peer.screenStreamId) return this.showScreen(peer, e.streams[0])
       const video = peer.tile.querySelector("video")
       if (video.srcObject !== e.streams[0]) video.srcObject = e.streams[0]
       video.play().catch(() => {})
@@ -107,7 +166,7 @@ export default class extends Controller {
 
     if (initiator) {
       pc.createOffer().then((offer) => pc.setLocalDescription(offer))
-        .then(() => this.send(info.id, { sdp: pc.localDescription.toJSON() }))
+        .then(() => this.send(info.id, { sdp: pc.localDescription.toJSON(), screen: this.screenStream?.id }))
     }
     this.refreshCount()
     this.announceMedia()
@@ -115,7 +174,9 @@ export default class extends Controller {
   }
 
   async signal(from, data) {
+    if (data.hello) return this.candidate && this.connectTo(from, true)
     const peer = this.connectTo(from, false)
+    if (data.screen) peer.screenStreamId = data.screen
     if (data.sdp) {
       await peer.pc.setRemoteDescription(data.sdp)
       for (const c of peer.pending.splice(0)) await peer.pc.addIceCandidate(c).catch(() => {})
@@ -141,11 +202,40 @@ export default class extends Controller {
     return tile
   }
 
+  // The candidate's shared screen, shown big for the panel.
+  showScreen(peer, stream) {
+    if (!peer.screenTile) {
+      peer.screenTile = document.createElement("div")
+      peer.screenTile.className = "it-tile it-screen connected"
+      peer.screenTile.innerHTML = `<video autoplay playsinline muted></video><span class="it-name">🖥️ ${esc(peer.name)}'s screen</span>`
+      this.gridTarget.prepend(peer.screenTile)
+    }
+    const video = peer.screenTile.querySelector("video")
+    video.srcObject = stream
+    video.play().catch(() => {})
+  }
+
+  // Proctoring alert from the candidate's browser: banner + beep + red flash on their tile.
+  showAlert(alert) {
+    warningBeep()
+    const item = document.createElement("div")
+    item.className = `it-alert sev-${alert.severity}`
+    item.innerHTML = `<b>⚠ ${esc(alert.title)}</b>${alert.message ? `<span>${esc(alert.message)}</span>` : ""}${alert.snapshot_url ? `<img src="${esc(alert.snapshot_url)}" alt="">` : ""}`
+    this.alertsTarget.prepend(item)
+    setTimeout(() => item.remove(), 12000)
+    this.gridTarget.querySelectorAll(".role-candidate, .it-screen").forEach((tile) => {
+      tile.classList.remove("flagged")
+      void tile.offsetWidth
+      tile.classList.add("flagged")
+    })
+  }
+
   drop(peerId) {
     const peer = this.peers.get(peerId)
     if (!peer) return
     clearTimeout(peer.dropTimer)
     peer.pc.close()
+    peer.screenTile?.remove()
     peer.tile.remove()
     this.peers.delete(peerId)
     this.refreshCount()
@@ -194,7 +284,9 @@ export default class extends Controller {
     this.peers.forEach((_, id) => this.drop(id))
     this.subscription?.unsubscribe()
     this.subscription = null
-    this.stream?.getTracks().forEach((t) => t.stop())
+    if (!this.candidate) this.stream?.getTracks().forEach((t) => t.stop()) // the candidate's camera is shared with proctoring
+    this.screenStream?.getTracks().forEach((t) => t.stop())
+    this.screenStream = null
     if (redirect && this.leaveUrlValue) window.Turbo.visit(this.leaveUrlValue)
   }
 

@@ -23,8 +23,19 @@
     </form>
   <% end %>
 
+  <% if local_assigns[:token] %>
+    <div class="card it-join it-screen-gate hidden" data-interview-room-target="screenGate">
+      <div class="it-join-ico"><%= icon("monitor") %></div>
+      <h2>Share your entire screen</h2>
+      <p class="muted small">For a fair interview the panel sees your screen during <b><%= round.name %></b>. Choose <b>“Entire screen”</b> in the next window. The interview runs in full screen; switching tabs, other apps, phones or other people are flagged to the panel.</p>
+      <button type="button" class="btn btn-primary btn-lg btn-block" data-action="interview-room#shareScreen"><%= icon("monitor") %> Share screen &amp; join</button>
+      <p class="tiny" style="color:var(--red);min-height:1em" data-interview-room-target="screenError"></p>
+    </div>
+  <% end %>
+
   <div class="it-layout <%= 'no-side' unless local_assigns[:side] %> hidden" data-interview-room-target="room">
     <div class="it-stage">
+      <div class="it-alerts" data-interview-room-target="alerts"></div>
       <div class="it-grid" data-interview-room-target="grid" data-count="1">
         <div class="it-tile it-self connected">
           <video data-interview-room-target="localVideo" autoplay muted playsinline></video>
@@ -44,5 +55,6 @@
       </div>
     </div>
     <% if local_assigns[:side] %><aside class="it-side"><%= side %></aside><% end %>
+    <%= local_assigns[:extra] %>
   </div>
 </div>

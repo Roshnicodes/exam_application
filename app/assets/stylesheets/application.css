@@ -1351,3 +1351,18 @@ a.stat-card:hover .sc-go { opacity: 1; transform: translateX(3px); }
   .sched-row .avatar, .sched-row .badge { display: none; }
   .funnel-row { grid-template-columns: 100px 1fr 32px; }
 }
+
+/* ---------- Proctored interview ---------- */
+.proctor-probe { position: fixed; width: 2px; height: 2px; opacity: 0; pointer-events: none; left: 0; bottom: 0; }
+.it-candidate-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.it-screen-gate { max-width: 520px; }
+.it-tile.it-screen { grid-column: 1 / -1; aspect-ratio: 16 / 9; border-color: rgba(236, 72, 153, .7); background: #000; }
+.it-tile.it-screen video { object-fit: contain; background: #000; }
+.it-tile.flagged { animation: tile-alert 1s ease-in-out 5; border-color: var(--red); }
+.it-alerts { display: grid; gap: .5rem; margin-bottom: .6rem; }
+.it-alerts:empty { display: none; }
+.it-alert { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; padding: .6rem .8rem; border-radius: 12px; background: rgba(239, 68, 68, .92); color: #fff; font-size: .85rem; animation: pop .3s; box-shadow: 0 10px 24px -12px rgba(239, 68, 68, .9); }
+.it-alert.sev-medium, .it-alert.sev-low { background: rgba(245, 158, 11, .95); }
+.it-alert span { opacity: .9; }
+.it-alert img { width: 54px; height: 40px; object-fit: cover; border-radius: 6px; margin-left: auto; }
+.rs-warn { display: inline-flex; align-items: center; gap: .2rem; color: var(--red); font-weight: 800; }

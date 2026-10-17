@@ -37,6 +37,8 @@
               <% if round.panelists.empty? %><span class="tiny muted">No panel</span><% end %>
             </div>
             <span class="tiny">
+              <% warns = invitation.proctor_events.for_round(round).violations.count %>
+              <% if warns.positive? %><span class="rs-warn" title="Proctoring warnings during this round"><%= icon("alert") %> <%= warns %></span> · <% end %>
               <% if (avg = round.average) %><b class="rs-score"><%= avg %>/10</b> · <% end %>
               <%= pluralize(round.interview_feedbacks.size, "scorecard") %>
             </span>

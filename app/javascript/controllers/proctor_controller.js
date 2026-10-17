@@ -5,7 +5,7 @@ import { warningBeep, unlockAudio } from "lib/sound"
 import { Broadcaster } from "lib/live_video"
 
 const MESSAGES = {
-  tab_switch: "You switched tabs or minimized the exam window.",
+  tab_switch: "You switched tabs or minimized the window.",
   window_blur: "The exam window lost focus. Stay on this screen.",
   fullscreen_exit: "You exited full screen mode.",
   no_face: "Your face is not visible. Stay in front of the camera.",
@@ -16,6 +16,8 @@ const MESSAGES = {
   devtools: "Restricted keyboard shortcut detected.",
   screenshot: "Screenshots are not allowed.",
   noise: "Talking or loud background noise detected.",
+  screen_share_stopped: "You stopped sharing your screen. Share your entire screen again to continue.",
+  screen_not_entire: "Please share your entire screen, not a single window or tab.",
   multiple_displays: "A second display is connected. Disconnect it.",
   looking_away: "Please look at the screen. Turning away or looking down is not allowed.",
   face_movement: "Too much movement detected. Sit still and stay centred in the camera.",
@@ -29,9 +31,29 @@ const SNAPSHOT_MS = 30_000
 // Watches the candidate: camera recording, face detection, focus / full screen / keyboard activity.
 export default class extends Controller {
   static targets = [ "video", "faceStatus", "warnLabel", "warning", "warningText", "warningDots", "warningLeft", "fullscreenGate", "cameraGate" ]
-  static values = { eventsUrl: String, recordingsUrl: String, warnings: Number, maxWarnings: Number, token: String }
+  static values = { eventsUrl: String, recordingsUrl: String, warnings: Number, maxWarnings: Number, token: String,
+                    mode: { type: String, default: "exam" } }
 
-  async connect() {
+  // In an interview the checks start once the candidate is in the room (after screen sharing),
+  // so the share picker or the join click can't be mistaken for leaving the window.
+  connect() {
+    this.onExternalViolation = (e) => this.violation(e.detail.kind, e.detail.message)
+    window.addEventListener("proctor:violation", this.onExternalViolation)
+    if (this.interview) {
+      this.onReady = () => this.begin()
+      window.addEventListener("interview:ready", this.onReady, { once: true })
+    } else {
+      this.begin()
+    }
+  }
+
+  get interview() {
+    return this.modeValue === "interview"
+  }
+
+  async begin() {
+    if (this.started) return
+    this.started = true
     this.active = true
     this.lastFired = {}
     this.uploads = new Set()
@@ -61,7 +83,7 @@ export default class extends Controller {
   }
 
   startMonitoring() {
-    this.startLiveFeed()
+    if (!this.interview) this.startLiveFeed() // the interview room already streams the camera
     if (this.monitoring) return
     this.monitoring = true
     this.videoTarget.srcObject = this.stream
@@ -70,13 +92,15 @@ export default class extends Controller {
     this.startSegment()
     this.startFaceDetection()
     this.startObjectDetection()
-    this.startNoiseMonitor()
+    if (!this.interview) this.startNoiseMonitor() // talking is the point of an interview
     this.snapshotTimer = setInterval(() => this.report("snapshot"), SNAPSHOT_MS)
     setTimeout(() => this.report("snapshot"), 4000)
     if (window.screen.isExtended) this.violation("multiple_displays")
   }
 
   disconnect() {
+    window.removeEventListener("proctor:violation", this.onExternalViolation)
+    window.removeEventListener("interview:ready", this.onReady)
     this.broadcaster?.stop()
     this.active = false
     this.unbindListeners()
@@ -164,6 +188,7 @@ export default class extends Controller {
 
   // ---------------------------------------------------------------- full screen
   checkFullscreen(changed = false) {
+    if (this.interview && !document.documentElement.requestFullscreen) return // e.g. iPhone Safari
     const inFs = !!document.fullscreenElement
     this.fullscreenGateTarget.classList.toggle("hidden", inFs || !this.active)
     if (changed && !inFs) this.violation("fullscreen_exit")
@@ -469,7 +494,7 @@ export default class extends Controller {
         ? `${left} warning${left === 1 ? "" : "s"} left before your exam is ended automatically. HR has been notified.`
         : "Warning limit reached. Your exam is being submitted."
     } else {
-      this.warningLeftTarget.textContent = "HR has been notified of this activity."
+      this.warningLeftTarget.textContent = this.interview ? "The interview panel has been alerted." : "HR has been notified of this activity."
     }
     this.warningTarget.classList.remove("hidden")
   }

@@ -9,6 +9,8 @@ class ProctorEvent < ApplicationRecord
     "looking_away"      => [ "Looking away from the screen", "medium", true ],
     "eyes_away"         => [ "Eyes off screen (looking down / away)", "high", true ],
     "phone_detected"    => [ "Mobile phone / book / device detected", "critical", true ],
+    "screen_share_stopped" => [ "Stopped sharing the screen", "high", true ],
+    "screen_not_entire" => [ "Shared a window instead of the entire screen", "medium", true ],
     "face_movement"     => [ "Excessive movement / out of camera frame", "medium", true ],
     "camera_off"        => [ "Camera stopped or blocked", "critical", true ],
     "copy_paste"        => [ "Copy / paste attempt", "medium", true ],
@@ -39,6 +41,7 @@ class ProctorEvent < ApplicationRecord
   before_validation { self.severity = KINDS.dig(kind, 1) || "info" if severity.blank? || severity == "warning" }
 
   scope :violations, -> { where(kind: KINDS.select { |_, v| v[2] }.keys) }
+  scope :for_round, ->(round) { where("metadata ->> 'round_id' = ?", round.id.to_s) }
   scope :timeline, -> { where.not(kind: "snapshot").order(created_at: :desc) }
   scope :with_snapshots, -> { joins(:snapshot_attachment) }
 

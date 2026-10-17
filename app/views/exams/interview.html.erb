@@ -1,10 +1,25 @@
 <% content_for :title, @round.name %>
 <%= turbo_stream_from @invitation, :candidate %>
-<div class="exam-wrap" style="max-width:1200px">
-  <%= render "header" %>
-  <div class="card card-pad" style="margin-bottom:1rem">
-    <h2><%= @round.name %> — <%= @invitation.vacancy %></h2>
-    <p class="muted small" style="margin-top:.3rem">Allow camera and microphone. The panel can see and hear you, and you can see and hear them. Use headphones if you can, to avoid echo.</p>
+<div data-controller="proctor"
+     data-proctor-mode-value="interview"
+     data-proctor-events-url-value="<%= exam_events_path(@invitation.token) %>"
+     data-proctor-recordings-url-value="<%= exam_recordings_path(@invitation.token) %>"
+     data-proctor-warnings-value="<%= @invitation.proctor_events.for_round(@round).violations.count %>"
+     data-proctor-max-warnings-value="0">
+  <div class="exam-wrap" style="max-width:1200px">
+    <%= render "header" %>
+    <div class="card card-pad it-candidate-bar">
+      <div class="grow">
+        <h2><%= @round.name %> — <%= @invitation.vacancy %></h2>
+        <p class="muted small" style="margin-top:.3rem">The panel sees and hears you and your screen. Stay in full screen, keep your face in the camera, and don't use other apps, tabs, notes or phones. Use headphones to avoid echo.</p>
+      </div>
+      <div class="row wrap" style="gap:.5rem">
+        <span class="face-status idle" data-proctor-target="faceStatus"><%= icon("user") %> <span>Waiting to start…</span></span>
+        <span class="warn-meter"><%= icon("alert") %> <span data-proctor-target="warnLabel"><%= @invitation.proctor_events.for_round(@round).violations.count %></span></span>
+      </div>
+    </div>
+    <video class="proctor-probe" data-proctor-target="video" autoplay muted playsinline></video>
+    <%= render "shared/interview_room", round: @round, token: @invitation.token, leave_url: exam_finished_path(@invitation.token) %>
   </div>
-  <%= render "shared/interview_room", round: @round, token: @invitation.token, leave_url: exam_finished_path(@invitation.token) %>
+  <%= render "exams/proctor_gates" %>
 </div>

@@ -1,0 +1,28 @@
+<div class="warning-overlay hidden" data-proctor-target="cameraGate" style="z-index:2001">
+  <div class="warning-box">
+    <div class="big-ico"><%= icon("camera") %></div>
+    <h2>Camera required</h2>
+    <p>Your camera is blocked or disconnected. Allow camera &amp; microphone access in your browser's address bar, then try again. HR has been notified.</p>
+    <button type="button" class="btn btn-primary btn-lg btn-block" data-action="proctor#retryCamera"><%= icon("camera") %> Try again</button>
+  </div>
+</div>
+
+<div class="warning-overlay hidden" data-proctor-target="fullscreenGate">
+  <div class="warning-box">
+    <div class="big-ico" style="background:var(--brand-soft);color:var(--brand)"><%= icon("maximize") %></div>
+    <h2 style="color:var(--ink)">Return to full screen</h2>
+    <p>This must stay in full screen mode. Leaving full screen is reported to HR.</p>
+    <button type="button" class="btn btn-primary btn-lg btn-block" data-action="proctor#enterFullscreen"><%= icon("maximize") %> Enter full screen</button>
+  </div>
+</div>
+
+<div class="warning-overlay hidden" data-proctor-target="warning">
+  <div class="warning-box">
+    <div class="big-ico"><%= icon("alert") %></div>
+    <h2>Warning!</h2>
+    <p data-proctor-target="warningText">Suspicious activity detected.</p>
+    <div class="warning-count" data-proctor-target="warningDots"></div>
+    <p class="small" style="margin-top:-.6rem" data-proctor-target="warningLeft"></p>
+    <button type="button" class="btn btn-dark btn-lg btn-block" data-action="proctor#dismissWarning">I understand, continue</button>
+  </div>
+</div>
