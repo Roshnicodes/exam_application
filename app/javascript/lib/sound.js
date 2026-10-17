@@ -40,36 +40,34 @@ function bell(freq, start, { duration = 0.6, volume = 0.16, type = "sine" } = {}
   })
 }
 
-// A short, loud electronic beep (square wave, softened by a filter so it is clear but not piercing).
-function beep(freq, start, { duration = 0.16, volume = 0.32 } = {}) {
+// The original warning beep: a crisp square-wave "beep" (short ramps so it doesn't click).
+function beep(freq, start, { duration = 0.14, volume = 0.16 } = {}) {
   const c = audioContext()
   const osc = c.createOscillator()
-  const filter = c.createBiquadFilter()
   const gain = c.createGain()
   osc.type = "square"
   osc.frequency.value = freq
-  filter.type = "lowpass"
-  filter.frequency.value = 2600
-  gain.gain.setValueAtTime(0.0001, start)
-  gain.gain.exponentialRampToValueAtTime(volume, start + 0.01)
-  gain.gain.setValueAtTime(volume, start + duration - 0.03)
-  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration)
-  osc.connect(filter).connect(gain).connect(c.destination)
+  gain.gain.setValueAtTime(0, start)
+  gain.gain.linearRampToValueAtTime(volume, start + 0.008)
+  gain.gain.setValueAtTime(volume, start + duration - 0.02)
+  gain.gain.linearRampToValueAtTime(0, start + duration)
+  osc.connect(gain).connect(c.destination)
   osc.start(start)
-  osc.stop(start + duration + 0.02)
+  osc.stop(start + duration + 0.01)
 }
 
-// Warning alarm: a clear "beep-beep-beep" that can't be missed (candidate + HR / panel).
+// Warning alarm (candidate + HR / panel): the original triple "beep-beep-beep".
+// Serious warnings play it twice.
 export function alarm({ rounds = 1 } = {}) {
   const c = ready()
   let t = c.currentTime + 0.02
   for (let r = 0; r < rounds; r++) {
-    for (let i = 0; i < 3; i++) beep(i === 2 ? 1175 : 988, t + i * 0.22) // B5 B5 D6
-    t += 0.95
+    for (let i = 0; i < 3; i++) beep(988, t + i * 0.22) // B5
+    t += 0.9
   }
 }
 
-// Candidate warning (kept as a name used across the app).
+// Candidate warning.
 export function warningBeep() {
   alarm()
 }
