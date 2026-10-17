@@ -17,6 +17,7 @@
           <div class="check" data-system-check-target="camCheck"><%= icon("camera") %> Camera &amp; microphone <span class="st">Pending</span></div>
           <div class="check" data-system-check-target="faceCheck"><%= icon("user") %> Single face visible <span class="st">Pending</span></div>
           <div class="check" data-system-check-target="screenCheck"><%= icon("monitor") %> Single display &amp; full screen support <span class="st">Pending</span></div>
+          <div class="check" data-system-check-target="shareCheck"><%= icon("monitor") %> Entire screen shared <span class="st">Pending</span></div>
         </div>
       </div>
 
@@ -32,6 +33,7 @@
           <div class="rule"><%= icon("mic") %> Keep quiet — no talking</div>
           <div class="rule"><%= icon("phone") %> No phones, books or other devices</div>
           <div class="rule"><%= icon("eye") %> Keep your eyes on the screen</div>
+          <div class="rule"><%= icon("monitor") %> Your screen is shared &amp; recorded</div>
           <div class="rule"><%= icon("clock") %> Exam auto-submits when time ends</div>
         </div>
         <label class="row small" style="margin:1.4rem 0;cursor:pointer;align-items:flex-start">
@@ -40,6 +42,7 @@
         </label>
         <div class="stack">
           <button type="button" class="btn btn-light btn-lg btn-block" data-action="system-check#allow" data-system-check-target="allowBtn"><%= icon("camera") %> Allow camera &amp; microphone</button>
+          <button type="button" class="btn btn-light btn-lg btn-block" data-action="system-check#share" data-system-check-target="shareBtn"><%= icon("monitor") %> Share entire screen</button>
           <%= form_with url: exam_start_path(@invitation.token), data: { system_check_target: "form" } do |f| %>
             <%= f.button class: "btn btn-primary btn-lg btn-block", disabled: true, data: { system_check_target: "startBtn", action: "system-check#start" } do %><%= icon("play") %> Start exam in full screen<% end %>
           <% end %>

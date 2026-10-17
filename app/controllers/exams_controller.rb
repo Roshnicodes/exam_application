@@ -94,6 +94,7 @@ class ExamsController < ApplicationController
     return head :unprocessable_entity unless params[:segment].respond_to?(:content_type)
 
     prefix = @invitation.finished? && @invitation.current_round ? "#{@invitation.current_round.name.parameterize}-" : ""
+    prefix += "screen-" if params[:kind] == "screen"
     @invitation.recordings.attach(io: params[:segment].tempfile, content_type: params[:segment].content_type,
                                   filename: "#{prefix}segment-#{params[:index].to_i.to_s.rjust(3, "0")}-#{Time.current.to_i}#{File.extname(params[:segment].original_filename.to_s).presence || ".webm"}")
     head :created

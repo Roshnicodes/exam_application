@@ -99,6 +99,16 @@
     </div>
   </div>
 
+  <div class="warning-overlay hidden" data-proctor-target="screenGate" style="z-index:2001">
+    <div class="warning-box">
+      <div class="big-ico" style="background:var(--brand-soft);color:var(--brand)"><%= icon("monitor") %></div>
+      <h2 style="color:var(--ink)">Share your entire screen</h2>
+      <p>Screen sharing is required during this test (HR sees it live and it is recorded). Choose <b>“Entire screen”</b> in the next window.</p>
+      <button type="button" class="btn btn-primary btn-lg btn-block" data-action="proctor#shareScreen"><%= icon("monitor") %> Share entire screen</button>
+      <p class="tiny" style="color:var(--red);min-height:1em;margin:.6rem 0 0" data-proctor-target="screenError"></p>
+    </div>
+  </div>
+
   <div class="warning-overlay hidden" data-proctor-target="fullscreenGate">
     <div class="warning-box">
       <div class="big-ico" style="background:var(--brand-soft);color:var(--brand)"><%= icon("maximize") %></div>

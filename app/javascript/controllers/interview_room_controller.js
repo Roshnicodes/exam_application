@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 import { cable } from "@hotwired/turbo-rails"
 import { ICE_SERVERS, newViewerId } from "lib/live_video"
-import { getStream } from "lib/media"
+import { getStream, screenShareSupported, getScreenStream, requestScreen } from "lib/media"
 import { warningBeep } from "lib/sound"
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
@@ -15,7 +15,11 @@ export default class extends Controller {
   connect() {
     this.peers = new Map() // peerId -> { pc, pending, tile, name, role, screenStreamId, screenTile }
     this.peerId = newViewerId()
-    if (this.candidate && this.screenShareSupported) return this.screenGateTarget.classList.remove("hidden")
+    if (this.candidate && this.screenShareSupported) {
+      const existing = getScreenStream() // still sharing from the test in this tab
+      if (existing) return this.useScreen(existing)
+      return this.screenGateTarget.classList.remove("hidden")
+    }
     if (!this.needsNameValue) this.join()
   }
 
@@ -25,36 +29,36 @@ export default class extends Controller {
 
   // Phones / tablets can't share their screen; desktops must.
   get screenShareSupported() {
-    return !!navigator.mediaDevices?.getDisplayMedia && !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+    return screenShareSupported()
   }
 
   // ---- Candidate: share the entire screen before joining -------------------
   async shareScreen() {
     this.screenErrorTarget.textContent = ""
+    window.dispatchEvent(new Event("proctor:picking"))
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor", frameRate: 5 }, audio: false, monitorTypeSurfaces: "include", selfBrowserSurface: "exclude" })
-      const track = stream.getVideoTracks()[0]
-      const surface = track.getSettings().displaySurface
-      if (surface && surface !== "monitor") {
-        stream.getTracks().forEach((t) => t.stop())
-        this.screenErrorTarget.textContent = "Please choose “Entire screen” (not a window or a tab)."
-        window.dispatchEvent(new CustomEvent("proctor:violation", { detail: { kind: "screen_not_entire", message: `Picked a ${surface}` } }))
-        return
-      }
-      track.addEventListener("ended", () => this.screenStopped())
-      const first = !this.screenStream
-      this.screenStream = stream
-      this.screenGateTarget.classList.add("hidden")
+      await this.useScreen(await requestScreen())
       document.documentElement.requestFullscreen?.({ navigationUI: "hide" }).catch(() => {})
-      if (first) {
-        await this.join()
-      } else {
-        // re-shared after stopping: swap the track in every connection, no reconnect needed
-        this.peers.forEach((peer) => peer.screenSender?.replaceTrack(track))
-      }
     } catch (e) {
-      this.screenErrorTarget.textContent = "Screen sharing is required to join. Click the button and choose “Entire screen”."
+      if (e.name === "NotEntireScreen") {
+        this.screenErrorTarget.textContent = e.message
+        window.dispatchEvent(new CustomEvent("proctor:violation", { detail: { kind: "screen_not_entire", message: `Picked a ${e.surface}` } }))
+      } else {
+        this.screenErrorTarget.textContent = "Screen sharing is required to join. Click the button and choose “Entire screen”."
+      }
+    } finally {
+      window.dispatchEvent(new Event("proctor:picked"))
     }
+  }
+
+  async useScreen(stream) {
+    const track = stream.getVideoTracks()[0]
+    track.addEventListener("ended", () => this.screenStopped(), { once: true })
+    const first = !this.screenStream
+    this.screenStream = stream
+    this.screenGateTarget.classList.add("hidden")
+    if (first) await this.join()
+    else this.peers.forEach((peer) => peer.screenSender?.replaceTrack(track)) // re-shared: swap the track, no reconnect
   }
 
   screenStopped() {

@@ -4,7 +4,7 @@ import { ICE_SERVERS, newViewerId } from "lib/live_video"
 
 // Viewer side (HR / panelist): shows the candidate's live camera, like a video call.
 export default class extends Controller {
-  static targets = [ "video", "status", "sound", "frame" ]
+  static targets = [ "video", "status", "sound", "frame", "screen" ]
   static values = { invitationId: Number, watchToken: String }
 
   async connect() {
@@ -53,12 +53,14 @@ export default class extends Controller {
   async signal(data) {
     if (data?.sdp) {
       this.closePeer()
+      this.screenId = data.screen || null
       const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS })
       this.pc = pc
       // no direct video within 10s (blocked network) -> switch to the backup frames
       clearTimeout(this.fallbackTimer)
       this.fallbackTimer = setTimeout(() => { if (!this.live) this.useFrames() }, 10000)
       pc.ontrack = (e) => {
+        if (this.screenId && e.streams[0]?.id === this.screenId) return this.showScreen(e.streams[0])
         this.videoTarget.srcObject = e.streams[0]
         this.videoTarget.play().catch(() => {})
         this.live = true
@@ -113,7 +115,21 @@ export default class extends Controller {
     if (this.hasSoundTarget) this.soundTarget.textContent = this.videoTarget.muted ? "🔇 Unmute" : "🔊 Mute"
   }
 
+  // The candidate's shared screen: shown big, with the camera as a small inset.
+  showScreen(stream) {
+    if (!this.hasScreenTarget) return // compact monitor tiles show the camera only
+    this.screenTarget.srcObject = stream
+    this.screenTarget.hidden = false
+    this.screenTarget.play().catch(() => {})
+    this.element.classList.add("has-screen")
+  }
+
   closePeer() {
+    if (this.hasScreenTarget) {
+      this.screenTarget.srcObject = null
+      this.screenTarget.hidden = true
+    }
+    this.element.classList.remove("has-screen")
     this.pc?.close()
     this.pc = null
     this.live = false

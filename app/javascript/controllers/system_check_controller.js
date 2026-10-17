@@ -1,15 +1,16 @@
 import { Controller } from "@hotwired/stimulus"
-import { getStream } from "lib/media"
+import { getStream, screenShareSupported, getScreenStream, requestScreen } from "lib/media"
 import { loadFaceDetector } from "lib/face_detector"
 import { unlockAudio } from "lib/sound"
 
 // Pre-exam check: camera + mic permission, exactly one face, single display, full screen support.
 export default class extends Controller {
-  static targets = [ "video", "tag", "placeholder", "camCheck", "faceCheck", "screenCheck", "agree", "startBtn", "allowBtn", "form" ]
+  static targets = [ "video", "tag", "placeholder", "camCheck", "faceCheck", "screenCheck", "shareCheck", "shareBtn", "agree", "startBtn", "allowBtn", "form" ]
 
   connect() {
-    this.state = { cam: false, face: false, screen: false }
+    this.state = { cam: false, face: false, screen: false, share: false }
     this.checkScreen()
+    this.checkShare()
     loadFaceDetector() // warm up the model while the candidate reads the rules
   }
 
@@ -62,8 +63,41 @@ export default class extends Controller {
     this.refresh()
   }
 
+  // Desktop: the entire screen must be shared before starting. Phones can't share, so it's skipped there.
+  checkShare() {
+    if (!screenShareSupported()) {
+      this.state.share = true
+      this.set("shareCheck", true, "Not needed on mobile")
+      this.shareBtnTarget.classList.add("hidden")
+    } else if (getScreenStream()) {
+      this.state.share = true
+      this.set("shareCheck", true, "Shared ✓")
+      this.shareBtnTarget.classList.add("hidden")
+    }
+    this.refresh()
+  }
+
+  async share() {
+    try {
+      const screen = await requestScreen()
+      screen.getVideoTracks()[0].addEventListener("ended", () => {
+        this.state.share = false
+        this.set("shareCheck", false, "Stopped — share again")
+        this.shareBtnTarget.classList.remove("hidden")
+        this.refresh()
+      }, { once: true })
+      this.state.share = true
+      this.set("shareCheck", true, "Shared ✓")
+      this.shareBtnTarget.classList.add("hidden")
+    } catch (e) {
+      this.state.share = false
+      this.set("shareCheck", false, e.name === "NotEntireScreen" ? "Choose “Entire screen”" : "Not shared")
+    }
+    this.refresh()
+  }
+
   refresh() {
-    const ready = this.state.cam && this.state.face && this.state.screen && this.agreeTarget.checked
+    const ready = this.state.cam && this.state.face && this.state.screen && this.state.share && this.agreeTarget.checked
     this.startBtnTarget.disabled = !ready
   }
 

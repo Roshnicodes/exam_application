@@ -14,6 +14,41 @@ export async function getStream() {
 export function stopStream() {
   stream?.getTracks().forEach((t) => t.stop())
   stream = null
+  stopScreen()
+}
+
+// ---- Entire-screen sharing (desktop only), shared by the test and the interview rooms ----
+let screen
+
+export function screenShareSupported() {
+  return !!navigator.mediaDevices?.getDisplayMedia && !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+}
+
+export function getScreenStream() {
+  return screen && screen.getVideoTracks().some((t) => t.readyState === "live") ? screen : null
+}
+
+// Opens the browser's share picker; only "Entire screen" is accepted.
+export async function requestScreen() {
+  const s = await navigator.mediaDevices.getDisplayMedia({
+    video: { displaySurface: "monitor", frameRate: 5 }, audio: false,
+    monitorTypeSurfaces: "include", selfBrowserSurface: "exclude", surfaceSwitching: "exclude"
+  })
+  const surface = s.getVideoTracks()[0]?.getSettings().displaySurface
+  if (surface && surface !== "monitor") {
+    s.getTracks().forEach((t) => t.stop())
+    const error = new Error("Please choose “Entire screen” — not a window or a tab.")
+    error.name = "NotEntireScreen"
+    error.surface = surface
+    throw error
+  }
+  screen = s
+  return s
+}
+
+export function stopScreen() {
+  screen?.getTracks().forEach((t) => t.stop())
+  screen = null
 }
 
 export function snapshot(video, quality = 0.7) {

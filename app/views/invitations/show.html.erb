@@ -76,12 +76,12 @@
             <% @invitation.recordings.order(:created_at).each_with_index do |rec, i| %>
               <div>
                 <video src="<%= rails_blob_path(rec, disposition: "inline") %>" controls preload="metadata" playsinline></video>
-                <div class="tiny muted" style="margin-top:.3rem">Part <%= i + 1 %> · <%= rec.created_at.strftime("%-I:%M:%S %p") %> · <%= number_to_human_size(rec.byte_size) %></div>
+                <div class="tiny muted" style="margin-top:.3rem"><b><%= rec.filename.to_s.include?("screen-") ? "🖥️ Screen" : "📷 Camera" %></b><%= " · #{rec.filename.to_s.split('-segment').first.split('screen').first.tr('-', ' ').strip.titleize}" if rec.filename.to_s.match?(/interview|round/) %> · <%= rec.created_at.strftime("%-I:%M:%S %p") %> · <%= number_to_human_size(rec.byte_size) %></div>
               </div>
             <% end %>
           </div>
         <% else %>
-          <p class="muted small">Video + audio is recorded in 1-minute segments while the exam is running.</p>
+          <p class="muted small">Camera (with audio) and the shared screen are recorded in 1-minute segments during the test and interviews.</p>
         <% end %>
       </div>
     </div>

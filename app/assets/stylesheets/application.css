@@ -1368,3 +1368,11 @@ a.stat-card:hover .sc-go { opacity: 1; transform: translateX(3px); }
 .rs-warn { display: inline-flex; align-items: center; gap: .2rem; color: var(--red); font-weight: 800; }
 .live-video .lv-frame { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
 .live-video[data-live-state="live"] .lv-frame:not([hidden]) ~ video { opacity: 0; }
+/* candidate's screen big, camera as a picture-in-picture inset */
+.live-video .lv-screen { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; z-index: 1; transform: none; }
+.live-video.has-screen { aspect-ratio: 16 / 9; }
+.live-video.has-screen > video[data-live-video-target="video"] {
+  inset: auto .8rem .8rem auto; width: 26%; height: auto; aspect-ratio: 4 / 3; z-index: 2;
+  border-radius: 12px; border: 2px solid rgba(255, 255, 255, .8); box-shadow: 0 10px 24px -10px rgba(0, 0, 0, .7);
+}
+.live-video.has-screen .lv-sound { right: auto; left: .7rem; }

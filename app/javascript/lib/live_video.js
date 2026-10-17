@@ -21,8 +21,9 @@ export class Broadcaster {
     this.frameViewers = new Set() // viewers on the backup (frames) view
   }
 
-  async start(stream) {
+  async start(stream, screen = null) {
     this.stream = stream
+    this.screen = screen
     this.subscription = await cable.subscribeTo(
       { channel: "LiveVideoChannel", role: "candidate", token: this.token },
       { received: (message) => this.received(message) }
@@ -36,6 +37,12 @@ export class Broadcaster {
       const track = stream.getTracks().find((t) => t.kind === sender.track?.kind)
       if (track) sender.replaceTrack(track)
     }))
+  }
+
+  // The candidate (re)shared their screen: reconnect viewers so they receive it too.
+  setScreen(screen) {
+    this.screen = screen
+    this.peers.forEach((_, id) => this.offer(id))
   }
 
   received(message) {
@@ -84,12 +91,14 @@ export class Broadcaster {
     const peer = { pc, pending: [] }
     this.peers.set(viewerId, peer)
     this.stream.getTracks().forEach((track) => pc.addTrack(track, this.stream))
+    const screenTrack = this.screen?.getVideoTracks().find((t) => t.readyState === "live")
+    if (screenTrack) pc.addTrack(screenTrack, this.screen)
     pc.onicecandidate = (e) => e.candidate && this.send(viewerId, { candidate: e.candidate.toJSON() })
     pc.onconnectionstatechange = () => { if ([ "failed", "closed" ].includes(pc.connectionState)) this.close(viewerId) }
 
     await pc.setLocalDescription(await pc.createOffer())
     this.limitBitrate(pc)
-    this.send(viewerId, { sdp: pc.localDescription.toJSON() })
+    this.send(viewerId, { sdp: pc.localDescription.toJSON(), screen: screenTrack ? this.screen.id : null })
   }
 
   async signal(viewerId, data) {

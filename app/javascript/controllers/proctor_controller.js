@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { getStream, snapshot, csrfToken } from "lib/media"
+import { getStream, snapshot, csrfToken, screenShareSupported, getScreenStream, requestScreen } from "lib/media"
 import { loadFaceDetector, loadObjectDetector } from "lib/face_detector"
 import { warningBeep, unlockAudio } from "lib/sound"
 import { Broadcaster } from "lib/live_video"
@@ -30,7 +30,8 @@ const SNAPSHOT_MS = 30_000
 
 // Watches the candidate: camera recording, face detection, focus / full screen / keyboard activity.
 export default class extends Controller {
-  static targets = [ "video", "faceStatus", "warnLabel", "warning", "warningText", "warningDots", "warningLeft", "fullscreenGate", "cameraGate" ]
+  static targets = [ "video", "faceStatus", "warnLabel", "warning", "warningText", "warningDots", "warningLeft", "fullscreenGate", "cameraGate",
+                     "screenGate", "screenError" ]
   static values = { eventsUrl: String, recordingsUrl: String, warnings: Number, maxWarnings: Number, token: String,
                     mode: { type: String, default: "exam" } }
 
@@ -39,6 +40,14 @@ export default class extends Controller {
   connect() {
     this.onExternalViolation = (e) => this.violation(e.detail.kind, e.detail.message)
     window.addEventListener("proctor:violation", this.onExternalViolation)
+    // the interview room opens the share picker itself and tells us around it
+    this.onPicking = (e) => {
+      clearTimeout(this.pickTimer)
+      this.picking = true
+      this.pickTimer = setTimeout(() => { this.picking = false }, e.type === "proctor:picked" ? 1500 : 30000)
+    }
+    window.addEventListener("proctor:picking", this.onPicking)
+    window.addEventListener("proctor:picked", this.onPicking)
     if (this.interview) {
       this.onReady = () => this.begin()
       window.addEventListener("interview:ready", this.onReady, { once: true })
@@ -58,11 +67,53 @@ export default class extends Controller {
     this.lastFired = {}
     this.uploads = new Set()
     this.segmentIndex = 0
+    this.segments = {} // "camera" / "screen" -> current recording segment
     this.bindListeners()
     this.checkFullscreen()
 
     if (!(await this.attachCamera())) return
     this.startMonitoring()
+    this.setupScreen()
+  }
+
+  // ---------------------------------------------------------------- screen sharing (test)
+  // On a desktop the test needs the entire screen shared (from the system check); the screen
+  // is recorded and shown live to HR. The interview room handles its own sharing.
+  setupScreen() {
+    if (this.interview || !this.hasScreenGateTarget || !screenShareSupported()) return
+    const existing = getScreenStream()
+    if (existing) this.useScreen(existing)
+    else this.screenGateTarget.classList.remove("hidden")
+  }
+
+  async shareScreen() {
+    if (this.hasScreenErrorTarget) this.screenErrorTarget.textContent = ""
+    this.picking = true // the browser's share picker takes focus; don't count that as leaving
+    try {
+      this.useScreen(await requestScreen())
+      this.enterFullscreen()
+    } catch (e) {
+      if (e.name === "NotEntireScreen") this.violation("screen_not_entire", `Picked a ${e.surface}`, { overlay: false })
+      if (this.hasScreenErrorTarget) this.screenErrorTarget.textContent = e.name === "NotEntireScreen" ? e.message : "Screen sharing is required. Click the button and choose “Entire screen”."
+    } finally {
+      setTimeout(() => { this.picking = false }, 1500)
+    }
+  }
+
+  useScreen(screen) {
+    this.screenStream = screen
+    this.screenGateTarget.classList.add("hidden")
+    screen.getVideoTracks()[0].addEventListener("ended", () => this.screenEnded(screen), { once: true })
+    this.startSegment("screen")
+    this.broadcaster?.setScreen(screen)
+  }
+
+  screenEnded(screen) {
+    if (!this.active || this.screenStream !== screen) return
+    this.closeSegment("screen")
+    this.screenStream = null
+    this.violation("screen_share_stopped", "Screen sharing was turned off", { overlay: false })
+    this.screenGateTarget.classList.remove("hidden")
   }
 
   async attachCamera() {
@@ -100,6 +151,8 @@ export default class extends Controller {
 
   disconnect() {
     window.removeEventListener("proctor:violation", this.onExternalViolation)
+    window.removeEventListener("proctor:picking", this.onPicking)
+    window.removeEventListener("proctor:picked", this.onPicking)
     window.removeEventListener("interview:ready", this.onReady)
     this.broadcaster?.stop()
     this.active = false
@@ -108,7 +161,7 @@ export default class extends Controller {
     clearInterval(this.objectTimer)
     clearInterval(this.snapshotTimer)
     clearInterval(this.noiseTimer)
-    clearTimeout(this.segmentTimer)
+    Object.values(this.segments || {}).forEach((seg) => clearTimeout(seg.timer))
   }
 
   // Live camera for HR / panelists (WebRTC). Failure here never blocks the exam.
@@ -117,7 +170,7 @@ export default class extends Controller {
     try {
       if (this.broadcaster) return this.broadcaster.setStream(this.stream)
       this.broadcaster = new Broadcaster(this.tokenValue)
-      this.broadcaster.start(this.stream).catch((e) => console.warn("Live feed unavailable", e))
+      this.broadcaster.start(this.stream, this.screenStream).catch((e) => console.warn("Live feed unavailable", e))
     } catch (e) {
       console.warn("Live feed unavailable", e)
     }
@@ -144,7 +197,7 @@ export default class extends Controller {
       clearInterval(this.objectTimer)
       clearInterval(this.noiseTimer)
       clearInterval(this.snapshotTimer)
-      this.closeSegment()
+      this.closeSegment("camera")
       this.cameraGateTarget.classList.remove("hidden")
     }
 
@@ -400,28 +453,30 @@ export default class extends Controller {
   }
 
   // ---------------------------------------------------------------- recording
-  startSegment() {
-    if (!this.active || !window.MediaRecorder) return
+  // 1-minute segments, uploaded as they finish; "camera" and "screen" are recorded separately.
+  startSegment(label = "camera") {
+    const source = label === "screen" ? this.screenStream : this.stream
+    if (!this.active || !window.MediaRecorder || !source?.getTracks().some((t) => t.readyState === "live")) return
     const type = [ "video/webm;codecs=vp8,opus", "video/webm", "video/mp4" ].find((t) => MediaRecorder.isTypeSupported(t))
-    const recorder = new MediaRecorder(this.stream, { mimeType: type, videoBitsPerSecond: 350_000, audioBitsPerSecond: 48_000 })
+    const recorder = new MediaRecorder(source, { mimeType: type, videoBitsPerSecond: label === "screen" ? 500_000 : 350_000, audioBitsPerSecond: 48_000 })
     const chunks = []
     const stopped = new Promise((resolve) => (recorder.onstop = resolve))
     recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data)
     recorder.start(1000)
-    this.segment = { recorder, chunks, stopped, type: recorder.mimeType || type }
-    this.segmentTimer = setTimeout(() => this.rotateSegment(), SEGMENT_MS)
+    this.segments[label] = { recorder, chunks, stopped, type: recorder.mimeType || type,
+                             timer: setTimeout(() => this.rotateSegment(label), SEGMENT_MS) }
   }
 
-  rotateSegment() {
-    this.closeSegment()
-    this.startSegment()
+  rotateSegment(label) {
+    this.closeSegment(label)
+    this.startSegment(label)
   }
 
-  async closeSegment() {
-    const seg = this.segment
+  async closeSegment(label = "camera") {
+    const seg = this.segments[label]
     if (!seg) return
-    this.segment = null
-    clearTimeout(this.segmentTimer)
+    delete this.segments[label]
+    clearTimeout(seg.timer)
     if (seg.recorder.state !== "inactive") seg.recorder.stop()
     await seg.stopped
     if (!seg.chunks.length) return
@@ -429,11 +484,16 @@ export default class extends Controller {
     const body = new FormData()
     body.append("segment", new Blob(seg.chunks, { type: seg.type }), `segment.${seg.type.includes("mp4") ? "mp4" : "webm"}`)
     body.append("index", this.segmentIndex++)
+    body.append("kind", label)
     const upload = fetch(this.recordingsUrlValue, { method: "POST", headers: { "X-CSRF-Token": csrfToken() }, body })
       .catch((e) => console.warn("Recording upload failed", e))
     this.uploads.add(upload)
     upload.finally(() => this.uploads.delete(upload))
     return upload
+  }
+
+  closeAllSegments() {
+    return Promise.all(Object.keys(this.segments).map((label) => this.closeSegment(label)))
   }
 
   // Called by the exam controller right before submitting.
@@ -447,13 +507,15 @@ export default class extends Controller {
     this.fullscreenGateTarget.classList.add("hidden")
     this.cameraGateTarget.classList.add("hidden")
     this.broadcaster?.stop()
-    const done = this.closeSegment().then(() => Promise.allSettled([ ...this.uploads ]))
+    if (this.hasScreenGateTarget) this.screenGateTarget.classList.add("hidden")
+    const done = this.closeAllSegments().then(() => Promise.allSettled([ ...this.uploads ]))
     event.detail.waits.push(done)
   }
 
   // ---------------------------------------------------------------- violations
   violation(kind, detail, { overlay = true } = {}) {
     if (!this.active || this.active === "terminated") return
+    if (this.picking && [ "window_blur", "tab_switch", "fullscreen_exit" ].includes(kind)) return
     const now = Date.now()
     if (now - (this.lastFired[kind] || 0) < (COOLDOWN[kind] || COOLDOWN.default)) return
     this.lastFired[kind] = now
