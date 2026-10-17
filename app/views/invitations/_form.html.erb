@@ -66,7 +66,11 @@
         <%= f.select :interview_mode, Invitation::INTERVIEW_MODES, {}, class: "input" %>
       </div>
       <div class="field full">
-        <%= f.label :location, "Location / meeting link" %>
+        <%= f.label :meeting_link, "Interview meeting link (optional)" %>
+        <div class="input-wrap"><%= icon("video") %><%= f.url_field :meeting_link, placeholder: "https://meet.google.com/… or Zoom link — leave empty to use the built-in interview room", class: "input" %></div>
+      </div>
+      <div class="field full">
+        <%= f.label :location, "Location / venue" %>
         <div class="input-wrap"><%= icon("map") %><%= f.text_field :location, placeholder: "Office address or Google Meet / Zoom link", class: "input" %></div>
       </div>
       <div class="field full">

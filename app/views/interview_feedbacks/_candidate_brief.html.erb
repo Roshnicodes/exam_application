@@ -1,0 +1,17 @@
+<%# Short candidate summary for the interview side panel. locals: invitation:, hr: false %>
+<div class="card">
+  <div class="card-head"><h2><%= icon("user") %> <%= invitation.candidate_name %></h2><%= status_badge(invitation) %></div>
+  <div class="card-body kv">
+    <div><span>Vacancy</span><b><%= invitation.vacancy %></b></div>
+    <div><span>Experience</span><b><%= invitation.experience.presence || "—" %></b></div>
+    <% if invitation.finished? %>
+      <div><span>Test score</span><b><%= invitation.score %>/<%= invitation.total_marks %> (<%= invitation.percentage %>%)</b></div>
+      <div><span>Result</span><b style="color:<%= invitation.passed? ? 'var(--green)' : 'var(--red)' %>"><%= invitation.result_label %></b></div>
+    <% end %>
+    <div><span>Warnings</span><b><%= invitation.warnings_count %></b></div>
+    <div><span>Interview avg</span><b><%= invitation.interview_average ? "#{invitation.interview_average}/10" : "—" %></b></div>
+  </div>
+  <% if local_assigns[:hr] && invitation.finished? %>
+    <div class="card-body" style="padding-top:0"><%= link_to report_invitation_path(invitation), class: "btn btn-light btn-sm btn-block", target: "_blank" do %><%= icon("file") %> Answer sheet<% end %></div>
+  <% end %>
+</div>

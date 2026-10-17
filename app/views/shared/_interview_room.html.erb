@@ -1,0 +1,48 @@
+<%# Meet-style room. locals: invitation:, token: (candidate), watch_token: (panelist), name: (HR),
+    panelists: (panelist picks their name), leave_url:, side: (HTML for the right panel) %>
+<% panelists = local_assigns[:panelists] %>
+<div class="it-room" data-controller="interview-room"
+     data-interview-room-invitation-id-value="<%= invitation.id %>"
+     data-interview-room-leave-url-value="<%= leave_url %>"
+     <% if local_assigns[:token] %>data-interview-room-token-value="<%= token %>"<% end %>
+     <% if local_assigns[:watch_token] %>data-interview-room-watch-token-value="<%= watch_token %>"<% end %>
+     <% if local_assigns[:name] %>data-interview-room-name-value="<%= name %>"<% end %>
+     data-interview-room-needs-name-value="<%= panelists ? 'true' : 'false' %>">
+
+  <% if panelists %>
+    <form class="card it-join" data-interview-room-target="joinPanel" data-action="submit->interview-room#joinAs">
+      <div class="it-join-ico"><%= icon("video") %></div>
+      <h2>Join the interview</h2>
+      <p class="muted small">Pick your name so the candidate and others know who is speaking.</p>
+      <select class="input" data-interview-room-target="nameInput" required>
+        <option value="">— I am —</option>
+        <% panelists.each do |p| %><option value="<%= p.name %>"><%= p.name %><%= " (#{p.designation})" if p.designation.present? %></option><% end %>
+        <option value="Guest panelist">Someone else (guest panelist)</option>
+      </select>
+      <button class="btn btn-primary btn-lg btn-block"><%= icon("video") %> Join with camera &amp; mic</button>
+    </form>
+  <% end %>
+
+  <div class="it-layout <%= 'no-side' unless local_assigns[:side] %> hidden" data-interview-room-target="room">
+    <div class="it-stage">
+      <div class="it-grid" data-interview-room-target="grid" data-count="1">
+        <div class="it-tile it-self connected">
+          <video data-interview-room-target="localVideo" autoplay muted playsinline></video>
+          <div class="it-placeholder"><span class="avatar">You</span></div>
+          <span class="it-name">You</span>
+        </div>
+      </div>
+      <p class="it-status" data-interview-room-target="status">Joining…</p>
+      <div class="it-controls">
+        <button type="button" class="it-btn" data-interview-room-target="micBtn" data-action="interview-room#toggleMic"><%= icon("mic") %><span>Mute</span></button>
+        <button type="button" class="it-btn" data-interview-room-target="camBtn" data-action="interview-room#toggleCam"><%= icon("video") %><span>Stop video</span></button>
+        <span class="it-count" data-interview-room-target="count">1 in the room</span>
+        <% if invitation.meeting_link.present? %>
+          <a class="it-btn" href="<%= invitation.meeting_link %>" target="_blank" rel="noopener" title="Open the external meeting link"><%= icon("link") %><span>Meet / Zoom</span></a>
+        <% end %>
+        <button type="button" class="it-btn leave" data-action="interview-room#leave"><%= icon("x") %><span>Leave</span></button>
+      </div>
+    </div>
+    <% if local_assigns[:side] %><aside class="it-side"><%= side %></aside><% end %>
+  </div>
+</div>

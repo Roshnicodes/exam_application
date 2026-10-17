@@ -1,6 +1,7 @@
 class ResultsController < ApplicationController
   HEADERS = [ "Rank", "Candidate", "Email", "Mobile", "Vacancy", "Department", "Question paper", "Score", "Total marks",
-              "Percentage", "Pass mark %", "Result", "Exam status", "Warnings", "Time taken (min)", "Submitted at" ].freeze
+              "Percentage", "Pass mark %", "Result", "Exam status", "Warnings", "Time taken (min)", "Submitted at",
+              "Interview avg (/10)", "Panel recommendations" ].freeze
 
   def index
     load_results
@@ -12,15 +13,16 @@ class ResultsController < ApplicationController
       [ @ranks[i.id], i.candidate_name, i.candidate_email, i.entered_phone.presence || i.candidate_phone, i.vacancy, i.department,
         i.quiz.title, i.score, i.total_marks, "#{i.percentage}%", "#{i.quiz.pass_percentage}%", i.result_label,
         i.terminated? ? "Terminated (#{i.termination_reason})" : "Submitted", i.warnings_count,
-        i.time_taken ? (i.time_taken / 60.0).round(1) : "", i.submitted_at&.strftime("%d-%m-%Y %I:%M %p") ].map(&:to_s)
+        i.time_taken ? (i.time_taken / 60.0).round(1) : "", i.submitted_at&.strftime("%d-%m-%Y %I:%M %p"),
+        i.interview_average, i.interview_feedbacks.map { |f| "#{f.reviewer_name}: #{f.recommendation_label}" }.join("; ") ].map(&:to_s)
     end
-    send_xlsx Spreadsheet.build("Results", HEADERS, rows, widths: [ 7, 24, 28, 14, 26, 18, 26, 8, 11, 11, 11, 9, 28, 10, 14, 20 ], highlight: [ 9, 11 ]),
+    send_xlsx Spreadsheet.build("Results", HEADERS, rows, widths: [ 7, 24, 28, 14, 26, 18, 26, 8, 11, 11, 11, 9, 28, 10, 14, 20, 14, 40 ], highlight: [ 9, 11, 16 ]),
               "exam-results-#{Date.current}.xlsx"
   end
 
   private
     def load_results
-      all = Current.user.invitations.completed.includes(:quiz)
+      all = Current.user.invitations.completed.includes(:quiz, :interview_feedbacks)
       @quizzes = Current.user.quizzes.order(:title)
       @vacancies = all.distinct.order(:vacancy).pluck(:vacancy)
 

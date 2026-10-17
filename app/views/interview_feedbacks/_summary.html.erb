@@ -1,0 +1,23 @@
+<% feedbacks = invitation.interview_feedbacks.select(&:persisted?) %>
+<div id="feedback_invitation_<%= invitation.id %>" class="card">
+  <div class="card-head">
+    <h2><%= icon("award") %> Interview feedback</h2>
+    <% if (avg = invitation.interview_average) %><span class="badge sev-success">Avg <%= avg %>/10</span><% end %>
+  </div>
+  <% if feedbacks.any? %>
+    <% feedbacks.each do |fb| %>
+      <div class="fb-item">
+        <div class="row between">
+          <div class="person"><span class="avatar" style="background: <%= gradient_for(fb.reviewer_name) %>"><%= initials_for(fb.reviewer_name) %></span><div><b><%= fb.reviewer_name %></b><span><%= fb.user_id ? "HR" : "Panelist" %> · <%= fb.updated_at.strftime("%d %b, %-I:%M %p") %></span></div></div>
+          <span class="reco-pill reco-<%= fb.recommendation %>"><%= fb.recommendation_label %><%= " · #{fb.average}" if fb.average %></span>
+        </div>
+        <div class="fb-scores">
+          <% fb.scores.each do |name, score| %><span><%= name %> <b><%= score %></b></span><% end %>
+        </div>
+        <% if fb.comments.present? %><p class="small" style="margin-top:.4rem"><%= fb.comments %></p><% end %>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="card-body small muted">No feedback yet. Panelists can score from the interview room or their watch link.</div>
+  <% end %>
+</div>

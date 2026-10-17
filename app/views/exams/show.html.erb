@@ -1,5 +1,5 @@
 <% content_for :title, "Assessment · #{@invitation.vacancy}" %>
-<% otp_step = @invitation.otp_requested? && @invitation.entered_phone.present? && params[:step] != "phone" %>
+<% otp_step = (@invitation.otp_requested? || @invitation.otp_active?) && @invitation.entered_phone.present? && params[:step] != "phone" %>
 <div class="exam-wrap">
   <%= render "header" %>
 
@@ -28,7 +28,7 @@
         <% elsif otp_step %>
           <h2>Enter the OTP</h2>
           <div class="waiting" style="margin-top:1rem"><span class="spinner"></span><span>OTP sent to your HR for <b>+91 <%= @invitation.entered_phone %></b>. Ask HR to share the 6-digit code.</span></div>
-          <%= form_with url: exam_verify_otp_path(@invitation.token), class: "stack", data: { controller: "otp" } do |f| %>
+          <%= form_with url: exam_verify_otp_path(@invitation.token), class: "stack", data: { controller: "otp", turbo: false } do |f| %>
             <div class="otp-field-wrap">
               <input type="text" name="otp" id="otp" class="otp-field" inputmode="numeric" autocomplete="one-time-code"
                      maxlength="6" pattern="[0-9]{6}" required autofocus placeholder="______" aria-label="6 digit OTP"

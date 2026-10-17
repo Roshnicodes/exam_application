@@ -1,0 +1,10 @@
+<% content_for :title, "Interview" %>
+<%= turbo_stream_from @invitation, :candidate %>
+<div class="exam-wrap" style="max-width:1200px">
+  <%= render "header" %>
+  <div class="card card-pad" style="margin-bottom:1rem">
+    <h2>Your interview for <%= @invitation.vacancy %></h2>
+    <p class="muted small" style="margin-top:.3rem">Allow camera and microphone. The panel can see and hear you, and you can see and hear them. Use headphones if you can, to avoid echo.</p>
+  </div>
+  <%= render "shared/interview_room", invitation: @invitation, token: @invitation.token, leave_url: exam_finished_path(@invitation.token) %>
+</div>

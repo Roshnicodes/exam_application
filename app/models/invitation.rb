@@ -14,6 +14,7 @@ class Invitation < ApplicationRecord
   has_secure_token :token, length: 24
   has_secure_token :watch_token, length: 24 # read-only live view link for panelists
 
+  has_many :interview_feedbacks, -> { order(:created_at) }, dependent: :destroy
   has_many :invitation_panelists, dependent: :destroy
   has_many :assigned_panelists, through: :invitation_panelists, source: :employee
 
@@ -27,6 +28,7 @@ class Invitation < ApplicationRecord
   validates :candidate_phone, length: { is: 10 }, allow_blank: true
   validates :status, inclusion: { in: STATUSES }
   validates :max_warnings, numericality: { only_integer: true, in: 0..50 }
+  validates :meeting_link, format: { with: %r{\Ahttps?://}i, message: "must start with http:// or https://" }, allow_blank: true
 
   scope :recent, -> { order(created_at: :desc) }
   scope :live, -> { where(status: "in_progress") }
@@ -64,7 +66,7 @@ class Invitation < ApplicationRecord
 
     update!(entered_phone: phone, otp_code: format("%06d", SecureRandom.random_number(1_000_000)),
             otp_expires_at: OTP_TTL.from_now, otp_attempts: 0,
-            status: (verified? ? status : "otp_requested"))
+            status: (verified? || in_progress? || finished? ? status : "otp_requested"))
     log!("otp_requested", "Mobile +91 #{phone} - OTP #{otp_code}")
   end
 
@@ -74,7 +76,8 @@ class Invitation < ApplicationRecord
     raise ArgumentError, "Too many wrong attempts. Please request a new OTP" if otp_attempts >= MAX_OTP_ATTEMPTS
 
     if ActiveSupport::SecurityUtils.secure_compare(otp_code, code.to_s.strip)
-      update!(status: "verified", verified_at: Time.current, otp_code: nil, otp_expires_at: nil)
+      update!(status: (in_progress? || finished? ? status : "verified"), verified_at: verified_at || Time.current,
+              otp_code: nil, otp_expires_at: nil)
       log!("verified", "Mobile +91 #{entered_phone}")
       true
     else
@@ -213,6 +216,39 @@ class Invitation < ApplicationRecord
     [ self.watch_token, exam_batch&.watch_token ].compact.any? { |t| ActiveSupport::SecurityUtils.secure_compare(t, watch_token.to_s) }
   end
 
+  # ---- Interview room ------------------------------------------------------
+
+  DEFAULT_INTERVIEW_PARAMETERS = [ "Communication", "Technical knowledge", "Problem solving", "Attitude & fit" ].freeze
+
+  def interview_open?
+    interview_status == "open"
+  end
+
+  def open_interview!
+    update!(interview_status: "open", interview_started_at: interview_started_at || Time.current)
+  end
+
+  def close_interview!
+    update!(interview_status: "closed")
+  end
+
+  # What panelists score: the vacancy's selection parameters (minus the online test), else sensible defaults.
+  def interview_parameters
+    names = Array(opening&.selection_parameters).map { |p| p["name"] }.compact_blank
+    names = names.reject { |n| n.match?(/\b(test|exam|assessment|aptitude|written)\b/i) }
+    names.presence || DEFAULT_INTERVIEW_PARAMETERS
+  end
+
+  def interview_average
+    vals = interview_feedbacks.filter_map(&:average)
+    vals.any? ? (vals.sum / vals.size).round(1) : nil
+  end
+
+  def broadcast_feedback
+    broadcast_replace_to [ self, :events ], target: "feedback_invitation_#{id}",
+                         partial: "interview_feedbacks/summary", locals: { invitation: self }
+  end
+
   # Live monitor grid tile (also refreshed on every proctoring event / snapshot).
   def broadcast_tile
     broadcast_replace_to [ user, :invitations ], target: "monitor_tile_#{id}",
@@ -246,6 +282,10 @@ class Invitation < ApplicationRecord
     end
 
     def broadcast_live_state
+      if saved_change_to_interview_status?
+        broadcast_replace_to [ self, :candidate ], target: "interview_cta",
+                             partial: "exams/interview_cta", locals: { invitation: self }
+      end
       broadcast_replace_to [ self, :events ], target: "live_state_invitation_#{id}",
                            partial: "invitations/live_state", locals: { invitation: self }
       broadcast_replace_to [ user, :invitations ], target: "invitation_item_#{id}",

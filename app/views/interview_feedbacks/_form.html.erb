@@ -1,0 +1,37 @@
+<%# Scorecard. locals: invitation:, feedback:, url:, panelists: (panelist view picks a name) %>
+<%= form_with model: feedback, url: url, method: :post, id: "feedback_form_#{invitation.id}", class: "card scorecard" do |f| %>
+  <div class="card-head"><h2><%= icon("award") %> Your scorecard</h2><span class="tiny muted">Out of 10</span></div>
+  <div class="card-body stack">
+    <% if local_assigns[:saved] %>
+      <div class="saved-note"><%= icon("check-circle") %> Saved<%= " — thanks #{feedback.reviewer_name.split.first}" if feedback.reviewer_name.present? %>. You can update it any time.</div>
+    <% end %>
+    <% if feedback.errors.any? %><div class="errors" style="margin:0"><%= feedback.errors.full_messages.to_sentence %></div><% end %>
+    <% if local_assigns[:panelists] %>
+      <div class="field">
+        <label for="employee_id">I am <span class="req">*</span></label>
+        <%= select_tag :employee_id, options_for_select(panelists.map { |p| [ p.name, p.id ] }, feedback.employee_id), prompt: "Choose your name", class: "input", required: true %>
+      </div>
+    <% end %>
+    <% invitation.interview_parameters.each do |param| %>
+      <% value = feedback.scores[param] %>
+      <div class="score-row" data-controller="score">
+        <div class="row between"><label><%= param %></label><b data-score-target="out"><%= value || "–" %></b></div>
+        <input type="range" min="0" max="10" step="1" name="interview_feedback[scores][<%= param %>]" value="<%= value || 5 %>"
+               data-action="input->score#show" data-score-target="input" class="score-range">
+      </div>
+    <% end %>
+    <div class="field">
+      <label>Recommendation <span class="req">*</span></label>
+      <div class="reco-grid">
+        <% InterviewFeedback::RECOMMENDATIONS.each do |key, label| %>
+          <label class="reco reco-<%= key %>"><%= f.radio_button :recommendation, key, required: true %><span><%= label %></span></label>
+        <% end %>
+      </div>
+    </div>
+    <div class="field">
+      <%= f.label :comments, "Comments" %>
+      <%= f.text_area :comments, rows: 3, class: "input", placeholder: "Strengths, concerns, follow-ups…" %>
+    </div>
+    <%= f.button class: "btn btn-primary btn-block" do %><%= icon("check") %> <%= feedback.persisted? ? "Update feedback" : "Submit feedback" %><% end %>
+  </div>
+<% end %>

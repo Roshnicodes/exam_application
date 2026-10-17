@@ -60,7 +60,7 @@ class ExamBatch < ApplicationRecord
       invitation = invitations.build(
         row.merge(user: user, quiz: quiz, opening: opening, vacancy: vacancy_title, department: department,
                   interview_date: interview_date, interview_mode: interview_mode, location: location, notes: notes,
-                  max_warnings: max_warnings, link_expires_at: link_expires_at)
+                  max_warnings: max_warnings, link_expires_at: link_expires_at, meeting_link: meeting_link)
       )
       errors << "Candidate #{i + 1} (#{row[:candidate_name].presence || 'no name'}): #{invitation.errors.full_messages.to_sentence}" unless invitation.valid?
       invitation
@@ -68,7 +68,7 @@ class ExamBatch < ApplicationRecord
     [ built, errors ]
   end
 
-  SHARED_FIELDS = %i[interview_date interview_mode location notes max_warnings link_expires_at].freeze
+  SHARED_FIELDS = %i[interview_date interview_mode location notes max_warnings link_expires_at meeting_link].freeze
 
   # Pushes schedule / rule changes to candidates who haven't started yet.
   def sync_pending_invitations!

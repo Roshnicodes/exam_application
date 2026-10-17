@@ -1,0 +1,15 @@
+<div id="interview_cta">
+  <% if invitation.interview_open? %>
+    <div class="interview-cta">
+      <span class="ring-ico"><%= icon("video") %></span>
+      <div class="grow"><b>Your interview has started</b><p class="small">The panel is waiting for you in the interview room.</p></div>
+      <%= link_to exam_interview_path(invitation.token), class: "btn btn-primary btn-lg", data: { turbo: false } do %><%= icon("video") %> Join interview<% end %>
+    </div>
+  <% elsif invitation.meeting_link.present? && !invitation.interview_status.in?(%w[closed]) %>
+    <div class="interview-cta soft">
+      <span class="ring-ico"><%= icon("link") %></span>
+      <div class="grow"><b>Interview meeting link</b><p class="small">Join at the scheduled time<%= " (#{invitation.interview_date.strftime('%d %b, %-I:%M %p')})" if invitation.interview_date %>.</p></div>
+      <a class="btn btn-light" href="<%= invitation.meeting_link %>" target="_blank" rel="noopener"><%= icon("link") %> Open meeting</a>
+    </div>
+  <% end %>
+</div>

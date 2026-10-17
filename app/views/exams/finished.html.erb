@@ -1,7 +1,9 @@
 <% content_for :title, "Exam submitted" %>
 <% terminated = @invitation.terminated? %>
+<%= turbo_stream_from @invitation, :candidate %>
 <div class="exam-wrap" data-controller="media-cleanup">
   <%= render "header" %>
+  <%= render "exams/interview_cta", invitation: @invitation %>
   <div class="card finish-card">
     <div class="big-ico <%= 'bad' if terminated %>"><%= icon(terminated ? "x-circle" : "check-circle") %></div>
     <% if terminated %>
@@ -26,6 +28,6 @@
       <% if @invitation.interview_date %><div><span>Interview</span><b><%= @invitation.interview_date.strftime("%d %b %Y, %-I:%M %p") %></b></div><% end %>
       <div><span>Time taken</span><b><%= duration_between(@invitation.started_at, @invitation.submitted_at) %></b></div>
     </div>
-    <p class="tiny muted" style="margin-top:2rem">You can close this window now.</p>
+    <p class="tiny muted" style="margin-top:2rem"><%= @invitation.interview_open? ? "Your interview has started — use the Join interview button above." : "Keep this page open if HR told you an interview follows — a Join button appears here when it starts." %></p>
   </div>
 </div>

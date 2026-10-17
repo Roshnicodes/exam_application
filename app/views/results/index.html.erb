@@ -42,6 +42,7 @@
         <span>
           <span class="result-badge <%= i.passed? ? 'pass' : 'fail' %>"><%= icon(i.passed? ? "check-circle" : "x-circle") %> <%= i.result_label %></span>
           <% if i.terminated? %><small class="term">Terminated</small><% end %>
+          <% if (avg = i.interview_average) %><small class="iv-score" title="Interview average from <%= pluralize(i.interview_feedbacks.size, 'panelist') %>">🎤 <%= avg %>/10</small><% end %>
         </span>
         <span class="hide-md"><% if i.warnings_count.positive? %><span class="warn-pill"><%= icon("alert") %> <%= i.warnings_count %></span><% else %><span class="muted small">0</span><% end %></span>
         <span class="hide-md small"><%= duration_between(i.started_at, i.submitted_at) %></span>

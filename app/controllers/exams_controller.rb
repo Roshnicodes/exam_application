@@ -9,8 +9,8 @@ class ExamsController < ApplicationController
              with: -> { redirect_to exam_path(params[:token]), alert: "Too many attempts. Please wait a few minutes." }
 
   before_action :set_invitation
-  before_action :redirect_if_finished, except: %i[finished events recordings]
-  before_action :require_verified, only: %i[instructions start take answer submit]
+  before_action :redirect_if_finished, except: %i[finished events recordings interview]
+  before_action :require_verified, only: %i[instructions start take answer submit interview]
   before_action :auto_submit_if_time_up, only: %i[take answer submit]
 
   rescue_from ActiveRecord::RecordNotFound do
@@ -21,6 +21,7 @@ class ExamsController < ApplicationController
   end
 
   def show
+    return redirect_to exam_interview_path(@invitation.token) if @invitation.interview_open? && candidate_verified?
     return redirect_to exam_take_path(@invitation.token) if @invitation.in_progress? && candidate_verified?
     redirect_to exam_instructions_path(@invitation.token) if @invitation.verified? && candidate_verified?
   end
@@ -37,6 +38,8 @@ class ExamsController < ApplicationController
   def verify_otp
     @invitation.verify_otp!(params[:otp])
     session[session_key] = @invitation.entered_phone
+    return redirect_to exam_interview_path(@invitation.token), notice: "Verified — joining the interview." if @invitation.interview_open?
+
     redirect_to exam_instructions_path(@invitation.token), notice: "Verified successfully!"
   rescue ArgumentError => e
     redirect_to exam_path(@invitation.token, step: "otp"), alert: e.message
@@ -98,6 +101,11 @@ class ExamsController < ApplicationController
     redirect_to exam_path(@invitation.token) unless @invitation.finished?
   end
 
+  # Two-way video interview with the panel (after the test, once HR opens the room).
+  def interview
+    redirect_to exam_finished_path(@invitation.token), alert: "The interview room is not open yet." unless @invitation.interview_open?
+  end
+
   private
     def set_invitation
       @invitation = Invitation.includes(:quiz, :user).find_by!(token: params[:token])
@@ -117,7 +125,11 @@ class ExamsController < ApplicationController
     end
 
     def redirect_if_finished
-      redirect_to exam_finished_path(@invitation.token) if @invitation.finished?
+      return unless @invitation.finished?
+      # a candidate on a new device may still need the OTP to join an open interview
+      return if @invitation.interview_open? && action_name.in?(%w[show request_otp verify_otp])
+
+      redirect_to exam_finished_path(@invitation.token)
     end
 
     def auto_submit_if_time_up

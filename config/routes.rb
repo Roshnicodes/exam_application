@@ -28,12 +28,20 @@ Rails.application.routes.draw do
     get :export, on: :collection
   end
   resources :invitations, only: %i[index new create show edit update destroy] do
-    get :report, on: :member
+    member do
+      get :report
+      get :interview
+      post :open_interview
+      post :close_interview
+      post :feedback
+    end
   end
 
   # Read-only live view for interview panelists (no login, secret link)
   get "watch/batch/:watch_token" => "watch#batch", as: :watch_batch
   get "watch/:watch_token" => "watch#show", as: :watch
+  get "watch/:watch_token/interview" => "watch#interview", as: :watch_interview
+  post "watch/:watch_token/feedback" => "watch#feedback", as: :watch_feedback
 
   # Public candidate flow, addressed by the shared link token
   scope "exam/:token", controller: :exams, as: :exam do
@@ -48,6 +56,7 @@ Rails.application.routes.draw do
     post :recordings
     post :submit
     get :finished
+    get :interview
   end
 
   get "up" => "rails/health#show", as: :rails_health_check

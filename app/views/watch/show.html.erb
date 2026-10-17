@@ -4,6 +4,8 @@
       title: @invitation.candidate_name, avatar: initials_for(@invitation.candidate_name),
       subtitle: [ @invitation.vacancy, @invitation.department.presence, @invitation.quiz.title ].compact.join(" · "),
       chips: [ [ "clock", "#{@invitation.quiz.duration_minutes} min" ], [ "list", "#{@invitation.quiz.questions.size} questions" ] ] } do %>
+  <% if @invitation.meeting_link.present? %><a class="btn btn-light" href="<%= @invitation.meeting_link %>" target="_blank" rel="noopener"><%= icon("link") %> Meet / Zoom</a><% end %>
+  <%= link_to watch_interview_path(params[:watch_token]), class: "btn btn-primary" do %><%= icon("video") %> <%= @invitation.interview_open? ? "Join interview (live now)" : "Interview room" %><% end %>
 <% end %>
 
 <div class="split">
@@ -21,5 +23,6 @@
   </div>
   <div class="stack">
     <%= render "invitations/live_state", invitation: @invitation %>
+    <%= render "interview_feedbacks/summary", invitation: @invitation %>
   </div>
 </div>

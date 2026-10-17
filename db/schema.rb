@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_16_104754) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_17_043630) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -94,10 +94,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_104754) do
     t.string "vacancy_title"
     t.string "department"
     t.string "watch_token"
+    t.string "meeting_link"
     t.index ["quiz_id"], name: "index_exam_batches_on_quiz_id"
     t.index ["user_id"], name: "index_exam_batches_on_user_id"
     t.index ["vacancy_id"], name: "index_exam_batches_on_vacancy_id"
     t.index ["watch_token"], name: "index_exam_batches_on_watch_token", unique: true
+  end
+
+  create_table "interview_feedbacks", force: :cascade do |t|
+    t.bigint "invitation_id", null: false
+    t.bigint "employee_id"
+    t.bigint "user_id"
+    t.string "reviewer_name", null: false
+    t.jsonb "scores", default: {}, null: false
+    t.string "recommendation", null: false
+    t.text "comments"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["employee_id"], name: "index_interview_feedbacks_on_employee_id"
+    t.index ["invitation_id", "employee_id"], name: "index_interview_feedbacks_on_invitation_id_and_employee_id", unique: true, where: "(employee_id IS NOT NULL)"
+    t.index ["invitation_id", "user_id"], name: "index_interview_feedbacks_on_invitation_id_and_user_id", unique: true, where: "(user_id IS NOT NULL)"
+    t.index ["invitation_id"], name: "index_interview_feedbacks_on_invitation_id"
+    t.index ["user_id"], name: "index_interview_feedbacks_on_user_id"
   end
 
   create_table "invitation_panelists", force: :cascade do |t|
@@ -144,6 +162,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_104754) do
     t.bigint "vacancy_id"
     t.bigint "exam_batch_id"
     t.string "watch_token"
+    t.string "interview_status"
+    t.datetime "interview_started_at"
+    t.string "meeting_link"
     t.index ["exam_batch_id"], name: "index_invitations_on_exam_batch_id"
     t.index ["quiz_id"], name: "index_invitations_on_quiz_id"
     t.index ["token"], name: "index_invitations_on_token", unique: true
@@ -244,6 +265,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_104754) do
   add_foreign_key "exam_batches", "quizzes"
   add_foreign_key "exam_batches", "users"
   add_foreign_key "exam_batches", "vacancies"
+  add_foreign_key "interview_feedbacks", "employees"
+  add_foreign_key "interview_feedbacks", "invitations"
+  add_foreign_key "interview_feedbacks", "users"
   add_foreign_key "invitation_panelists", "employees"
   add_foreign_key "invitation_panelists", "invitations"
   add_foreign_key "invitations", "exam_batches"

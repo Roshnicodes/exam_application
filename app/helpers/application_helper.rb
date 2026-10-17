@@ -129,7 +129,8 @@ module ApplicationHelper
 
   def candidate_share_text(invitation)
     "Hi #{invitation.candidate_name}, please take your online assessment for the #{invitation.vacancy} role here: " \
-      "#{exam_url(invitation.token)} (Your HR will share the OTP with you.)"
+      "#{exam_url(invitation.token)} (Your HR will share the OTP with you.)" +
+      (invitation.meeting_link.present? ? " Interview meeting link: #{invitation.meeting_link}" : "")
   end
 
   def panelist_share_text(employee, invitation: nil, batch: nil)

@@ -1,0 +1,19 @@
+<div class="card interview-card">
+  <div class="card-head">
+    <h2><%= icon("video") %> Interview</h2>
+    <% if invitation.interview_open? %><span class="badge badge-in_progress"><span class="dot"></span>Room open</span>
+    <% elsif invitation.interview_status == "closed" %><span class="badge">Done</span><% end %>
+  </div>
+  <div class="card-body stack">
+    <% if invitation.interview_open? %>
+      <%= link_to interview_invitation_path(invitation), class: "btn btn-primary btn-block" do %><%= icon("video") %> Join interview room<% end %>
+      <%= button_to close_interview_invitation_path(invitation), class: "btn btn-light btn-block", form: { data: { turbo_confirm: "End the interview for everyone?" } } do %><%= icon("x") %> End interview<% end %>
+    <% else %>
+      <p class="small muted">Video interview with the panel — candidate, HR and panelists see and hear each other. <%= "Usually after the test." unless invitation.finished? %></p>
+      <%= button_to open_interview_invitation_path(invitation), class: "btn btn-primary btn-block" do %><%= icon("play") %> <%= invitation.interview_status == "closed" ? "Re-open interview room" : "Start interview" %><% end %>
+    <% end %>
+    <% if invitation.meeting_link.present? %>
+      <a class="btn btn-light btn-block" href="<%= invitation.meeting_link %>" target="_blank" rel="noopener"><%= icon("link") %> Open Meet / Zoom link</a>
+    <% end %>
+  </div>
+</div>

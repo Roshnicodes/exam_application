@@ -6,6 +6,7 @@ class Employee < ApplicationRecord
   has_many :vacancies, through: :vacancy_panelists
   has_many :invitation_panelists, dependent: :destroy
   has_many :exam_batch_panelists, dependent: :destroy
+  has_many :interview_feedbacks, dependent: :nullify
 
   normalizes :employee_code, :name, :department_name, :designation, with: ->(v) { v.to_s.squish.presence }
   normalizes :email, with: ->(e) { e.to_s.strip.downcase.presence }
