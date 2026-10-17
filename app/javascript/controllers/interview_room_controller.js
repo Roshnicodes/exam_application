@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 import { cable } from "@hotwired/turbo-rails"
 import { ICE_SERVERS, newViewerId } from "lib/live_video"
-import { getStream, screenShareSupported, getScreenStream, requestScreen } from "lib/media"
+import { getStream, cameraHelp, screenShareSupported, getScreenStream, requestScreen } from "lib/media"
 import { alarm, chime } from "lib/sound"
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
@@ -102,12 +102,12 @@ export default class extends Controller {
     if (!this.waitingCandidate) this.roomTarget.classList.remove("hidden")
     this.setStatus("Starting camera…")
     try {
-      this.stream = this.candidate ? await getStream()
-        : await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: { echoCancellation: true, noiseSuppression: true } })
+      this.stream = this.candidate ? await getStream() : await this.panelMedia()
       if (!this.candidate && !this.screenShareSupported) this.stream.getVideoTracks()[0]?.applyConstraints?.({ facingMode: "user" })
-    } catch {
+    } catch (e) {
       this.stream = new MediaStream() // join without camera / mic (can still see and hear others)
-      this.setStatus("Camera / mic blocked — you can still watch and listen")
+      const help = cameraHelp(e)
+      this.mediaNote = `${help.title}. ${help.help} You can still watch and listen.`
     }
     this.localVideoTarget.srcObject = this.stream
     this.updateButtons()
@@ -122,10 +122,25 @@ export default class extends Controller {
     if (this.candidate && !this.testValue) window.dispatchEvent(new Event("interview:ready"))
 
     this.subscription = await cable.subscribeTo(params, {
-      connected: () => this.setStatus(this.testValue ? "Connected — waiting for the candidate (they join automatically while in the test)" : "Connected — waiting for others to join"),
+      connected: () => this.setStatus([ this.mediaNote, this.testValue ? "Connected — waiting for the candidate (they join automatically while in the test)" : "Connected — waiting for others to join" ].filter(Boolean).join(" · ")),
       rejected: () => this.setStatus(this.testValue ? "The call is available while the candidate is taking the test" : "The interview room is not open"),
       received: (m) => this.received(m)
     })
+  }
+
+  // Camera + mic, or whichever of the two works (no webcam, camera busy in another app…).
+  async panelMedia() {
+    const video = { width: { ideal: 640 }, height: { ideal: 480 } }
+    const audio = { echoCancellation: true, noiseSuppression: true }
+    try {
+      return await navigator.mediaDevices.getUserMedia({ video, audio })
+    } catch (e) {
+      if (e.name === "NotAllowedError") throw e
+      const partial = await navigator.mediaDevices.getUserMedia({ audio }).catch(() => navigator.mediaDevices.getUserMedia({ video }))
+        .catch(() => { throw e })
+      this.mediaNote = cameraHelp(e).title
+      return partial
+    }
   }
 
   received(message) {
@@ -536,7 +551,7 @@ export default class extends Controller {
     const n = this.peers.size + 1
     if (this.hasCountTarget) this.countTarget.textContent = `${n} in the room`
     this.gridTarget.dataset.count = n
-    if (this.peers.size) this.setStatus("")
+    if (this.peers.size) this.setStatus(this.mediaNote || "")
     if (this.waitingCandidate) {
       // the candidate's call panel opens while someone from the panel is in the call
       const inCall = this.peers.size > 0

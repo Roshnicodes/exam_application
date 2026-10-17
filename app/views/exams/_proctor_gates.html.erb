@@ -1,8 +1,8 @@
 <div class="warning-overlay hidden" data-proctor-target="cameraGate" style="z-index:2001">
   <div class="warning-box">
     <div class="big-ico"><%= icon("camera") %></div>
-    <h2>Camera required</h2>
-    <p>Your camera is blocked or disconnected. Allow camera &amp; microphone access in your browser's address bar, then try again. HR has been notified.</p>
+    <h2 data-proctor-target="cameraTitle">Camera required</h2>
+    <p data-proctor-target="cameraHelp">Your camera is blocked or disconnected. Allow camera &amp; microphone access in your browser's address bar, then try again. HR has been notified.</p>
     <button type="button" class="btn btn-primary btn-lg btn-block" data-action="proctor#retryCamera"><%= icon("camera") %> Try again</button>
   </div>
 </div>

@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { getStream, snapshot, csrfToken, screenShareSupported, getScreenStream, requestScreen } from "lib/media"
+import { getStream, snapshot, csrfToken, screenShareSupported, getScreenStream, requestScreen, cameraHelp } from "lib/media"
 import { loadFaceDetector, loadObjectDetector } from "lib/face_detector"
 import { warningBeep, unlockAudio } from "lib/sound"
 import { Broadcaster } from "lib/live_video"
@@ -32,7 +32,7 @@ const SNAPSHOT_MS = 30_000
 
 // Watches the candidate: camera recording, face detection, focus / full screen / keyboard activity.
 export default class extends Controller {
-  static targets = [ "video", "faceStatus", "warnLabel", "warning", "warningText", "warningDots", "warningLeft", "fullscreenGate", "cameraGate",
+  static targets = [ "video", "faceStatus", "warnLabel", "warning", "warningText", "warningDots", "warningLeft", "fullscreenGate", "cameraGate", "cameraTitle", "cameraHelp",
                      "screenGate", "screenError" ]
   static values = { eventsUrl: String, recordingsUrl: String, warnings: Number, maxWarnings: Number, token: String,
                     mode: { type: String, default: "exam" } }
@@ -129,10 +129,13 @@ export default class extends Controller {
       this.stream = await getStream()
       this.cameraGateTarget.classList.add("hidden")
       return true
-    } catch {
-      this.setFace("bad", "Camera blocked — allow camera access")
+    } catch (e) {
+      const help = cameraHelp(e)
+      this.setFace("bad", help.title)
+      if (this.hasCameraTitleTarget) this.cameraTitleTarget.textContent = help.title
+      if (this.hasCameraHelpTarget) this.cameraHelpTarget.textContent = `${help.help} HR has been notified.`
       this.cameraGateTarget.classList.remove("hidden")
-      this.violation("camera_off", "Camera permission denied", { overlay: false })
+      this.violation("camera_off", `${help.title} (${e?.name || "error"})`, { overlay: false })
       return false
     }
   }

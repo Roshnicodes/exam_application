@@ -4,11 +4,50 @@ let stream
 export async function getStream() {
   if (stream && stream.getVideoTracks().some((t) => t.readyState === "live")) return stream
 
-  stream = await navigator.mediaDevices.getUserMedia({
-    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
-    audio: { echoCancellation: true, noiseSuppression: false }
-  })
+  if (!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error("No camera API"), { name: "NoMediaApi" })
+  const video = { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }
+  const audio = { echoCancellation: true, noiseSuppression: false }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video, audio })
+  } catch (e) {
+    if (e.name === "NotAllowedError" || e.name === "SecurityError") throw e
+    // no microphone, or the camera can't do these settings / is busy: retry with simpler requests
+    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .catch(() => navigator.mediaDevices.getUserMedia({ video: true }))
+      .catch(() => { throw e })
+  }
   return stream
+}
+
+// Why the camera didn't start, in plain words, with what to do about it.
+export function cameraHelp(error) {
+  const ua = navigator.userAgent
+  if (/WhatsApp|FBAN|FBAV|Instagram|Line\/|; wv\)/i.test(ua)) {
+    return { short: "Open in Chrome", title: "Open this link in Chrome",
+             help: "This link opened inside an app (e.g. WhatsApp), which can't use the camera. Tap ⋮ (top right) → “Open in Chrome” / “Open in browser”, or copy the link into Chrome." }
+  }
+  if (!window.isSecureContext) {
+    return { short: "Not secure (https)", title: "Use the https:// link", help: "The camera only works on a secure https:// link. Open the exact link HR sent you." }
+  }
+  switch (error?.name) {
+    case "NotAllowedError":
+    case "SecurityError":
+      return { short: "Permission blocked", title: "Camera permission is blocked",
+               help: "Click the 🔒 / camera icon at the left of the address bar → set Camera and Microphone to “Allow” → reload the page. If it stays blocked, also allow the browser to use the camera in your computer's privacy settings (Windows: Settings → Privacy → Camera; Mac: System Settings → Privacy → Camera)." }
+    case "NotReadableError":
+    case "TrackStartError":
+    case "AbortError":
+      return { short: "Camera busy", title: "Camera is being used by another app",
+               help: "Close Zoom, Teams, Meet, WhatsApp desktop or any other tab/app using the camera, then try again." }
+    case "NotFoundError":
+    case "DevicesNotFoundError":
+    case "OverconstrainedError":
+      return { short: "No camera found", title: "No camera found", help: "Connect a webcam (or use a laptop / phone with a camera) and try again." }
+    case "NoMediaApi":
+      return { short: "Browser not supported", title: "This browser can't use the camera", help: "Open the link in the latest Google Chrome or Microsoft Edge." }
+    default:
+      return { short: "Camera error", title: "Camera didn't start", help: `Reload the page and allow the camera. (${error?.name || "unknown error"})` }
+  }
 }
 
 export function stopStream() {

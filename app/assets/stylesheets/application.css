@@ -1727,3 +1727,5 @@ a:hover { color: var(--brand); }
 .it-room.test-call .it-controls { gap: .45rem; }
 .it-room.test-call .it-btn { padding: .6rem .9rem; font-size: .8rem; }
 #test-call .card-body { padding: .8rem; }
+.cam-help { margin: -.2rem 0 .3rem; padding: .7rem .85rem; border-radius: 12px; background: var(--red-soft); color: #991b1b; font-size: .82rem; line-height: 1.45; }
+.cam-help b { display: block; margin-bottom: .15rem; }

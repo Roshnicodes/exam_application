@@ -1,11 +1,11 @@
 import { Controller } from "@hotwired/stimulus"
-import { getStream, screenShareSupported, getScreenStream, requestScreen } from "lib/media"
+import { getStream, cameraHelp, screenShareSupported, getScreenStream, requestScreen } from "lib/media"
 import { loadFaceDetector } from "lib/face_detector"
 import { unlockAudio } from "lib/sound"
 
 // Pre-exam check: camera + mic permission, exactly one face, single display, full screen support.
 export default class extends Controller {
-  static targets = [ "video", "tag", "placeholder", "camCheck", "faceCheck", "screenCheck", "shareCheck", "shareBtn", "agree", "startBtn", "allowBtn", "form" ]
+  static targets = [ "video", "tag", "placeholder", "camCheck", "faceCheck", "screenCheck", "shareCheck", "shareBtn", "agree", "startBtn", "allowBtn", "form", "camHelp" ]
 
   connect() {
     this.state = { cam: false, face: false, screen: false, share: false }
@@ -25,12 +25,18 @@ export default class extends Controller {
       this.placeholderTarget.classList.add("hidden")
       this.tagTarget.classList.remove("hidden")
       this.set("camCheck", true, "Ready")
+      if (this.hasCamHelpTarget) this.camHelpTarget.classList.add("hidden")
       this.state.cam = true
       this.allowBtnTarget.classList.add("hidden")
       unlockAudio()
       this.watchFace()
     } catch (e) {
-      this.set("camCheck", false, e.name === "NotAllowedError" ? "Permission denied" : "Not found")
+      const help = cameraHelp(e)
+      this.set("camCheck", false, help.short)
+      if (this.hasCamHelpTarget) {
+        this.camHelpTarget.innerHTML = `<b>${help.title}</b><span>${help.help}</span>`
+        this.camHelpTarget.classList.remove("hidden")
+      }
       this.allowBtnTarget.innerHTML = "Try again"
     }
     this.refresh()
