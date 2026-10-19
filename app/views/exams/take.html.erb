@@ -49,7 +49,8 @@
               <% if i == @questions.size - 1 %>
                 <button type="button" class="btn btn-success" data-action="exam#confirmSubmit"><%= icon("check") %> Finish exam</button>
               <% else %>
-                <button type="button" class="btn btn-primary" data-action="exam#next">Save &amp; next <%= icon("chevron-right") %></button>
+                <button type="button" class="btn btn-light" data-action="exam#skip" title="Leave this question for now — come back to it any time">Skip <%= icon("chevron-right") %></button>
+                <button type="button" class="btn btn-primary" data-action="exam#next">Next <%= icon("chevron-right") %></button>
               <% end %>
             </div>
           </div>
@@ -72,7 +73,8 @@
             <button type="button" data-exam-target="navButton" data-action="exam#goto" data-index="<%= i %>" class="<%= 'answered' unless @invitation.answers[q.id.to_s].nil? %>"><%= i + 1 %></button>
           <% end %>
         </div>
-        <div class="legend"><span><i style="background:var(--green)"></i>Answered</span><span><i style="background:var(--amber)"></i>Review</span><span><i style="background:var(--surface-2);border:1px solid var(--line)"></i>Not visited</span></div>
+        <div class="legend"><span><i style="background:var(--green)"></i>Answered</span><span><i style="background:#fee2e2;border:1px solid #fca5a5"></i>Skipped</span><span><i style="background:var(--amber)"></i>Review</span><span><i style="background:var(--surface-2);border:1px solid var(--line)"></i>Not visited</span></div>
+        <p class="tiny muted" style="margin-top:.6rem">You can skip any question and come back — click a number above.</p>
       </div>
     </aside>
   </div>
@@ -82,6 +84,7 @@
       <div class="modal-top"><div class="ring-ico" style="animation:none"><%= icon("send") %></div><h2>Submit your exam?</h2><p>You won't be able to change answers after submitting.</p></div>
       <div class="card-body">
         <p><b data-exam-target="confirmAnswered">0</b> of <%= @questions.size %> questions answered.</p>
+        <div class="skipped-list hidden" data-exam-target="skippedList"></div>
         <div class="row" style="margin-top:1.2rem">
           <button type="button" class="btn btn-light grow" data-action="exam#cancelSubmit">Keep working</button>
           <button type="button" class="btn btn-primary grow" data-action="exam#submit"><%= icon("check") %> Submit now</button>
@@ -93,8 +96,8 @@
   <div class="warning-overlay hidden" data-proctor-target="cameraGate" style="z-index:2001">
     <div class="warning-box">
       <div class="big-ico"><%= icon("camera") %></div>
-      <h2>Camera required</h2>
-      <p>Your camera is blocked or disconnected. Allow camera &amp; microphone access in your browser's address bar, then try again. HR has been notified.</p>
+      <h2 data-proctor-target="cameraTitle">Camera required</h2>
+      <p data-proctor-target="cameraHelp">Your camera is blocked or disconnected. Allow camera &amp; microphone access in your browser's address bar, then try again. HR has been notified.</p>
       <button type="button" class="btn btn-primary btn-lg btn-block" data-action="proctor#retryCamera"><%= icon("camera") %> Try again</button>
     </div>
   </div>

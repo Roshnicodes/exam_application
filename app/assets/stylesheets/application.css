@@ -1746,3 +1746,8 @@ a:hover { color: var(--brand); }
 .qa-blue { background: linear-gradient(135deg, #38bdf8, #0284c7); box-shadow: 0 12px 24px -14px #0284c7; }
 .state-pill.violet { background: #f3e8ff; color: #7e22ce; }
 .state-pill svg.icon { width: .95em; height: .95em; }
+.q-nav button.skipped:not(.answered) { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
+.skipped-list { margin-top: .8rem; text-align: left; }
+.skipped-list div { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .4rem; }
+.skipped-list button { width: 40px; height: 36px; border-radius: 10px; border: 1.5px solid #fca5a5; background: #fee2e2; color: #b91c1c; font: inherit; font-weight: 800; cursor: pointer; }
+.skipped-list button:hover { background: #fecaca; }

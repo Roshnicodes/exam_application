@@ -3,7 +3,8 @@ import { csrfToken } from "lib/media"
 
 // Question navigation, answer autosave, countdown and submission.
 export default class extends Controller {
-  static targets = [ "form", "question", "navButton", "timer", "clock", "answeredLabel", "confirm", "confirmAnswered", "submitting", "submittingTitle" ]
+  static targets = [ "form", "question", "navButton", "timer", "clock", "answeredLabel", "confirm", "confirmAnswered", "submitting", "submittingTitle",
+                     "skippedList" ]
   static values = { secondsLeft: Number, answerUrl: String }
 
   connect() {
@@ -18,8 +19,9 @@ export default class extends Controller {
     clearInterval(this.timer)
   }
 
-  // ---- navigation
+  // ---- navigation: questions can be answered in any order, skipped and revisited
   show(i) {
+    if (i !== this.index) this.markVisited(this.index)
     this.index = Math.max(0, Math.min(i, this.questionTargets.length - 1))
     this.questionTargets.forEach((q, n) => q.classList.toggle("hidden", n !== this.index))
     this.navButtonTargets.forEach((b, n) => b.classList.toggle("current", n === this.index))
@@ -27,8 +29,23 @@ export default class extends Controller {
   }
 
   next() { this.show(this.index + 1) }
+  skip() { this.show(this.index + 1) }
   prev() { this.show(this.index - 1) }
-  goto(e) { this.show(Number(e.currentTarget.dataset.index)) }
+  goto(e) {
+    this.confirmTarget.classList.add("hidden")
+    this.show(Number(e.currentTarget.dataset.index))
+  }
+
+  // a question left without an answer shows as "skipped" in the number grid
+  markVisited(i) {
+    const q = this.questionTargets[i]
+    const button = this.navButtonTargets[i]
+    if (q && button) button.classList.toggle("skipped", !q.querySelector("input:checked"))
+  }
+
+  unansweredIndexes() {
+    return this.questionTargets.map((q, i) => (q.querySelector("input:checked") ? null : i)).filter((i) => i !== null)
+  }
 
   flag() {
     this.navButtonTargets[this.index].classList.toggle("flagged")
@@ -46,6 +63,7 @@ export default class extends Controller {
   answer(e) {
     const q = e.target.closest("[data-question-id]")
     this.navButtonTargets[this.questionTargets.indexOf(q)].classList.add("answered")
+    this.navButtonTargets[this.questionTargets.indexOf(q)].classList.remove("skipped")
     this.save(q.dataset.questionId, e.target.value)
     this.updateCount()
   }
@@ -88,7 +106,13 @@ export default class extends Controller {
 
   // ---- submission
   confirmSubmit() {
+    this.markVisited(this.index)
     this.confirmAnsweredTarget.textContent = this.answeredCount()
+    const left = this.unansweredIndexes()
+    this.skippedListTarget.classList.toggle("hidden", left.length === 0)
+    this.skippedListTarget.innerHTML = left.length
+      ? `<p class="small">Not answered yet — tap one to go back:</p><div>${left.map((i) => `<button type="button" data-index="${i}" data-action="exam#goto">${i + 1}</button>`).join("")}</div>`
+      : ""
     this.confirmTarget.classList.remove("hidden")
   }
 
