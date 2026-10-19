@@ -2,7 +2,7 @@
 <%= turbo_stream_from @invitation, :events %>
 <%= render layout: "shared/page_header", locals: {
       title: "#{@round.name} — #{@invitation.candidate_name}", icon: "video",
-      subtitle: @round.open? ? "Live now — you can see and talk to the candidate and the rest of the panel." : "This round is #{@round.status_label.downcase}. You can join and wait; the candidate appears once HR starts it.",
+      subtitle: @round.open? ? "Live now" : "Round #{@round.status_label.downcase}",
       chips: [ ([ "calendar", @round.scheduled_at.strftime("%a %d %b, %-I:%M %p") ] if @round.scheduled_at) ].compact } do %>
   <%= link_to "Back to candidate", watch_path(params[:watch_token]), class: "btn btn-light" %>
 <% end %>

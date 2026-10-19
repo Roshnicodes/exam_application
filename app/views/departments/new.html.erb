@@ -1,5 +1,5 @@
 <% content_for :title, "New department" %>
-<%= render layout: "shared/page_header", locals: { title: "New department", subtitle: nil, icon: "building", crumbs: [ [ "Departments", departments_path ] ] } do %>
+<%= render layout: "shared/page_header", locals: { title: "New department", icon: "building", crumbs: [ [ "Departments", departments_path ] ] } do %>
 <% end %>
 <%= form_with model: @department, class: "card" do |f| %>
   <div class="form-section stack"><%= render "shared/errors", record: @department %><%= render "fields", f: f %></div>

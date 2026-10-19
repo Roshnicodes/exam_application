@@ -1,6 +1,6 @@
 <% content_for :title, "New vacancy" %>
 <%= render layout: "shared/page_header", locals: {
-      title: "New vacancy", subtitle: "Define the post, eligibility, selection process and interview panel.", icon: "briefcase",
+      title: "New vacancy", icon: "briefcase",
       crumbs: [ [ "Vacancies", vacancies_path ] ] } do %>
 <% end %>
 <%= render "form", vacancy: @vacancy %>

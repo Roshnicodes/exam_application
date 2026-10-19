@@ -3,7 +3,7 @@
     <%= render "shared/errors", record: vacancy %>
     <div class="form-section-head">
       <span class="ico"><%= icon("briefcase") %></span>
-      <div><h3>Post details</h3><p>Which department, what post and how many openings.</p></div>
+      <div><h3>Post details</h3></div>
     </div>
     <div class="fields">
       <div class="field" data-controller="combobox" data-combobox-placeholder-value="Search department…">
@@ -36,7 +36,7 @@
   <div class="form-section">
     <div class="form-section-head">
       <span class="ico"><%= icon("graduation") %></span>
-      <div><h3>Eligibility</h3><p>Qualification and experience required for this post.</p></div>
+      <div><h3>Eligibility</h3></div>
     </div>
     <div class="fields">
       <div class="field full">
@@ -57,7 +57,7 @@
   <div class="form-section" data-controller="repeater">
     <div class="form-section-head">
       <span class="ico"><%= icon("target") %></span>
-      <div class="grow"><h3>Selection parameters</h3><p>How candidates are evaluated, with weightage (total 100%). A stage named with <b>"test"</b> (e.g. Online test) takes the exam score automatically; every other stage (Technical interview, HR interview…) is scored 1-10 by the panel in the interview scorecard.</p></div>
+      <div class="grow"><h3>Selection parameters</h3></div>
       <span class="small">Total <span class="weight-total" data-repeater-target="total">0%</span></span>
     </div>
     <div data-repeater-target="list">
@@ -73,7 +73,7 @@
   <div class="form-section">
     <div class="form-section-head">
       <span class="ico"><%= icon("users") %></span>
-      <div class="grow"><h3>Interview panelists</h3><p>Search and pick employees from your employee list.</p></div>
+      <div class="grow"><h3>Interview panelists</h3></div>
       <%= link_to employees_path, class: "btn btn-light btn-sm", target: "_blank" do %><%= icon("upload") %> Upload employees<% end %>
     </div>
     <% if @employees.any? %>

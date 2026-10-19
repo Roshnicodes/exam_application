@@ -1,6 +1,6 @@
 <% content_for :title, "Edit #{@invitation.candidate_name}" %>
 <%= render layout: "shared/page_header", locals: {
-      title: "Edit candidate", subtitle: "Update details, schedule or proctoring rules. The exam link stays the same.", icon: "edit",
+      title: "Edit candidate", icon: "edit",
       crumbs: [ [ "Candidates", invitations_path ], [ @invitation.candidate_name, invitation_path(@invitation) ] ] } do %>
 <% end %>
 <%= render "form", invitation: @invitation %>

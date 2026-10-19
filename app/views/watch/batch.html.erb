@@ -3,7 +3,7 @@
 <%= turbo_stream_from @batch, :live %>
 <%= render layout: "shared/page_header", locals: {
       title: "Live — #{@batch.name}", icon: "video",
-      subtitle: "#{@batch.post_name} · #{@batch.quiz.title}. Click a candidate to see their camera large with the full timeline." } do %>
+      subtitle: "#{@batch.post_name} · #{@batch.quiz.title}" } do %>
 <% end %>
 <div data-controller="autorefresh" data-autorefresh-interval-value="60000">
   <div class="mon-grid">

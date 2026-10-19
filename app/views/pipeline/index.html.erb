@@ -1,7 +1,7 @@
 <% content_for :title, "Pipeline" %>
 <% totals = @columns.transform_values(&:size) %>
 <%= render layout: "shared/page_header", locals: {
-      title: "Hiring pipeline", subtitle: "Every candidate by stage — from invite to final decision. Click a card to open the candidate.", icon: "activity",
+      title: "Hiring pipeline", icon: "activity",
       crumbs: [ [ "Dashboard", root_path ] ],
       stats: [
         { label: "In process", value: totals.values_at("invited", "testing", "interviews", "decision").sum, icon: "users", tone: "violet" },

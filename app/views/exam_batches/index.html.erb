@@ -1,6 +1,6 @@
 <% content_for :title, "Batches" %>
 <%= render layout: "shared/page_header", locals: {
-      title: "Group exams (batches)", subtitle: "Invite many candidates at once and monitor all of them live on one screen.", icon: "users",
+      title: "Group exams (batches)", icon: "users",
       crumbs: [ [ "Dashboard", root_path ] ],
       stats: [
         { label: "Batches", value: @batches.size, icon: "users", tone: "violet" },

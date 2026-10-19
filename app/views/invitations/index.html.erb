@@ -4,7 +4,7 @@
 <% all = Current.user.invitations %>
 <% keep = { q: params[:q], group: params[:group] }.compact_blank %>
 <%= render layout: "shared/page_header", locals: {
-      title: "Candidates", subtitle: "Everyone you've invited, their test status and result — by position or as one list.", icon: "users",
+      title: "Candidates", icon: "users",
       crumbs: [ [ "Dashboard", root_path ] ],
       stats: [
         { label: "Invited", value: all.count, icon: "send", tone: "violet", path: invitations_path(group: "position") },

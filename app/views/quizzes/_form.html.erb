@@ -3,7 +3,7 @@
     <%= render "shared/errors", record: quiz %>
     <div class="form-section-head">
       <span class="ico"><%= icon("file") %></span>
-      <div><h3>Paper details</h3><p>Title, time limit and passing criteria.</p></div>
+      <div><h3>Paper details</h3></div>
     </div>
     <div class="fields three">
       <div class="field" style="grid-column:span 1">
@@ -40,7 +40,7 @@
     <% end %>
     <div class="form-section-head">
       <span class="ico"><%= icon("sheet") %></span>
-      <div class="grow"><h3>Bulk upload from Excel</h3><p>Download the template, fill one question per row with its <b style="color:#059669">Correct Answer</b> (green column — used to calculate the result), and upload it here.</p></div>
+      <div class="grow"><h3>Bulk upload from Excel</h3></div>
     </div>
     <div class="excel-card">
       <div class="dropzone" data-controller="dropzone" data-action="click->dropzone#pick">
@@ -63,7 +63,7 @@
   <div class="form-section">
     <div class="form-section-head">
       <span class="ico"><%= icon("list") %></span>
-      <div class="grow"><h3>Questions</h3><p>Add manually, or leave this blank when uploading from Excel. Select the radio next to the correct option.</p></div>
+      <div class="grow"><h3>Questions</h3></div>
     </div>
 
     <div data-nested-form-target="list">

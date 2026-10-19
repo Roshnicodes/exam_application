@@ -1,6 +1,6 @@
 <% content_for :title, "Edit #{@batch.name}" %>
 <%= render layout: "shared/page_header", locals: {
-      title: "Edit batch", subtitle: "Schedule and rule changes apply to every candidate who hasn't started yet.", icon: "edit",
+      title: "Edit batch", icon: "edit",
       crumbs: [ [ "Batches", exam_batches_path ], [ @batch.name, exam_batch_path(@batch) ] ] } do %>
 <% end %>
 <%= render "form", batch: @batch %>

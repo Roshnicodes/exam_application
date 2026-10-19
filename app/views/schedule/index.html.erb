@@ -1,6 +1,6 @@
 <% content_for :title, "Schedule" %>
 <%= render layout: "shared/page_header", locals: {
-      title: "Interview schedule", subtitle: "Every upcoming interview round across candidates. Set dates and panels from each candidate's page.", icon: "calendar",
+      title: "Interview schedule", icon: "calendar",
       crumbs: [ [ "Dashboard", root_path ] ],
       stats: [
         { label: "Live now", value: @live.size, icon: "video", tone: "red" },
@@ -20,7 +20,7 @@
   </div>
 <% end %>
 <% if @unscheduled.any? %>
-  <div class="card sched-day"><div class="card-head"><h2><%= icon("alert") %> Not scheduled yet</h2><span class="tiny muted">Open the candidate to set a date</span></div><%= render partial: "schedule/row", collection: @unscheduled, as: :r %></div>
+  <div class="card sched-day"><div class="card-head"><h2><%= icon("alert") %> Not scheduled yet</h2></div><%= render partial: "schedule/row", collection: @unscheduled, as: :r %></div>
 <% end %>
 <% if @live.empty? && @days.empty? && @unscheduled.empty? %>
   <div class="card empty"><div class="ico"><%= icon("calendar") %></div><h3>No interviews coming up</h3><p>Rounds appear here once candidates finish their test.</p></div>

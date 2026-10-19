@@ -1,6 +1,6 @@
 <% content_for :title, "Vacancies" %>
 <%= render layout: "shared/page_header", locals: {
-      title: "Vacancies", subtitle: "All open and closed posts across departments.", icon: "briefcase",
+      title: "Vacancies", icon: "briefcase",
       crumbs: [ [ "Masters", departments_path ] ],
       stats: [
         { label: "Vacancies", value: @vacancies.size, icon: "briefcase", tone: "violet" },

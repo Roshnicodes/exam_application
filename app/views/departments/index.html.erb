@@ -1,7 +1,7 @@
 <% content_for :title, "Departments" %>
 <% total_vacancies = @departments.sum { |d| d.vacancies.size } %>
 <%= render layout: "shared/page_header", locals: {
-      title: "Department master", subtitle: "Departments group your vacancies. Add a department, then create vacancies under it.", icon: "building",
+      title: "Department master", icon: "building",
       crumbs: [ [ "Masters", departments_path ] ],
       stats: [
         { label: "Departments", value: @departments.size, icon: "building", tone: "violet" },
@@ -15,7 +15,7 @@
   <%= form_with model: @department, class: "card dept-add" do |f| %>
     <div class="dept-add-head">
       <span class="dept-add-ico"><%= icon("plus") %></span>
-      <div><h3>Add department</h3><p>Quickly add a new department.</p></div>
+      <div><h3>Add department</h3></div>
     </div>
     <div class="stack" style="padding:1.25rem">
       <%= render "shared/errors", record: @department %>

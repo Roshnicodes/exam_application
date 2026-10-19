@@ -3,7 +3,7 @@
     <% if invitation.errors.any? %><%= render "shared/errors", record: invitation %><% end %>
     <div class="form-section-head">
       <span class="ico"><%= icon("target") %></span>
-      <div><h3>What is this invite for?</h3><p>Online test only, or the test followed by interviews. Interview fields appear only when needed — you can add rounds later too.</p></div>
+      <div><h3>What is this invite for?</h3></div>
     </div>
     <%= render "shared/plan_picker", f: f, value: invitation.interview_plan %>
   </div>
@@ -11,7 +11,7 @@
   <div class="form-section">
     <div class="form-section-head">
       <span class="ico"><%= icon("user") %></span>
-      <div><h3>Candidate information</h3><p>Who is taking the test. The mobile number must match what the candidate enters.</p></div>
+      <div><h3>Candidate information</h3></div>
     </div>
     <div class="fields">
       <div class="field">
@@ -45,7 +45,7 @@
   <div class="form-section">
     <div class="form-section-head">
       <span class="ico"><%= icon("briefcase") %></span>
-      <div><h3>Position</h3><p>The role they're applying for.</p></div>
+      <div><h3>Position</h3></div>
     </div>
     <div class="fields">
       <% if @vacancies.any? %>
@@ -79,7 +79,7 @@
   <div class="form-section" data-invite-form-target="interviewOnly">
     <div class="form-section-head">
       <span class="ico"><%= icon("calendar") %></span>
-      <div><h3>Interview details</h3><p>When and how the interview happens after the test.</p></div>
+      <div><h3>Interview details</h3></div>
     </div>
     <div class="fields">
       <div class="field">
@@ -109,7 +109,7 @@
   <div class="form-section">
     <div class="form-section-head">
       <span class="ico"><%= icon("shield") %></span>
-      <div><h3>Online test &amp; proctoring</h3><p>Choose the question paper and how strict proctoring should be.</p></div>
+      <div><h3>Online test &amp; proctoring</h3></div>
     </div>
     <div class="fields three">
       <div class="field">

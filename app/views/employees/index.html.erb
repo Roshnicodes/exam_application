@@ -2,7 +2,7 @@
 <% filter_params = params.permit(:q, :department).to_h %>
 
 <%= render layout: "shared/page_header", locals: {
-      title: "Employees & panelists", subtitle: "Upload the employee list once, then pick interview panelists from it in any vacancy.", icon: "id-card",
+      title: "Employees & panelists", icon: "id-card",
       crumbs: [ [ "Masters", departments_path ] ],
       stats: [
         { label: "Employees", value: @stats[:total], icon: "users", tone: "violet" },
@@ -19,7 +19,7 @@
   <div id="upload-panel" class="card emp-panel <%= 'hidden' %>" data-toggle-panel-target="panel">
     <div class="emp-panel-head">
       <span class="emp-panel-ico" style="background:linear-gradient(135deg,#10b981,#14b8a6)"><%= icon("sheet") %></span>
-      <div class="grow"><h3>Bulk upload from Excel / CSV</h3><p>All sheets are read. Existing employees are updated by Employee Code — blank cells keep old data.</p></div>
+      <div class="grow"><h3>Bulk upload from Excel / CSV</h3></div>
       <button type="button" class="btn btn-ghost icon-btn" data-action="toggle-panel#close" aria-label="Close"><%= icon("x") %></button>
     </div>
     <div class="emp-panel-body">
@@ -40,7 +40,7 @@
   <%= form_with model: @employee, id: "add-panel", class: "card emp-panel #{'hidden' unless @employee.errors.any?}", data: { toggle_panel_target: "panel" } do |f| %>
     <div class="emp-panel-head">
       <span class="emp-panel-ico"><%= icon("plus") %></span>
-      <div class="grow"><h3>Add an employee</h3><p>Quick add without a file.</p></div>
+      <div class="grow"><h3>Add an employee</h3></div>
       <button type="button" class="btn btn-ghost icon-btn" data-action="toggle-panel#close" aria-label="Close"><%= icon("x") %></button>
     </div>
     <div class="emp-panel-body">

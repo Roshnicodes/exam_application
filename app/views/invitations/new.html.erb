@@ -2,7 +2,6 @@
 
 <%= render layout: "shared/page_header", locals: {
       title: @invitation.test_only? ? "Invite for online test" : "Invite for test + interview",
-      subtitle: "Fill in the candidate and position. You'll get a secure test link to share right after.",
       icon: "send", crumbs: [ [ "Candidates", invitations_path ] ] } do %>
 <% end %>
 

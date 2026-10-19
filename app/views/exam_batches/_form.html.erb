@@ -9,7 +9,7 @@
     <% end %>
     <div class="form-section-head">
       <span class="ico"><%= icon("file") %></span>
-      <div><h3>Exam details (same for everyone)</h3><p>Every candidate in this batch gets this paper, schedule and proctoring rules.</p></div>
+      <div><h3>Exam details (same for everyone)</h3></div>
     </div>
     <div class="fields three">
       <div class="field">
@@ -67,7 +67,7 @@
   <div class="form-section">
     <div class="form-section-head">
       <span class="ico"><%= icon("video") %></span>
-      <div><h3>Interview plan</h3><p>Rounds every candidate in this batch gets after the test.</p></div>
+      <div><h3>Interview plan</h3></div>
     </div>
     <%= render "shared/plan_picker", f: f, value: batch.interview_plan %>
   </div>

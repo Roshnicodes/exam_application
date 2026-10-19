@@ -4,7 +4,7 @@
 <% list = @invitations.to_a.sort_by { |i| [ { "in_progress" => 0, "otp_requested" => 1, "verified" => 2 }.fetch(i.status, 3), -i.warnings_count, i.candidate_name ] } %>
 <%= render layout: "shared/page_header", locals: {
       title: @batch ? "Live monitor — #{@batch.name}" : "Live monitor",
-      subtitle: "Every candidate on one screen. Tiles update by themselves and flash red on suspicious activity.", icon: "video",
+      icon: "video",
       crumbs: @batch ? [ [ "Batches", exam_batches_path ], [ @batch.name, exam_batch_path(@batch) ] ] : [ [ "Dashboard", root_path ] ],
       stats: [
         { label: "On screen", value: list.size, icon: "users", tone: "violet" },

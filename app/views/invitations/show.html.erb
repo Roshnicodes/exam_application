@@ -33,11 +33,11 @@
   <div class="stack">
     <% unless @invitation.finished? %>
       <div class="card">
-        <div class="card-head"><h2><%= icon("video") %> Live camera</h2><span class="tiny muted">Like a video call — video + audio from the candidate</span></div>
+        <div class="card-head"><h2><%= icon("video") %> Live camera</h2></div>
         <div class="card-body"><%= render "shared/live_video", invitation: @invitation %></div>
       </div>
       <div class="card" id="test-call">
-        <div class="card-head"><h2><%= icon("users") %> Video call during the test</h2><span class="tiny muted">HR, panelists &amp; candidate see and hear each other</span></div>
+        <div class="card-head"><h2><%= icon("users") %> Video call during the test</h2></div>
         <div class="card-body"><%= render "shared/interview_room", invitation: @invitation, test_call: true, name: Current.user.name %></div>
       </div>
     <% end %>

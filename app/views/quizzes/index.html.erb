@@ -1,6 +1,6 @@
 <% content_for :title, "Question papers" %>
 <%= render layout: "shared/page_header", locals: {
-      title: "Question papers", subtitle: "Reusable MCQ papers you can assign to any candidate.", icon: "file",
+      title: "Question papers", icon: "file",
       crumbs: [ [ "Dashboard", root_path ] ],
       stats: [
         { label: "Papers", value: @quizzes.size, icon: "file", tone: "violet" },

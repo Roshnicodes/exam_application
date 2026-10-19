@@ -1,7 +1,7 @@
 <% content_for :title, "Results" %>
 <% filters = params.permit(:quiz_id, :vacancy, :result, :q, :sort).to_h %>
 <%= render layout: "shared/page_header", locals: {
-      title: "Results", subtitle: "Scores, ranks and pass / fail for every completed exam. Ranks are within each question paper.", icon: "award",
+      title: "Results", icon: "award",
       crumbs: [ [ "Dashboard", root_path ] ],
       stats: [
         { label: "Exams completed", value: @summary[:total], icon: "check-circle", tone: "violet", path: results_path(filters.except("result")) },

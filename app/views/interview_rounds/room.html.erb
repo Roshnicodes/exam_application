@@ -2,7 +2,7 @@
 <%= turbo_stream_from @invitation, :events %>
 <%= render layout: "shared/page_header", locals: {
       title: "#{@round.name} — #{@invitation.candidate_name}", icon: "video",
-      subtitle: @round.open? ? "Live. The candidate joins from their exam link; panelists from their watch link." : "This round is #{@round.status_label.downcase}. Start it to let the candidate in.",
+      subtitle: @round.open? ? "Live now" : "Round #{@round.status_label.downcase}",
       crumbs: [ [ "Candidates", invitations_path ], [ @invitation.candidate_name, invitation_path(@invitation) ] ],
       chips: [ ([ "calendar", @round.scheduled_at.strftime("%a %d %b, %-I:%M %p") ] if @round.scheduled_at), [ "users", @round.panelists.map(&:name).join(", ").presence || "No panel" ] ].compact } do %>
   <% if @round.open? %>
