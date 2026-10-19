@@ -2,16 +2,25 @@ class InvitationsController < ApplicationController
   before_action :set_invitation, only: %i[show report edit update destroy decide]
 
   def index
-    @invitations = Current.user.invitations.includes(:quiz).recent
-    @invitations = @invitations.where(status: params[:status]) if Invitation::STATUSES.include?(params[:status])
+    @invitations = Current.user.invitations.includes(:quiz, :interview_rounds).recent
+    if params[:status] == "submitted"
+      @invitations = @invitations.completed # finished the test (incl. auto-terminated)
+    elsif Invitation::STATUSES.include?(params[:status])
+      @invitations = @invitations.where(status: params[:status])
+    end
+    @invitations = @invitations.qualified if params[:status] == "qualified"
+    @invitations = @invitations.disqualified if params[:status] == "disqualified"
     if params[:q].present?
       q = "%#{Invitation.sanitize_sql_like(params[:q])}%"
       @invitations = @invitations.where("candidate_name ILIKE :q OR vacancy ILIKE :q OR candidate_email ILIKE :q", q: q)
     end
+    @by_position = params[:group] == "position"
   end
 
   def new
+    plan = Invitation::INTERVIEW_PLANS.key?(params[:plan]) ? params[:plan] : "separate"
     @invitation = Current.user.invitations.new(max_warnings: 5, interview_mode: "Online", quiz_id: params[:quiz_id], vacancy_id: params[:vacancy_id],
+                                               interview_plan: plan,
                                                interview_date: 1.day.from_now.change(hour: 11),
                                                link_expires_at: 3.days.from_now.end_of_day)
     load_form_options

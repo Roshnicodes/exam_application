@@ -1,7 +1,8 @@
-<% content_for :title, "Invite candidate" %>
+<% content_for :title, @invitation.test_only? ? "Invite for online test" : "Invite for test + interview" %>
 
 <%= render layout: "shared/page_header", locals: {
-      title: "Invite a candidate", subtitle: "Fill in the candidate and vacancy details. You'll get a secure exam link to share right after.",
+      title: @invitation.test_only? ? "Invite for online test" : "Invite for test + interview",
+      subtitle: "Fill in the candidate and position. You'll get a secure test link to share right after.",
       icon: "send", crumbs: [ [ "Candidates", invitations_path ] ] } do %>
 <% end %>
 

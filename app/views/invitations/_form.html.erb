@@ -1,9 +1,17 @@
-<%= form_with model: invitation, class: "card", multipart: true do |f| %>
+<%= form_with model: invitation, class: "card", multipart: true, data: { controller: "invite-form" } do |f| %>
   <div class="form-section">
     <% if invitation.errors.any? %><%= render "shared/errors", record: invitation %><% end %>
     <div class="form-section-head">
+      <span class="ico"><%= icon("target") %></span>
+      <div><h3>What is this invite for?</h3><p>Online test only, or the test followed by interviews. Interview fields appear only when needed — you can add rounds later too.</p></div>
+    </div>
+    <%= render "shared/plan_picker", f: f, value: invitation.interview_plan %>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-head">
       <span class="ico"><%= icon("user") %></span>
-      <div><h3>Candidate information</h3><p>Who is taking the exam. The mobile number must match what the candidate enters.</p></div>
+      <div><h3>Candidate information</h3><p>Who is taking the test. The mobile number must match what the candidate enters.</p></div>
     </div>
     <div class="fields">
       <div class="field">
@@ -19,7 +27,7 @@
         <div class="input-wrap"><%= icon("phone") %><%= f.telephone_field :candidate_phone, placeholder: "10 digit mobile", maxlength: 14, class: "input" %></div>
         <span class="hint">Optional. If set, only this number can request the OTP.</span>
       </div>
-      <div class="field full">
+      <div class="field full" data-invite-form-target="interviewOnly">
         <%= f.label :resume, "Resume / CV (PDF or Word, optional)" %>
         <div class="dropzone" data-controller="dropzone" data-action="click->dropzone#pick">
           <span class="ico"><%= icon("file") %></span>
@@ -37,7 +45,7 @@
   <div class="form-section">
     <div class="form-section-head">
       <span class="ico"><%= icon("briefcase") %></span>
-      <div><h3>Vacancy &amp; interview</h3><p>The role they're applying for and when the interview is scheduled.</p></div>
+      <div><h3>Position</h3><p>The role they're applying for.</p></div>
     </div>
     <div class="fields">
       <% if @vacancies.any? %>
@@ -65,6 +73,15 @@
           <%= f.text_field :department, placeholder: "e.g. Engineering", class: "input" %>
         </div>
       <% end %>
+    </div>
+  </div>
+
+  <div class="form-section" data-invite-form-target="interviewOnly">
+    <div class="form-section-head">
+      <span class="ico"><%= icon("calendar") %></span>
+      <div><h3>Interview details</h3><p>When and how the interview happens after the test.</p></div>
+    </div>
+    <div class="fields">
       <div class="field">
         <%= f.label :interview_date, "Interview date & time" %>
         <div class="input-wrap"><%= icon("calendar") %><%= f.datetime_local_field :interview_date, class: "input" %></div>
@@ -81,28 +98,18 @@
         <%= f.label :location, "Location / venue" %>
         <div class="input-wrap"><%= icon("map") %><%= f.text_field :location, placeholder: "Office address or Google Meet / Zoom link", class: "input" %></div>
       </div>
-      <div class="field full">
-        <%= f.label :notes, "Notes for candidate" %>
-        <%= f.text_area :notes, placeholder: "Anything the candidate should know before the exam…", class: "input", rows: 3 %>
-      </div>
     </div>
   </div>
 
-  <div class="form-section">
-    <div class="form-section-head">
-      <span class="ico"><%= icon("video") %></span>
-      <div><h3>Interview plan</h3><p>How interviews happen after the online test. You can add, move or change rounds later on the candidate page.</p></div>
-    </div>
-    <%= render "shared/plan_picker", f: f, value: invitation.interview_plan %>
+  <div data-invite-form-target="interviewOnly">
+    <%= render "shared/panel_picker", f: f, selected_ids: @panelist_ids,
+          hint: "Who will interview this candidate. Leave empty to use the vacancy's / batch's panel." %>
   </div>
-
-  <%= render "shared/panel_picker", f: f, selected_ids: @panelist_ids,
-        hint: "Who will interview this candidate. Leave empty to use the vacancy's / batch's panel." %>
 
   <div class="form-section">
     <div class="form-section-head">
       <span class="ico"><%= icon("shield") %></span>
-      <div><h3>Exam &amp; proctoring</h3><p>Choose the question paper and how strict proctoring should be.</p></div>
+      <div><h3>Online test &amp; proctoring</h3><p>Choose the question paper and how strict proctoring should be.</p></div>
     </div>
     <div class="fields three">
       <div class="field">
@@ -118,11 +125,15 @@
         <%= f.label :link_expires_at, "Link valid until" %>
         <%= f.datetime_local_field :link_expires_at, class: "input" %>
       </div>
+      <div class="field full">
+        <%= f.label :notes, "Notes for candidate" %>
+        <%= f.text_area :notes, placeholder: "Anything the candidate should know before the test…", class: "input", rows: 3 %>
+      </div>
     </div>
   </div>
 
   <div class="form-actions">
     <%= link_to "Cancel", invitation.persisted? ? invitation_path(invitation) : invitations_path, class: "btn btn-light" %>
-    <%= f.button class: "btn btn-primary" do %><%= icon(invitation.persisted? ? "check" : "link") %> <%= invitation.persisted? ? "Save changes" : "Create exam link" %><% end %>
+    <%= f.button class: "btn btn-primary" do %><%= icon(invitation.persisted? ? "check" : "link") %> <span data-invite-form-target="submitLabel"><%= invitation.persisted? ? "Save changes" : "Create test link" %></span><% end %>
   </div>
 <% end %>

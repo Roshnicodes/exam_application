@@ -8,7 +8,7 @@ class DashboardController < ApplicationController
     last_week = 13.days.ago.beginning_of_day...6.days.ago.beginning_of_day
 
     @cards = [
-      card("Total Candidates", invitations.count, "users", "blue", invitations_path,
+      card("Total Candidates", invitations.count, "users", "blue", invitations_path(group: "position"),
            daily(invitations.where(created_at: week), :created_at),
            invitations.where(created_at: week).count, invitations.where(created_at: last_week).count, "vs last 7 days"),
       card("Interviews Today", rounds.where(scheduled_at: Time.current.all_day).or(rounds.where(status: "open")).count,
@@ -31,7 +31,7 @@ class DashboardController < ApplicationController
     end
     @schedule = today.first(5)
 
-    @recent = invitations.includes(:quiz).recent.limit(6)
+    @recent = invitations.includes(:quiz, :interview_rounds).recent.limit(6)
     @live = invitations.live.recent.first ||
             rounds.where(status: "open").includes(:invitation).first&.invitation
     @feed = ProctorEvent.where(invitation: invitations).where.not(kind: "snapshot")

@@ -46,6 +46,11 @@ class Invitation < ApplicationRecord
   scope :recent, -> { order(created_at: :desc) }
   scope :live, -> { where(status: "in_progress") }
   scope :completed, -> { where(status: %w[submitted terminated]) }
+  # finished the test at or above the paper's pass mark (same rounding as #percentage)
+  scope :qualified, -> {
+    completed.joins(:quiz).where("invitations.total_marks > 0 AND ROUND(invitations.score * 100.0 / invitations.total_marks) >= quizzes.pass_percentage")
+  }
+  scope :disqualified, -> { completed.where.not(id: qualified.select(:id)) }
 
   after_create :build_interview_rounds
   after_update_commit :broadcast_live_state
@@ -172,6 +177,15 @@ class Invitation < ApplicationRecord
 
   def answered_count
     answers.values.compact.size
+  end
+
+  # What the candidate was invited for: the online test only, or the test followed by interviews.
+  def invited_for
+    interview_plan == "none" && interview_rounds.none? ? "Online test" : "Test + Interview"
+  end
+
+  def test_only?
+    interview_plan == "none"
   end
 
   def percentage

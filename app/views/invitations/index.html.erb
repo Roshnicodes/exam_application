@@ -2,36 +2,61 @@
 <%= turbo_stream_from Current.user, :invitations %>
 
 <% all = Current.user.invitations %>
+<% keep = { q: params[:q], group: params[:group] }.compact_blank %>
 <%= render layout: "shared/page_header", locals: {
-      title: "Candidates", subtitle: "Everyone you've invited, their exam status and results.", icon: "users",
+      title: "Candidates", subtitle: "Everyone you've invited, their test status and result — by position or as one list.", icon: "users",
       crumbs: [ [ "Dashboard", root_path ] ],
       stats: [
-        { label: "Invited", value: all.count, icon: "send", tone: "violet", path: invitations_path },
+        { label: "Invited", value: all.count, icon: "send", tone: "violet", path: invitations_path(group: "position") },
         { label: "Live now", value: all.live.count, icon: "video", tone: "red", path: invitations_path(status: "in_progress") },
-        { label: "Submitted", value: all.where(status: "submitted").count, icon: "check-circle", tone: "green", path: invitations_path(status: "submitted") },
-        { label: "Terminated", value: all.where(status: "terminated").count, icon: "x-circle", tone: "amber", path: invitations_path(status: "terminated") }
+        { label: "Submitted", value: all.completed.count, icon: "check-circle", tone: "blue", path: invitations_path(status: "submitted", group: "position") },
+        { label: "Qualified", value: all.qualified.count, icon: "award", tone: "green", path: invitations_path(status: "qualified", group: "position") },
+        { label: "Disqualified", value: all.disqualified.count, icon: "x-circle", tone: "amber", path: invitations_path(status: "disqualified", group: "position") }
       ] } do %>
-  <%= link_to new_invitation_path, class: "btn btn-primary" do %><%= icon("plus") %> Invite candidate<% end %>
+  <%= link_to new_invitation_path(plan: "none"), class: "btn btn-light" do %><%= icon("file") %> Invite for test<% end %>
+  <%= link_to new_invitation_path, class: "btn btn-primary" do %><%= icon("plus") %> Invite for test + interview<% end %>
 <% end %>
 
 <div class="card toolbar">
   <nav class="tabs">
-    <%= link_to "All", invitations_path(q: params[:q]), class: ("active" if params[:status].blank?) %>
-    <% { "pending" => "Link shared", "otp_requested" => "Awaiting OTP", "in_progress" => "Live", "submitted" => "Submitted", "terminated" => "Terminated" }.each do |key, label| %>
-      <%= link_to label, invitations_path(status: key, q: params[:q]), class: ("active" if params[:status] == key) %>
+    <%= link_to "All", invitations_path(keep), class: ("active" if params[:status].blank?) %>
+    <% { "pending" => "Link shared", "otp_requested" => "Awaiting OTP", "in_progress" => "Live", "submitted" => "Submitted",
+         "qualified" => "Qualified", "disqualified" => "Disqualified" }.each do |key, label| %>
+      <%= link_to label, invitations_path(keep.merge(status: key)), class: ("active" if params[:status] == key) %>
     <% end %>
   </nav>
-  <%= form_with url: invitations_path, method: :get, class: "search" do |f| %>
-    <%= icon("search") %>
-    <%= hidden_field_tag :status, params[:status] if params[:status].present? %>
-    <%= f.search_field :q, value: params[:q], placeholder: "Search name, email or vacancy…", class: "input" %>
-  <% end %>
+  <div class="row" style="gap:.5rem;flex-wrap:wrap">
+    <nav class="tabs view-toggle" aria-label="View">
+      <%= link_to invitations_path(keep.except(:group).merge(status: params[:status]).compact_blank), class: ("active" unless @by_position) do %><%= icon("list") %> List<% end %>
+      <%= link_to invitations_path(keep.merge(group: "position", status: params[:status]).compact_blank), class: ("active" if @by_position) do %><%= icon("briefcase") %> By position<% end %>
+    </nav>
+    <%= form_with url: invitations_path, method: :get, class: "search" do |f| %>
+      <%= icon("search") %>
+      <%= hidden_field_tag :status, params[:status] if params[:status].present? %>
+      <%= hidden_field_tag :group, params[:group] if params[:group].present? %>
+      <%= f.search_field :q, value: params[:q], placeholder: "Search name, email or vacancy…", class: "input" %>
+    <% end %>
+  </div>
 </div>
 
-<div class="card">
-  <% if @invitations.any? %>
-    <div class="cand-list"><% @invitations.each do |inv| %><%= render "invitations/manage_row", invitation: inv %><% end %></div>
-  <% else %>
-    <div class="empty"><div class="ico"><%= icon("users") %></div><h3>No candidates found</h3><p>Try a different filter or invite someone new.</p></div>
+<% if @invitations.none? %>
+  <div class="card"><div class="empty"><div class="ico"><%= icon("users") %></div><h3>No candidates found</h3><p>Try a different filter or invite someone new.</p></div></div>
+<% elsif @by_position %>
+  <% @invitations.group_by { |i| i.vacancy.presence || "No position" }.sort_by { |pos, _| pos.downcase }.each do |position, list| %>
+    <section class="card position-group">
+      <div class="card-head">
+        <h2><%= icon("briefcase") %> Candidates for <%= position %></h2>
+        <div class="row" style="gap:.4rem">
+          <span class="state-pill blue"><%= pluralize(list.size, "candidate") %></span>
+          <% done = list.select(&:finished?) %>
+          <% if done.any? %><span class="state-pill green"><%= done.count(&:passed?) %> qualified</span><% end %>
+        </div>
+      </div>
+      <div class="cand-list"><% list.each do |inv| %><%= render "invitations/manage_row", invitation: inv %><% end %></div>
+    </section>
   <% end %>
-</div>
+<% else %>
+  <div class="card">
+    <div class="cand-list"><% @invitations.each do |inv| %><%= render "invitations/manage_row", invitation: inv %><% end %></div>
+  </div>
+<% end %>

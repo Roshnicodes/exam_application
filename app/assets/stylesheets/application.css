@@ -81,7 +81,7 @@ svg.icon { width: 1.15em; height: 1.15em; flex-shrink: 0; stroke: currentColor; 
 .tiny { font-size: .75rem; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .grad-text { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.hidden { display: none !important; }
+.hidden, [hidden] { display: none !important; }
 .stack > * + * { margin-top: 1rem; }
 .row { display: flex; align-items: center; gap: .75rem; }
 .row.wrap { flex-wrap: wrap; }
@@ -1729,3 +1729,20 @@ a:hover { color: var(--brand); }
 #test-call .card-body { padding: .8rem; }
 .cam-help { margin: -.2rem 0 .3rem; padding: .7rem .85rem; border-radius: 12px; background: var(--red-soft); color: #991b1b; font-size: .82rem; line-height: 1.45; }
 .cam-help b { display: block; margin-bottom: .15rem; }
+
+/* ---------- Candidates: by position, qualified / disqualified ---------- */
+.position-group { margin-bottom: 1rem; }
+.position-group .card-head h2 { font-size: .98rem; }
+.view-toggle a { display: inline-flex; align-items: center; gap: .35rem; }
+.invited-for { font-style: normal; font-weight: 700; color: var(--brand-2); }
+.cand-row { grid-template-columns: auto minmax(0, 1fr) auto 110px 18px; }
+.result-pill { display: inline-block; padding: .15rem .6rem; border-radius: 99px; font-size: .72rem; font-weight: 800; }
+.result-pill.pass { background: #dcfce7; color: #15803d; }
+.result-pill.fail { background: #fee2e2; color: #b91c1c; }
+.stat-cards[style*="--cols: 5"] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .stat-cards[style*="--cols: 5"] { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .stat-cards[style*="--cols: 5"] { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1100px) { .cand-row { grid-template-columns: auto minmax(0, 1fr) auto 18px; } }
+.qa-blue { background: linear-gradient(135deg, #38bdf8, #0284c7); box-shadow: 0 12px 24px -14px #0284c7; }
+.state-pill.violet { background: #f3e8ff; color: #7e22ce; }
+.state-pill svg.icon { width: .95em; height: .95em; }

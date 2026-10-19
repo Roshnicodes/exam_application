@@ -69,12 +69,13 @@
       <% if @recent.any? %>
         <div class="table-wrap">
           <table class="table dash-table">
-            <thead><tr><th>Name</th><th>Position</th><th class="hide-sm">Invited On</th><th>Status</th><th class="hide-sm">Action</th></tr></thead>
+            <thead><tr><th>Name</th><th>Position</th><th>Invited for</th><th class="hide-sm">Invited on</th><th>Status</th><th class="hide-sm">Action</th></tr></thead>
             <tbody>
               <% @recent.each do |inv| %>
                 <tr>
                   <td><%= link_to invitation_path(inv), class: "person" do %><span class="avatar xs" style="background: <%= gradient_for(inv.candidate_name) %>"><%= initials_for(inv.candidate_name) %></span><b><%= inv.candidate_name %></b><% end %></td>
                   <td class="muted"><%= inv.vacancy %></td>
+                  <td><span class="state-pill <%= inv.test_only? ? 'blue' : 'violet' %>"><%= icon(inv.test_only? ? "file" : "video") %> <%= inv.invited_for %></span></td>
                   <td class="muted hide-sm"><%= inv.created_at.strftime("%d %b %Y, %I:%M %p") %></td>
                   <td><%= status_badge(inv) %></td>
                   <td class="hide-sm"><%= link_to invitation_path(inv), class: "view-all" do %>View <%= icon("arrow-right") %><% end %></td>
@@ -97,7 +98,8 @@
   <aside class="dash-side">
     <div class="quick-actions">
       <%= link_to new_vacancy_path, class: "qa qa-violet" do %><span><%= icon("plus") %></span><div><b>New Job / Vacancy</b><small>Create a new position</small></div><%= icon("arrow-right") %><% end %>
-      <%= link_to new_invitation_path, class: "qa qa-green" do %><span><%= icon("mail") %></span><div><b>Invite Candidate</b><small>Send link via WhatsApp / Email</small></div><%= icon("arrow-right") %><% end %>
+      <%= link_to new_invitation_path(plan: "none"), class: "qa qa-blue" do %><span><%= icon("file") %></span><div><b>Start Test</b><small>Send an online test link</small></div><%= icon("arrow-right") %><% end %>
+      <%= link_to new_invitation_path, class: "qa qa-green" do %><span><%= icon("mail") %></span><div><b>Invite Candidate</b><small>Test + interview, via WhatsApp / Email</small></div><%= icon("arrow-right") %><% end %>
       <%= link_to live_monitor_path, class: "qa qa-orange" do %><span><%= icon("video") %></span><div><b>Start Interview</b><small>Monitor &amp; evaluate</small></div><%= icon("arrow-right") %><% end %>
     </div>
 
