@@ -35,7 +35,7 @@
           <%= f.file_field :resume, accept: ".pdf,.doc,.docx", data: { dropzone_target: "input", action: "change->dropzone#changed" } %>
         </div>
       </div>
-      <div class="field">
+      <div class="field" data-invite-form-target="interviewOnly">
         <%= f.label :experience, "Experience" %>
         <%= f.select :experience, [ "Fresher", "0-1 years", "1-3 years", "3-5 years", "5-8 years", "8+ years" ], { include_blank: "Select experience" }, class: "input" %>
       </div>
