@@ -129,7 +129,7 @@ class QuestionPaperParser
         plain = unmark(line)
         if in_key || plain.match?(ANSWER_KEY_HEADING)
           in_key = true
-          plain.scan(KEY_PAIR) { |n, l| key[n.to_i] = l.upcase }
+          plain.tr("|", " ").scan(KEY_PAIR) { |n, l| key[n.to_i] = l.upcase } # "1-B 2-C" or a Q | Answer table
           next
         end
 
