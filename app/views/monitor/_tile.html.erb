@@ -12,6 +12,12 @@
     <% unless invitation.finished? %>
       <%= render "shared/live_video", invitation: invitation, watch_token: local_assigns[:watch_token], compact: true %>
     <% end %>
+    <% if invitation.in_progress? %>
+      <% page = local_assigns[:link] || invitation_path(invitation) %>
+      <button type="button" class="mon-talk" title="Talk to <%= invitation.candidate_name %> — opens their page with your mic on"
+              data-href="<%= page %><%= page.include?("?") ? "&" : "?" %>talk=1#test-call"
+              onclick="event.preventDefault(); event.stopPropagation(); Turbo.visit(this.dataset.href)">🎙️ Talk</button>
+    <% end %>
   </div>
   <%= render "monitor/tile_info", invitation: invitation %>
 <% end %>

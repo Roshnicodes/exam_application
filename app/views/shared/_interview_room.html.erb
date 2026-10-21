@@ -8,6 +8,8 @@
 <div class="it-room <%= 'test-call' if test_call %>" data-controller="interview-room"
      <% if round %>data-interview-room-round-id-value="<%= round.id %>"<% end %>
      <% if test_call %>data-interview-room-test-value="true" data-interview-room-invitation-id-value="<%= invitation.id %>"<% end %>
+     <% if local_assigns[:auto_join] %>data-interview-room-auto-join-value="true"<% end %>
+     <% if local_assigns[:talk] %>data-interview-room-talk-value="true"<% end %>
      data-interview-room-leave-url-value="<%= local_assigns[:leave_url] %>"
      <% if local_assigns[:token] %>data-interview-room-token-value="<%= token %>"<% end %>
      <% if local_assigns[:watch_token] %>data-interview-room-watch-token-value="<%= watch_token %>"<% end %>

@@ -14,7 +14,7 @@ export default class extends Controller {
                      "screenGate", "screenError", "alerts", "tap", "chat", "chatBtn", "unread", "messages", "chatInput",
                      "presentBtn", "codeBtn", "switchBtn", "switchNote", "code", "codeLang", "codeBy", "codeInput" ]
   static values = { roundId: Number, invitationId: Number, test: Boolean, token: String, watchToken: String, name: String,
-                    needsName: Boolean, leaveUrl: String }
+                    needsName: Boolean, leaveUrl: String, autoJoin: Boolean, talk: Boolean }
 
   connect() {
     this.peers = new Map() // peerId -> { pc, pending, tile, name, role, screenStreamId, screenTile }
@@ -22,7 +22,18 @@ export default class extends Controller {
     this.unread = 0
     if (this.hasPresentBtnTarget && !navigator.mediaDevices?.getDisplayMedia) this.presentBtnTarget.hidden = true // phones
     if (this.testValue) {
-      if (this.candidate) this.join() // waits quietly; the call opens when HR / a panelist joins
+      if (this.candidate) return this.join() // waits quietly; the call opens when HR / a panelist speaks
+      // HR / panelist: already in the call (muted) whenever this page is open — "Unmute to talk"
+      if (this.autoJoinValue) {
+        let name = this.nameValue
+        if (this.needsNameValue && !name) { try { name = localStorage.getItem("panelist-name") || "" } catch {} }
+        if (!this.needsNameValue || name) {
+          this.nameValue = name
+          this.quietJoin = true
+          if (this.hasJoinPanelTarget) this.joinPanelTarget.classList.add("hidden")
+          this.join()
+        }
+      }
       return
     }
     if (this.candidate && this.screenShareSupported) {
@@ -95,6 +106,7 @@ export default class extends Controller {
       this.nameValue = name
     }
     this.joinPanelTarget.classList.add("hidden")
+    this.quietJoin = false // joined by hand: mic and camera on as usual
     this.join()
   }
 
@@ -112,6 +124,11 @@ export default class extends Controller {
       this.stream = new MediaStream() // join without camera / mic (can still see and hear others)
       const help = cameraHelp(e)
       this.mediaNote = `${help.title}. ${help.help} You can still watch and listen.`
+    }
+    if (this.quietJoin) { // joined automatically: mic off (unless "Talk" was clicked) and camera off
+      this.stream.getAudioTracks().forEach((t) => (t.enabled = this.talkValue))
+      this.stream.getVideoTracks().forEach((t) => (t.enabled = false))
+      this.hearOthers = this.talkValue
     }
     this.localVideoTarget.srcObject = this.stream
     this.updateButtons()
@@ -173,8 +190,9 @@ export default class extends Controller {
       if (peer) {
         peer.tile.classList.toggle("muted", !message.mic)
         peer.tile.classList.toggle("cam-off", !message.cam)
-        peer.presenting = message.screen
+        Object.assign(peer, { mic: message.mic, cam: message.cam, presenting: message.screen })
         this.renderPresentation(peer)
+        this.refreshCount()
       }
     }
   }
@@ -205,6 +223,7 @@ export default class extends Controller {
       }
       if (peer.screenStreamId && e.streams[0]?.id === peer.screenStreamId) return this.showScreen(peer, e.streams[0])
       const video = peer.tile.querySelector("video")
+      if (this.quietJoin) video.muted = !this.hearOthers
       if (video.srcObject !== e.streams[0]) video.srcObject = e.streams[0]
       video.play().catch(() => this.needTap())
       peer.tile.classList.add("connected")
@@ -358,6 +377,8 @@ export default class extends Controller {
     if (!live || mine) return
     if (this.candidate) {
       // a question for the candidate: open the call window and the chat so it can't be missed
+      this.chatActive = true
+      this.refreshCount()
       this.element.classList.remove("minimized")
       this.toggleChat(true)
       chime()
@@ -524,8 +545,16 @@ export default class extends Controller {
 
   toggleMic() {
     this.stream?.getAudioTracks().forEach((t) => (t.enabled = !t.enabled))
+    if (this.stream?.getAudioTracks().some((t) => t.enabled)) this.hearOthers = true
+    this.applySpeaker()
     this.updateButtons()
     this.announceMedia()
+  }
+
+  // Joined silently: the others' sound starts with the first "Unmute" (so watching a candidate isn't noisy)
+  applySpeaker() {
+    if (!this.quietJoin) return
+    this.peers.forEach((peer) => { const v = peer.tile.querySelector("video"); if (v) v.muted = !this.hearOthers })
   }
 
   toggleCam() {
@@ -545,7 +574,7 @@ export default class extends Controller {
     const mic = this.stream?.getAudioTracks().some((t) => t.enabled)
     const cam = this.stream?.getVideoTracks().some((t) => t.enabled)
     this.micBtnTarget.classList.toggle("off", !mic)
-    this.micBtnTarget.querySelector("span").textContent = mic ? "Mute" : "Unmute"
+    this.micBtnTarget.querySelector("span").textContent = mic ? "Mute" : (this.testValue && !this.candidate ? "Unmute to talk" : "Unmute")
     this.camBtnTarget.classList.toggle("off", !cam)
     this.camBtnTarget.querySelector("span").textContent = cam ? "Stop video" : "Start video"
     this.element.querySelector(".it-self")?.classList.toggle("cam-off", !cam)
@@ -557,8 +586,13 @@ export default class extends Controller {
     this.gridTarget.dataset.count = n
     if (this.peers.size) this.setStatus(this.mediaNote || "")
     if (this.waitingCandidate) {
-      // the candidate's call panel opens while someone from the panel is in the call
-      const inCall = this.peers.size > 0
+      // the candidate's call window opens once someone from the panel talks, shows their camera,
+      // presents or writes in the chat (HR silently watching doesn't pop it up)
+      const panel = [ ...this.peers.values() ].filter((p) => p.role !== "candidate")
+      if (!panel.length) this.chatActive = this.panelSpoke = false
+      // once the panel has spoken it stays open (muting between questions doesn't close it)
+      if (panel.some((p) => p.mic || p.cam || p.presenting)) this.panelSpoke = true
+      const inCall = this.chatActive || this.panelSpoke
       this.roomTarget.classList.toggle("hidden", !inCall)
       if (!inCall) this.element.classList.remove("minimized")
       window.dispatchEvent(new CustomEvent("proctor:call", { detail: { active: inCall } }))

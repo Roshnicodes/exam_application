@@ -1833,3 +1833,9 @@ a:hover { color: var(--brand); }
 .guide-link { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin: .9rem 0; padding: .65rem .85rem; border-radius: 12px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; font-weight: 700; font-size: .86rem; }
 .guide-link:hover { background: #d1fae5; color: #065f46; }
 .guide-link span { font-weight: 600; color: #059669; }
+
+/* ---------- One-click talk ---------- */
+.mon-talk { position: absolute; top: 2.4rem; right: .45rem; z-index: 4; border: 0; cursor: pointer; padding: .3rem .65rem; border-radius: 99px; background: rgba(22, 163, 74, .92); color: #fff; font: inherit; font-size: .72rem; font-weight: 800; box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .5); }
+.mon-talk:hover { background: #15803d; }
+.test-call .it-btn[data-interview-room-target="micBtn"].off { background: #16a34a; }
+.test-call .it-btn[data-interview-room-target="micBtn"]:not(.off) { background: #ef4444; }
