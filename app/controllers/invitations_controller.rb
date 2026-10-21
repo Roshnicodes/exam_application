@@ -2,19 +2,21 @@ class InvitationsController < ApplicationController
   before_action :set_invitation, only: %i[show report edit update destroy decide]
 
   def index
-    @invitations = Current.user.invitations.includes(:quiz, :interview_rounds).recent
-    if params[:status] == "submitted"
-      @invitations = @invitations.completed # finished the test (incl. auto-terminated)
-    elsif Invitation::STATUSES.include?(params[:status])
-      @invitations = @invitations.where(status: params[:status])
-    end
-    @invitations = @invitations.qualified if params[:status] == "qualified"
-    @invitations = @invitations.disqualified if params[:status] == "disqualified"
-    if params[:q].present?
-      q = "%#{Invitation.sanitize_sql_like(params[:q])}%"
-      @invitations = @invitations.where("candidate_name ILIKE :q OR vacancy ILIKE :q OR candidate_email ILIKE :q", q: q)
-    end
+    @invitations = filtered_invitations
     @by_position = params[:group] == "position"
+  end
+
+  # Excel of the candidates on screen (same filters / search), with results, warnings, scores, answers and chat.
+  def export
+    label = [ params[:status], params[:q] ].compact_blank.join("-").parameterize.presence
+    send_xlsx CandidateExport.new(filtered_invitations, link: exam_link).to_xlsx, [ "candidates", label, Date.current ].compact.join("-") + ".xlsx"
+  end
+
+  # Excel for one candidate.
+  def export_one
+    invitation = Current.user.invitations.find(params[:id])
+    send_xlsx CandidateExport.new(Current.user.invitations.where(id: invitation.id), link: exam_link).to_xlsx,
+              "#{invitation.candidate_name.parameterize}-#{Date.current}.xlsx"
   end
 
   def new
@@ -89,6 +91,26 @@ class InvitationsController < ApplicationController
   end
 
   private
+    def exam_link
+      ->(invitation) { exam_url(invitation.token) }
+    end
+
+    def filtered_invitations
+      scope = Current.user.invitations.includes(:quiz, :interview_rounds).recent
+      if params[:status] == "submitted"
+        scope = scope.completed # finished the test (incl. auto-terminated)
+      elsif Invitation::STATUSES.include?(params[:status])
+        scope = scope.where(status: params[:status])
+      end
+      scope = scope.qualified if params[:status] == "qualified"
+      scope = scope.disqualified if params[:status] == "disqualified"
+      if params[:q].present?
+        q = "%#{Invitation.sanitize_sql_like(params[:q])}%"
+        scope = scope.where("candidate_name ILIKE :q OR vacancy ILIKE :q OR candidate_email ILIKE :q", q: q)
+      end
+      scope
+    end
+
     def load_form_options
       @quizzes = Current.user.quizzes.order(:title)
       @vacancies = Current.user.vacancies.open.includes(:department).order(:title)

@@ -49,23 +49,33 @@ module Spreadsheet
   # Builds an .xlsx with a styled header row. `notes` adds an Instructions sheet.
   # `highlight` lists column indexes drawn in green (e.g. the answer column).
   def self.build(sheet_name, headers, rows = [], widths: nil, notes: nil, highlight: [])
+    sheets = [ { name: sheet_name, headers: headers, rows: rows, widths: widths, highlight: highlight } ]
+    sheets << { name: "Instructions", headers: nil, rows: notes.map { |line| [ line ] }, widths: [ 110 ] } if notes
+    build_book(sheets)
+  end
+
+  # Several sheets in one workbook: [{ name:, headers:, rows:, widths:, highlight: }, ...]
+  def self.build_book(sheets)
     package = Axlsx::Package.new
     book = package.workbook
-    header_style = book.styles.add_style(b: true, fg_color: "FFFFFF", bg_color: "6D4AFF", alignment: { horizontal: :center, vertical: :center, wrap_text: true })
-    key_header = book.styles.add_style(b: true, fg_color: "FFFFFF", bg_color: "059669", alignment: { horizontal: :center, vertical: :center, wrap_text: true })
+    header_style = book.styles.add_style(b: true, fg_color: "FFFFFF", bg_color: "047857", alignment: { horizontal: :center, vertical: :center, wrap_text: true })
+    key_header = book.styles.add_style(b: true, fg_color: "FFFFFF", bg_color: "0E7490", alignment: { horizontal: :center, vertical: :center, wrap_text: true })
     key_cell = book.styles.add_style(b: true, fg_color: "065F46", bg_color: "D1FAE5", alignment: { horizontal: :center })
-    book.add_worksheet(name: sheet_name) do |ws|
-      ws.add_row headers, style: headers.each_index.map { |i| highlight.include?(i) ? key_header : header_style }, height: 30
-      rows.each do |r|
-        ws.add_row r, types: Array.new(r.size, :string), style: r.each_index.map { |i| key_cell if highlight.include?(i) }
-      end
-      ws.column_widths(*widths) if widths
-      ws.sheet_view.pane { |p| p.top_left_cell = "A2"; p.state = :frozen; p.y_split = 1 }
-    end
-    if notes
-      book.add_worksheet(name: "Instructions") do |ws|
-        notes.each { |line| ws.add_row [ line ] }
-        ws.column_widths 110
+    sheets.each do |sheet|
+      highlight = sheet[:highlight] || []
+      book.add_worksheet(name: sheet[:name].to_s.first(31)) do |ws|
+        if sheet[:headers]
+          ws.add_row sheet[:headers], style: sheet[:headers].each_index.map { |i| highlight.include?(i) ? key_header : header_style }, height: 30
+        end
+        sheet[:rows].each do |r|
+          r = r.map { |v| v.nil? ? "" : v.to_s }
+          ws.add_row r, types: Array.new(r.size, :string), style: r.each_index.map { |i| key_cell if highlight.include?(i) }
+        end
+        ws.column_widths(*sheet[:widths]) if sheet[:widths]
+        if sheet[:headers]
+          ws.sheet_view.pane { |p| p.top_left_cell = "A2"; p.state = :frozen; p.y_split = 1 }
+          ws.auto_filter = "A1:#{Axlsx.col_ref(sheet[:headers].size - 1)}#{[ sheet[:rows].size + 1, 2 ].max}" if sheet[:rows].any?
+        end
       end
     end
     package.to_stream.read

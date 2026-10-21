@@ -13,6 +13,7 @@
         { label: "Qualified", value: all.qualified.count, icon: "award", tone: "green", path: invitations_path(status: "qualified", group: "position") },
         { label: "Disqualified", value: all.disqualified.count, icon: "x-circle", tone: "amber", path: invitations_path(status: "disqualified", group: "position") }
       ] } do %>
+  <%= link_to export_invitations_path(status: params[:status], q: params[:q]), class: "btn btn-light", data: { turbo: false }, title: "Candidates shown here, with results, warnings, interview scores, answers and chat" do %><%= icon("download") %> Download Excel<% end %>
   <%= link_to new_invitation_path(plan: "none"), class: "btn btn-light" do %><%= icon("file") %> Invite for test<% end %>
   <%= link_to new_invitation_path, class: "btn btn-primary" do %><%= icon("plus") %> Invite for test + interview<% end %>
 <% end %>

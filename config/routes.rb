@@ -28,8 +28,10 @@ Rails.application.routes.draw do
     get :export, on: :collection
   end
   resources :invitations, only: %i[index new create show edit update destroy] do
+    get :export, on: :collection
     member do
       get :report
+      get :export, action: :export_one
       post :decide
     end
     resources :interview_rounds, path: "rounds", only: %i[create update destroy] do
