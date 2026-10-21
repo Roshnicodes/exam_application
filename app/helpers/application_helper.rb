@@ -160,7 +160,7 @@ module ApplicationHelper
   def panelist_share_text(employee, invitation: nil, batch: nil)
     what = invitation ? "#{invitation.candidate_name}'s exam (#{invitation.vacancy})" : "the \"#{batch.name}\" group exam"
     link = invitation ? watch_url(invitation.watch_token) : watch_batch_url(batch.watch_token)
-    "Hi #{employee.name}, you are on the interview panel for #{what}. Watch the candidate's live camera here: #{link}"
+    "Hi #{employee.name}, you are on the interview panel for #{what}. Watch the candidate live, join the interview and give your score here: #{link}"
   end
 
   def decision_message(invitation)

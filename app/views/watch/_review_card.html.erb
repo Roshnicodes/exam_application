@@ -1,0 +1,20 @@
+<%# Panelist's "give your score" card on the watch page. locals: invitation:, watch_token: %>
+<% rounds = invitation.interview_rounds.reject(&:cancelled?) %>
+<div class="card review-card">
+  <div class="card-head"><h2><%= icon("award") %> Your review</h2></div>
+  <% if rounds.any? %>
+    <% rounds.each do |round| %>
+      <% names = round.interview_feedbacks.map(&:reviewer_name) %>
+      <div class="list-item">
+        <span class="rs-dot rs-<%= round.status %>"><%= icon(round.completed? ? "check" : (round.open? ? "video" : "award")) %></span>
+        <div class="grow person"><div>
+          <b><%= round.name %></b>
+          <span><%= names.any? ? "Scored by #{names.to_sentence}" : "No scores yet" %></span>
+        </div></div>
+        <%= link_to watch_round_path(watch_token, round, anchor: "feedback_form_#{round.id}"), class: "btn btn-sm btn-primary" do %><%= icon("award") %> Give score<% end %>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="card-body small muted">This candidate is invited for the online test only — there is no interview round to score. HR can add a round from the candidate page.</div>
+  <% end %>
+</div>

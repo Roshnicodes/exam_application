@@ -30,6 +30,7 @@
     </div>
   </div>
   <div class="stack">
+    <%= render "watch/review_card", invitation: @invitation, watch_token: params[:watch_token] %>
     <%= render "invitations/live_state", invitation: @invitation %>
     <%= render "interview_rounds/watch_list", invitation: @invitation, watch_token: params[:watch_token] %>
     <% if @invitation.resume.attached? %>

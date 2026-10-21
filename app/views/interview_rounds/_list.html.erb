@@ -33,7 +33,8 @@
 
           <div class="row wrap between" style="margin-top:.5rem">
             <div class="panel-stack" title="<%= round.panelists.map(&:name).join(', ').presence || 'No panelists' %>">
-              <% round.panelists.first(5).each do |p| %><span class="avatar" style="background: <%= gradient_for(p.name) %>"><%= initials_for(p.name) %></span><% end %>
+              <% scored = round.interview_feedbacks.map(&:employee_id) %>
+              <% round.panelists.first(5).each do |p| %><span class="avatar <%= scored.include?(p.id) ? 'scored' : 'pending' %>" style="background: <%= gradient_for(p.name) %>" title="<%= p.name %> — <%= scored.include?(p.id) ? 'scored' : 'not scored yet' %>"><%= initials_for(p.name) %></span><% end %>
               <% if round.panelists.empty? %><span class="tiny muted">No panel</span><% end %>
             </div>
             <span class="tiny">

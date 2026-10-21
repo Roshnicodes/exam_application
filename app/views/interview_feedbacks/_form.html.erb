@@ -7,10 +7,21 @@
     <% end %>
     <% if feedback.errors.any? %><div class="errors" style="margin:0"><%= feedback.errors.full_messages.to_sentence %></div><% end %>
     <% if local_assigns[:panelists] %>
-      <div class="field">
-        <label for="employee_id">I am <span class="req">*</span></label>
-        <%= select_tag :employee_id, options_for_select(panelists.map { |p| [ p.name, p.id ] }, feedback.employee_id), prompt: "Choose your name", class: "input", required: true %>
-      </div>
+      <% if panelists.any? %>
+        <div class="field">
+          <label for="employee_id_<%= round.id %>">I am <span class="req">*</span></label>
+          <%= select_tag :employee_id, options_for_select(panelists.map { |p| [ p.name, p.id ] }, feedback.employee_id), prompt: "Choose your name", class: "input", id: "employee_id_#{round.id}" %>
+        </div>
+        <div class="field">
+          <label for="reviewer_name_<%= round.id %>" class="tiny muted">Not in the list? Type your name instead</label>
+          <%= text_field_tag :reviewer_name, (feedback.reviewer_name if feedback.employee_id.nil?), class: "input", id: "reviewer_name_#{round.id}", maxlength: 60, placeholder: "Your full name" %>
+        </div>
+      <% else %>
+        <div class="field">
+          <label for="reviewer_name_<%= round.id %>">Your name <span class="req">*</span></label>
+          <%= text_field_tag :reviewer_name, feedback.reviewer_name, class: "input", id: "reviewer_name_#{round.id}", maxlength: 60, required: true, placeholder: "Your full name" %>
+        </div>
+      <% end %>
     <% end %>
     <p class="tiny muted" style="margin:-.3rem 0 0">Score only what you assessed — leave the rest on "Skip".</p>
     <% round.score_parameters.each do |param| %>

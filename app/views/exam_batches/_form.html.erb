@@ -1,4 +1,6 @@
-<%= form_with model: batch, url: batch.persisted? ? exam_batch_path(batch) : exam_batches_path, class: "card", multipart: true do |f| %>
+<%= form_with model: batch, url: batch.persisted? ? exam_batch_path(batch) : exam_batches_path, class: "card", multipart: true,
+      data: { controller: "invite-form", invite_form_test_title_value: "Bulk invite — online test", invite_form_interview_title_value: "Bulk invite — test + interview",
+              invite_form_test_button_value: "Create test links", invite_form_interview_button_value: "Create test links & interview plan" } do |f| %>
   <div class="form-section">
     <% if batch.errors.any? || @row_errors.present? %>
       <div class="errors"><b>Please fix these:</b>
@@ -8,8 +10,16 @@
       </div>
     <% end %>
     <div class="form-section-head">
+      <span class="ico"><%= icon("target") %></span>
+      <div><h3>What is this invite for?</h3></div>
+    </div>
+    <%= render "shared/plan_picker", f: f, value: batch.interview_plan %>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-head">
       <span class="ico"><%= icon("file") %></span>
-      <div><h3>Exam details (same for everyone)</h3></div>
+      <div><h3>Test details (same for everyone)</h3></div>
     </div>
     <div class="fields three">
       <div class="field">
@@ -34,19 +44,19 @@
         </div>
       <% end %>
       <div class="field">
-        <%= f.label :interview_date, "Exam / interview date & time" %>
+        <%= f.label :interview_date, "Test / interview date & time" %>
         <%= f.datetime_local_field :interview_date, class: "input" %>
       </div>
-      <div class="field">
-        <%= f.label :interview_mode, "Mode" %>
+      <div class="field" data-invite-form-target="interviewOnly">
+        <%= f.label :interview_mode, "Interview mode" %>
         <%= f.select :interview_mode, Invitation::INTERVIEW_MODES, {}, class: "input" %>
       </div>
-      <div class="field">
-        <%= f.label :location, "Location / meeting link" %>
+      <div class="field" data-invite-form-target="interviewOnly">
+        <%= f.label :location, "Location / venue" %>
         <%= f.text_field :location, class: "input", placeholder: "Hall / Google Meet link" %>
       </div>
-      <div class="field">
-        <%= f.label :meeting_link, "Meeting link (optional)" %>
+      <div class="field" data-invite-form-target="interviewOnly">
+        <%= f.label :meeting_link, "Interview meeting link (optional)" %>
         <%= f.url_field :meeting_link, class: "input", placeholder: "Google Meet / Zoom" %>
       </div>
       <div class="field">
@@ -64,16 +74,10 @@
     </div>
   </div>
 
-  <div class="form-section">
-    <div class="form-section-head">
-      <span class="ico"><%= icon("video") %></span>
-      <div><h3>Interview plan</h3></div>
-    </div>
-    <%= render "shared/plan_picker", f: f, value: batch.interview_plan %>
+  <div data-invite-form-target="interviewOnly">
+    <%= render "shared/panel_picker", f: f, selected_ids: @panelist_ids,
+          hint: "Panelists for every candidate in this batch. Leave empty to use the vacancy's panel." %>
   </div>
-
-  <%= render "shared/panel_picker", f: f, selected_ids: @panelist_ids,
-        hint: "Panelists for every candidate in this batch. Leave empty to use the vacancy's panel." %>
 
   <div class="form-section" data-controller="repeater">
     <div class="form-section-head">
@@ -107,6 +111,6 @@
 
   <div class="form-actions">
     <%= link_to "Cancel", batch.persisted? ? exam_batch_path(batch) : exam_batches_path, class: "btn btn-light" %>
-    <%= f.button class: "btn btn-primary" do %><%= icon(batch.persisted? ? "check" : "link") %> <%= batch.persisted? ? "Save batch" : "Create exam links" %><% end %>
+    <%= f.button class: "btn btn-primary" do %><%= icon(batch.persisted? ? "check" : "link") %> <span data-invite-form-target="submitLabel"><%= batch.persisted? ? "Save batch" : "Create test links" %></span><% end %>
   </div>
 <% end %>

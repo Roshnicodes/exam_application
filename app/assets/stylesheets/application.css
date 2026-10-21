@@ -1756,3 +1756,11 @@ a:hover { color: var(--brand); }
 .live-video.compact.has-screen { aspect-ratio: auto; }
 .live-video.compact.has-screen > video[data-live-video-target="video"] { inset: auto .4rem .4rem auto; width: 34%; border-radius: 8px; border-width: 1.5px; }
 .live-video.compact.has-screen .lv-badge { z-index: 3; }
+.review-card { border: 1.5px solid rgba(34, 197, 94, .45); }
+.avatar.pending { opacity: .45; }
+.avatar.scored { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #22c55e; }
+/* bulk invite, online test only: no experience column */
+.test-only .cand-input-row input[name$="[experience]"], .test-only .cand-input-head span:nth-child(5) { display: none; }
+@media (min-width: 641px) { .test-only .cand-input-head, .test-only .cand-input-row { grid-template-columns: 30px 1.3fr 1.3fr 1fr auto; } }
+.watch-round .it-join { margin-top: 0; }
+.watch-round .it-room .it-stage { position: relative; top: auto; }

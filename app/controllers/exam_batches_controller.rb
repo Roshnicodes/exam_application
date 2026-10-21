@@ -9,6 +9,7 @@ class ExamBatchesController < ApplicationController
     @batch = Current.user.exam_batches.new(max_warnings: 5, interview_mode: "Online", quiz_id: params[:quiz_id], vacancy_id: params[:vacancy_id],
                                            interview_date: 1.day.from_now.change(hour: 11), link_expires_at: 3.days.from_now.end_of_day,
                                            name: "Batch #{Date.current.strftime('%d %b %Y')}")
+    @batch.interview_plan = params[:plan] if Invitation::INTERVIEW_PLANS.key?(params[:plan])
     @rows = Array.new(3) { {} }
     load_form_options
     redirect_to new_quiz_path, alert: "Create a question paper first." if @quizzes.empty?

@@ -1,6 +1,6 @@
 <% content_for :title, "Bulk invite" %>
 <%= render layout: "shared/page_header", locals: {
-      title: "Bulk invite — group exam", icon: "users",
+      title: @batch.interview_plan == "none" ? "Bulk invite — online test" : "Bulk invite — test + interview", icon: "users",
       crumbs: [ [ "Batches", exam_batches_path ] ] } do %>
 <% end %>
 

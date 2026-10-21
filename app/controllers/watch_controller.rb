@@ -21,11 +21,19 @@ class WatchController < ApplicationController
     round = @invitation.interview_rounds.find(params[:round_id])
     panelists = round.panelists.to_a
     panelist = panelists.find { |p| p.id == params[:employee_id].to_i }
-    feedback = panelist ? round.interview_feedbacks.find_or_initialize_by(employee: panelist) : round.interview_feedbacks.new
+    typed = params[:reviewer_name].to_s.squish.first(60)
+    feedback = if panelist
+      round.interview_feedbacks.find_or_initialize_by(employee: panelist)
+    elsif typed.present? # guest panelist, or no panel set for the round: one scorecard per name
+      round.interview_feedbacks.find_or_initialize_by(employee_id: nil, user_id: nil, reviewer_name: typed)
+    else
+      round.interview_feedbacks.new
+    end
     feedback.assign_attributes(params.expect(interview_feedback: [ :recommendation, :comments, scores: {} ])
-                                     .merge(invitation: @invitation, reviewer_name: panelist&.name.to_s))
-    saved = panelist && feedback.save
-    feedback.errors.add(:base, "Choose your name from the panel list") unless panelist
+                                     .merge(invitation: @invitation, reviewer_name: panelist&.name || typed))
+    who = panelist || typed.present?
+    saved = who && feedback.save
+    feedback.errors.add(:base, "Choose your name from the panel list or type it") unless who
 
     respond_to do |format|
       format.turbo_stream do
