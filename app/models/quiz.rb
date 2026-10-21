@@ -20,38 +20,10 @@ class Quiz < ApplicationRecord
     "3. Correct Answer (green column) is REQUIRED - it is used to calculate the result.",
     "   You can write the letter (A / B / C / D), the number (1 / 2 / 3 / 4) or the exact option text (e.g. New Delhi).",
     "4. Marks: marks for a correct answer (defaults to 1 when blank). Wrong or skipped answers get 0.",
-    "5. Save as .xlsx or .csv and upload it on the question paper form.",
+    "5. Save as .xlsx or .csv and upload it on the question paper form (Word, PDF and text papers can be uploaded too).",
     "",
     "RESULT: score = total marks of correctly answered questions. Percentage >= pass % of the paper means PASS."
   ].freeze
-
-  # Builds questions from an uploaded sheet. Returns a list of row errors (empty on success).
-  def import_questions(file)
-    errors = []
-    built = []
-    next_position = questions.map { |q| q.position.to_i }.max.to_i
-    Spreadsheet.rows(file).each do |line, row|
-      body = row["question"].to_s.strip
-      options = Question::LETTERS.map { |l| row["option #{l.downcase}"].to_s.strip }
-      next if body.blank? && options.all?(&:blank?)
-
-      answer = ANSWER_COLUMNS.lazy.map { |k| row[k] }.find(&:present?).to_s.strip
-      correct = self.class.answer_index(answer, options)
-      if body.blank? then errors << "Row #{line}: question text is missing"
-      elsif options.count(&:present?) < 2 then errors << "Row #{line}: needs at least two options"
-      elsif answer.blank? then errors << "Row #{line}: Correct Answer is empty — write A, B, C or D so the result can be calculated"
-      elsif correct.nil? then errors << "Row #{line}: Correct Answer \"#{answer}\" doesn't match any option (use A-D or the exact option text)"
-      else
-        marks = row["marks"].to_i.positive? ? row["marks"].to_i : 1
-        built << questions.build(body: body, options: options, correct_index: correct, marks: marks, position: next_position += 1)
-      end
-    end
-    errors << "No questions found in the file" if errors.empty? && built.empty?
-    built.each { |q| questions.delete(q) } if errors.any? # all-or-nothing, so a fixed re-upload doesn't duplicate rows
-    errors
-  rescue Spreadsheet::Error => e
-    [ e.message ]
-  end
 
   # "B", "b)", "2", "Option B" or the option's own text -> option index.
   def self.answer_index(answer, options)

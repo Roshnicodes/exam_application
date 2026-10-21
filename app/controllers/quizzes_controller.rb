@@ -51,15 +51,26 @@ class QuizzesController < ApplicationController
   end
 
   private
-    # Adds questions from the optional Excel/CSV upload. Returns false (with errors) when rows are invalid.
+    # Reads an uploaded paper (Word, PDF, Excel / CSV or text) into the form's questions.
+    # Saves straight away only when every question already has its answer; otherwise the form comes
+    # back for review with the questions that still need a correct option marked in red.
     def import_questions
       file = params.dig(:quiz, :questions_file)
       return true if file.blank?
 
-      row_errors = @quiz.import_questions(file)
-      return true if row_errors.empty?
+      paper = QuestionPaperParser.parse(file)
+      @quiz.title = paper.title if @quiz.title.blank? && paper.title.present?
+      @quiz.duration_minutes = paper.duration if paper.duration.to_i.between?(1, 300) && @quiz.new_record?
+      position = @quiz.questions.map { |q| q.position.to_i }.max.to_i
+      paper.questions.each { |q| @quiz.questions.build(q.merge(position: position += 1)) }
 
-      @import_errors = row_errors
+      missing = paper.questions.count { |q| q[:correct_index].nil? }
+      return true if missing.zero? && paper.warnings.empty?
+
+      @import_review = { file: file.original_filename, count: paper.questions.size, missing: missing, warnings: paper.warnings }
+      false
+    rescue QuestionPaperParser::Error => e
+      @import_errors = [ e.message ]
       false
     end
 

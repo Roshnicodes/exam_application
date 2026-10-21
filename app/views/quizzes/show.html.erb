@@ -12,7 +12,7 @@
 <div class="card">
   <% @quiz.questions.each_with_index do |q, i| %>
     <div class="review-q">
-      <div class="row between" style="align-items:flex-start"><b>Q<%= i + 1 %>. <%= q.body %></b><span class="badge"><%= pluralize(q.marks, "mark") %></span></div>
+      <div class="row between" style="align-items:flex-start"><div class="q-review-text"><b>Q<%= i + 1 %>.</b> <%= question_text(q.body) %></div><span class="badge"><%= pluralize(q.marks, "mark") %></span></div>
       <% q.options.each_with_index do |opt, idx| %>
         <div class="review-opt <%= 'correct' if idx == q.correct_index %>"><b><%= Question::LETTERS[idx] %>.</b> <%= opt %><% if idx == q.correct_index %><span class="tiny" style="margin-left:auto">Correct</span><% end %></div>
       <% end %>

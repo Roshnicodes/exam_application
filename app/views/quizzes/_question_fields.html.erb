@@ -1,12 +1,14 @@
 <% opts = (Array(f.object.options) + [ "", "", "", "" ]).first([ Array(f.object.options).size, 4 ].max) %>
-<div class="q-builder" data-nested-form-target="item">
+<% needs_answer = f.object.body.present? && f.object.correct_index.nil? %>
+<div class="q-builder <%= 'needs-answer' if needs_answer %>" data-nested-form-target="item">
   <%= f.hidden_field :id if f.object.persisted? %>
   <%= f.hidden_field :_destroy, data: { nested_form_target: "destroy" } %>
   <%= f.hidden_field :position, data: { nested_form_target: "position" } %>
   <div class="row" style="align-items:flex-start">
     <span class="q-num" data-nested-form-target="number">#</span>
     <div class="grow">
-      <%= f.text_area :body, rows: 2, placeholder: "Type the question…", class: "input" %>
+      <% if needs_answer %><div class="needs-answer-note"><%= icon("alert") %> Choose the correct answer — tick the circle next to the right option</div><% end %>
+      <%= f.text_area :body, rows: [ f.object.body.to_s.lines.size + 1, 2 ].max.clamp(2, 12), placeholder: "Type the question…", class: "input" %>
       <div class="opt-grid">
         <% opts.each_with_index do |opt, i| %>
           <label class="opt-input">

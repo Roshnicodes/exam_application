@@ -33,26 +33,40 @@
 
   <div class="form-section">
     <% if @import_errors.present? %>
-      <div class="errors"><b>Excel upload failed — nothing was imported. Fix these rows and upload again:</b>
+      <div class="errors"><b>Upload failed — nothing was imported:</b>
         <ul><% @import_errors.first(10).each do |e| %><li><%= e %></li><% end %></ul>
         <% if @import_errors.size > 10 %><p>…and <%= @import_errors.size - 10 %> more.</p><% end %>
       </div>
     <% end %>
     <div class="form-section-head">
       <span class="ico"><%= icon("sheet") %></span>
-      <div class="grow"><h3>Bulk upload from Excel</h3></div>
+      <div class="grow"><h3>Upload question paper</h3></div>
     </div>
+    <% if @import_review %>
+      <div class="import-review">
+        <b><%= icon("check-circle") %> Read <%= pluralize(@import_review[:count], "question") %> from <%= @import_review[:file] %>.</b>
+        <% if @import_review[:missing].positive? %>
+          <p><b><%= @import_review[:missing] %></b> <%= @import_review[:missing] == 1 ? "question doesn't" : "questions don't" %> have the correct answer in the file — they are marked in red below. Tick the right option (the circle next to it), check the text, then press <b>Save paper</b>.</p>
+        <% else %>
+          <p>Check the questions below, then press <b>Save paper</b>.</p>
+        <% end %>
+        <% if @import_review[:warnings].any? %>
+          <ul><% @import_review[:warnings].first(10).each do |w| %><li><%= w %></li><% end %></ul>
+          <p class="tiny">Add the skipped ones by hand with “Add question”, or fix the file and upload again.</p>
+        <% end %>
+      </div>
+    <% end %>
     <div class="excel-card">
       <div class="dropzone" data-controller="dropzone" data-action="click->dropzone#pick">
         <span class="ico"><%= icon("upload") %></span>
         <div class="grow">
-          <div class="small" data-dropzone-target="label"><b>Click to choose</b> or drag &amp; drop a <b>.xlsx</b> / <b>.csv</b> file</div>
-          <div class="tiny muted">Columns: Question · Option A–D · <b style="color:#059669">Correct Answer (A/B/C/D)</b> · Marks</div>
+          <div class="small" data-dropzone-target="label"><b>Click to choose</b> or drag &amp; drop the paper — <b>Word (.docx)</b>, <b>PDF</b>, <b>Excel (.xlsx / .csv)</b> or <b>text (.txt)</b></div>
+          <div class="tiny muted">Questions numbered 1. 2. 3. with options A. B. C. D. Correct answers are picked up from “Answer: B”, an answer key at the end, or a bold / highlighted option — anything missing you tick on the next screen.</div>
         </div>
-        <%= f.file_field :questions_file, accept: ".xlsx,.xls,.csv", data: { dropzone_target: "input", action: "change->dropzone#changed" } %>
+        <%= f.file_field :questions_file, accept: ".docx,.pdf,.txt,.xlsx,.xls,.csv", data: { dropzone_target: "input", action: "change->dropzone#changed" } %>
       </div>
       <div class="row wrap">
-        <%= link_to template_quizzes_path, class: "btn btn-light", data: { turbo: false } do %><span class="xl-badge">X</span> Download template<% end %>
+        <%= link_to template_quizzes_path, class: "btn btn-light", data: { turbo: false } do %><span class="xl-badge">X</span> Excel template<% end %>
         <% if quiz.persisted? %>
           <%= link_to export_quiz_path(quiz), class: "btn btn-light", data: { turbo: false } do %><%= icon("download") %> Current questions<% end %>
         <% end %>

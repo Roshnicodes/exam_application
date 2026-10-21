@@ -1771,3 +1771,21 @@ a:hover { color: var(--brand); }
 .answer-sheet .card-head { flex-wrap: wrap; }
 .brand .brand-asa { font-weight: 800; color: #4ade80; }
 .exam-brand .brand .brand-asa { color: var(--brand); }
+
+/* ---------- Question paper upload review ---------- */
+.import-review { margin-bottom: 1rem; padding: .9rem 1.1rem; border-radius: 14px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; font-size: .88rem; }
+.import-review > b { display: flex; align-items: center; gap: .4rem; }
+.import-review p { margin-top: .3rem; }
+.import-review ul { margin: .4rem 0 0; padding-left: 1.2rem; color: #92400e; }
+.q-builder.needs-answer { border-color: #fca5a5; background: rgba(254, 226, 226, .45); }
+.q-builder.needs-answer:has(input[type=radio]:checked) { border-color: rgba(16, 150, 100, .35); background: rgba(255, 255, 255, .4); }
+.q-builder.needs-answer:has(input[type=radio]:checked) .needs-answer-note { display: none; }
+.needs-answer-note { display: flex; align-items: center; gap: .35rem; margin-bottom: .45rem; color: #b91c1c; font-size: .8rem; font-weight: 700; }
+.q-text { white-space: normal; }
+.q-lines + .q-table, .q-table + .q-lines { margin-top: .6rem; }
+.q-table { border-collapse: collapse; margin: .2rem 0; font-size: .92rem; font-weight: 500; background: rgba(255, 255, 255, .7); border-radius: 10px; overflow: hidden; }
+.q-table th, .q-table td { border: 1px solid #d1e7dd; padding: .35rem .8rem; text-align: left; }
+.q-table th { background: #ecfdf5; font-weight: 700; color: #065f46; }
+.q-review-text { font-weight: 600; flex: 1; min-width: 0; }
+.q-review-text > b { margin-right: .2rem; }
+.q-review-text .q-lines { display: inline; }

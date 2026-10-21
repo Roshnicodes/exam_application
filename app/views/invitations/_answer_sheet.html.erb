@@ -9,7 +9,7 @@
     <% given = picked[i] %>
     <div class="review-q">
       <div class="row between" style="align-items:flex-start">
-        <b>Q<%= i + 1 %>. <%= q.body %></b>
+        <div class="q-review-text"><b>Q<%= i + 1 %>.</b> <%= question_text(q.body) %></div>
         <% if given.nil? %>
           <span class="badge">Skipped</span>
         <% elsif q.correct?(given) %>

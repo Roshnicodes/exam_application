@@ -32,7 +32,7 @@
               <button type="button" class="btn btn-ghost btn-sm" data-action="exam#flag"><%= icon("flag") %> Mark for review</button>
             </div>
           </div>
-          <div class="q-text"><%= q.body %></div>
+          <div class="q-text"><%= question_text(q.body) %></div>
           <div class="options">
             <% q.options.each_with_index do |opt, idx| %>
               <label class="option">

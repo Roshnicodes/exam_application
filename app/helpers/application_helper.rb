@@ -97,6 +97,21 @@ module ApplicationHelper
     end
   end
 
+  # Question text with "a | b | c" lines (tables from uploaded papers) shown as a real table.
+  def question_text(body)
+    blocks = body.to_s.split("\n").chunk_while { |a, b| a.include?(" | ") == b.include?(" | ") }
+    safe_join(blocks.map do |lines|
+      if lines.first.include?(" | ")
+        rows = lines.map { |l| l.split(" | ").map(&:strip) }
+        tag.table(class: "q-table") do
+          safe_join(rows.each_with_index.map { |cells, i| tag.tr(safe_join(cells.map { |c| i.zero? ? tag.th(c) : tag.td(c) })) })
+        end
+      else
+        tag.div(safe_join(lines, tag.br), class: "q-lines")
+      end
+    end)
+  end
+
   # Small trend line (with a soft filled area) for the dashboard stat cards.
   def sparkline(values, width: 96, height: 36)
     max = [ values.max.to_i, 1 ].max
