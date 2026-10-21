@@ -12,9 +12,9 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 export default class extends Controller {
   static targets = [ "grid", "localVideo", "micBtn", "camBtn", "status", "nameInput", "joinPanel", "room", "count",
                      "screenGate", "screenError", "alerts", "tap", "chat", "chatBtn", "unread", "messages", "chatInput",
-                     "presentBtn", "codeBtn", "switchBtn", "switchNote", "code", "codeLang", "codeBy", "codeInput" ]
+                     "presentBtn", "codeBtn", "switchBtn", "switchNote", "code", "codeLang", "codeBy", "codeInput", "tileMic" ]
   static values = { roundId: Number, invitationId: Number, test: Boolean, token: String, watchToken: String, name: String,
-                    needsName: Boolean, leaveUrl: String, autoJoin: Boolean, talk: Boolean }
+                    needsName: Boolean, leaveUrl: String, autoJoin: Boolean, talk: Boolean, audioOnly: Boolean }
 
   connect() {
     this.peers = new Map() // peerId -> { pc, pending, tile, name, role, screenStreamId, screenTile }
@@ -153,6 +153,7 @@ export default class extends Controller {
   async panelMedia() {
     const video = { width: { ideal: 640 }, height: { ideal: 480 } }
     const audio = { echoCancellation: true, noiseSuppression: true }
+    if (this.audioOnlyValue) return navigator.mediaDevices.getUserMedia({ audio })
     try {
       return await navigator.mediaDevices.getUserMedia({ video, audio })
     } catch (e) {
@@ -551,6 +552,29 @@ export default class extends Controller {
     this.announceMedia()
   }
 
+  // Live monitor tile mic: the first click joins this candidate's call with the mic on, then it toggles mute.
+  async tileToggle(event) {
+    event.preventDefault()
+    event.stopPropagation() // the tile itself is a link
+    if (this.subscription) return this.toggleMic()
+    if (this.joining) return
+    if (this.needsNameValue && !this.nameValue) {
+      let name = ""
+      try { name = localStorage.getItem("panelist-name") || "" } catch {}
+      name ||= (window.prompt("Your name (shown to the candidate):") || "").trim()
+      if (!name) return
+      try { localStorage.setItem("panelist-name", name) } catch {}
+      this.nameValue = name
+    }
+    this.joining = true
+    this.quietJoin = true
+    this.talkValue = true
+    this.tileMicTarget.classList.add("connecting")
+    await this.join()
+    this.joining = false
+    this.tileMicTarget.classList.remove("connecting")
+  }
+
   // Joined silently: the others' sound starts with the first "Unmute" (so watching a candidate isn't noisy)
   applySpeaker() {
     if (!this.quietJoin) return
@@ -572,6 +596,11 @@ export default class extends Controller {
   updateButtons() {
     if (!this.hasMicBtnTarget) return
     const mic = this.stream?.getAudioTracks().some((t) => t.enabled)
+    if (this.hasTileMicTarget) {
+      this.tileMicTarget.classList.toggle("off", !mic)
+      this.tileMicTarget.setAttribute("aria-label", mic ? "Mute" : "Unmute to talk")
+      this.tileMicTarget.title = mic ? "Mute" : "Unmute to talk"
+    }
     const cam = this.stream?.getVideoTracks().some((t) => t.enabled)
     this.micBtnTarget.classList.toggle("off", !mic)
     this.micBtnTarget.querySelector("span").textContent = mic ? "Mute" : (this.testValue && !this.candidate ? "Unmute to talk" : "Unmute")

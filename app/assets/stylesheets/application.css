@@ -1835,7 +1835,15 @@ a:hover { color: var(--brand); }
 .guide-link span { font-weight: 600; color: #059669; }
 
 /* ---------- One-click talk ---------- */
-.mon-talk { position: absolute; top: 2.4rem; right: .45rem; z-index: 4; border: 0; cursor: pointer; padding: .3rem .65rem; border-radius: 99px; background: rgba(22, 163, 74, .92); color: #fff; font: inherit; font-size: .72rem; font-weight: 800; box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .5); }
-.mon-talk:hover { background: #15803d; }
+
+
 .test-call .it-btn[data-interview-room-target="micBtn"].off { background: #16a34a; }
 .test-call .it-btn[data-interview-room-target="micBtn"]:not(.off) { background: #ef4444; }
+/* Meet-style mic on live monitor tiles */
+.mon-mic { position: absolute; top: 2.4rem; right: .45rem; z-index: 4; width: 38px; height: 38px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; color: #fff; background: #16a34a; box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .55); transition: .15s; }
+.mon-mic svg.icon { width: 1.1em; height: 1.1em; }
+.mon-mic.off { background: rgba(15, 23, 42, .75); }
+.mon-mic.off::after { content: ""; position: absolute; width: 22px; height: 2px; background: #f87171; transform: rotate(-45deg); border-radius: 2px; }
+.mon-mic:not(.off) { animation: pulse-bg 1.4s infinite; }
+.mon-mic.connecting { opacity: .6; cursor: progress; }
+.tile-call { display: none !important; }

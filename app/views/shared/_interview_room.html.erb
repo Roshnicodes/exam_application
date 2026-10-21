@@ -14,7 +14,14 @@
      <% if local_assigns[:token] %>data-interview-room-token-value="<%= token %>"<% end %>
      <% if local_assigns[:watch_token] %>data-interview-room-watch-token-value="<%= watch_token %>"<% end %>
      <% if local_assigns[:name] %>data-interview-room-name-value="<%= name %>"<% end %>
+     <% if local_assigns[:tile] %>data-interview-room-audio-only-value="true"<% end %>
      data-interview-room-needs-name-value="<%= panelists ? 'true' : 'false' %>">
+  <% if local_assigns[:tile] %>
+    <%# Live monitor tile: Meet-style mic — unmute to talk to this candidate, mute to stop %>
+    <button type="button" class="mon-mic off" data-interview-room-target="tileMic" data-action="interview-room#tileToggle"
+            title="Unmute to talk to <%= invitation.candidate_name %>" aria-label="Unmute to talk"><%= icon("mic") %></button>
+    <div class="tile-call" hidden>
+  <% end %>
 
   <% if panelists || (test_call && !local_assigns[:token]) %>
     <form class="card it-join" data-interview-room-target="joinPanel" data-action="submit->interview-room#joinAs">
@@ -109,4 +116,5 @@
     <% if local_assigns[:side] %><aside class="it-side"><%= side %></aside><% end %>
     <%= local_assigns[:extra] %>
   </div>
+  <% if local_assigns[:tile] %></div><% end %>
 </div>
