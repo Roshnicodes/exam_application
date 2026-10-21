@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { getStream, cameraHelp, screenShareSupported, screenShareImpossible, getScreenStream, requestScreen } from "lib/media"
+import { getStream, cameraHelp, isPhoneOrTablet, screenShareSupported, screenShareImpossible, getScreenStream, requestScreen } from "lib/media"
 import { loadFaceDetector } from "lib/face_detector"
 import { unlockAudio } from "lib/sound"
 
@@ -64,8 +64,9 @@ export default class extends Controller {
   async checkScreen() {
     const extended = window.screen.isExtended === true
     const fs = !!document.documentElement.requestFullscreen
-    this.state.screen = !extended && fs
-    this.set("screenCheck", this.state.screen, extended ? "Disconnect extra display" : (fs ? "OK" : "Unsupported browser"))
+    const phone = isPhoneOrTablet() // iPhone Safari has no full screen mode; that's fine on a phone
+    this.state.screen = !extended && (fs || phone)
+    this.set("screenCheck", this.state.screen, extended ? "Disconnect extra display" : (fs ? "OK" : (phone ? "OK (phone)" : "Unsupported browser")))
     this.refresh()
   }
 
