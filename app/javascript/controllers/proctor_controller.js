@@ -259,7 +259,8 @@ export default class extends Controller {
 
   // ---------------------------------------------------------------- full screen
   checkFullscreen(changed = false) {
-    if (this.interview && !document.documentElement.requestFullscreen) return // e.g. iPhone Safari
+    // iPhone Safari has no full screen mode; leaving the test page is still caught as a tab / app switch
+    if (!document.documentElement.requestFullscreen) return
     const inFs = !!document.fullscreenElement
     this.fullscreenGateTarget.classList.toggle("hidden", inFs || !this.active || !!this.switchAllowed)
     if (this.switchAllowed) return
