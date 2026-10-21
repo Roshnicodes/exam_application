@@ -4,7 +4,7 @@
      data-live-video-invitation-id-value="<%= invitation.id %>"
      <% if local_assigns[:watch_token] %>data-live-video-watch-token-value="<%= watch_token %>"<% end %>>
   <% if local_assigns[:poster] %><img class="lv-poster" src="<%= poster %>" alt=""><% end %>
-  <% unless compact %><video class="lv-screen" data-live-video-target="screen" autoplay muted playsinline hidden></video><% end %>
+  <video class="lv-screen" data-live-video-target="screen" autoplay muted playsinline hidden></video>
   <video data-live-video-target="video" autoplay muted playsinline></video>
   <span class="lv-badge"><span class="rec-dot"></span> <span data-live-video-target="status">Connecting…</span></span>
   <% unless compact %>

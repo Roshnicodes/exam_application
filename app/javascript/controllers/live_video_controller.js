@@ -117,7 +117,7 @@ export default class extends Controller {
 
   // The candidate's shared screen: shown big, with the camera as a small inset.
   showScreen(stream) {
-    if (!this.hasScreenTarget) return // compact monitor tiles show the camera only
+    if (!this.hasScreenTarget) return
     this.screenTarget.srcObject = stream
     this.screenTarget.hidden = false
     this.screenTarget.play().catch(() => {})

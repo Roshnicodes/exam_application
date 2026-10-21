@@ -1751,3 +1751,8 @@ a:hover { color: var(--brand); }
 .skipped-list div { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .4rem; }
 .skipped-list button { width: 40px; height: 36px; border-radius: 10px; border: 1.5px solid #fca5a5; background: #fee2e2; color: #b91c1c; font: inherit; font-weight: 800; cursor: pointer; }
 .skipped-list button:hover { background: #fecaca; }
+
+/* bulk / live monitor tiles: the shared screen fills the tile, camera in the corner */
+.live-video.compact.has-screen { aspect-ratio: auto; }
+.live-video.compact.has-screen > video[data-live-video-target="video"] { inset: auto .4rem .4rem auto; width: 34%; border-radius: 8px; border-width: 1.5px; }
+.live-video.compact.has-screen .lv-badge { z-index: 3; }
