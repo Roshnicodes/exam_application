@@ -59,8 +59,25 @@ export function stopStream() {
 // ---- Entire-screen sharing (desktop only), shared by the test and the interview rooms ----
 let screen
 
+let shareImpossible = false
+
+// Phones and tablets — also in Chrome's "Desktop site" mode, which hides "Mobile" in the user agent.
+// A touchscreen laptop still has a mouse / trackpad ("pointer: fine"), so it counts as a computer.
+export function isPhoneOrTablet() {
+  return navigator.userAgentData?.mobile === true || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && matchMedia("(pointer: coarse)").matches && !matchMedia("(any-pointer: fine)").matches)
+}
+
+// Browsers can share the screen only on a computer.
 export function screenShareSupported() {
-  return !!navigator.mediaDevices?.getDisplayMedia && !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+  return !shareImpossible && typeof navigator.mediaDevices?.getDisplayMedia === "function" && !isPhoneOrTablet()
+}
+
+// The share failed because this device can't share at all (not because the person pressed Cancel):
+// from now on the test / interview carries on without screen sharing.
+export function screenShareImpossible(error) {
+  if ([ "NotSupportedError", "TypeError", "InvalidStateError" ].includes(error?.name)) shareImpossible = true
+  return shareImpossible
 }
 
 export function getScreenStream() {

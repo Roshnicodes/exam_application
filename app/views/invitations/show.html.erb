@@ -1,7 +1,7 @@
 <% content_for :title, @invitation.candidate_name %>
 <%= turbo_stream_from @invitation, :events %>
 <% link = exam_url(@invitation.token) %>
-<% share_text = "Hi #{@invitation.candidate_name}, please take your online assessment for the #{@invitation.vacancy} role here: #{link} (Your HR will share the OTP with you.)" %>
+<% share_text = candidate_share_text(@invitation) %>
 
 <% chips = []
    chips << [ "calendar", @invitation.interview_date.strftime("%d %b %Y, %-I:%M %p") ] if @invitation.interview_date

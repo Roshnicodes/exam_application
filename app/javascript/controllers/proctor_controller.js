@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { getStream, snapshot, csrfToken, screenShareSupported, getScreenStream, requestScreen, cameraHelp } from "lib/media"
+import { getStream, snapshot, csrfToken, screenShareSupported, screenShareImpossible, getScreenStream, requestScreen, cameraHelp } from "lib/media"
 import { loadFaceDetector, loadObjectDetector } from "lib/face_detector"
 import { warningBeep, unlockAudio } from "lib/sound"
 import { Broadcaster } from "lib/live_video"
@@ -88,7 +88,8 @@ export default class extends Controller {
   // On a desktop the test needs the entire screen shared (from the system check); the screen
   // is recorded and shown live to HR. The interview room handles its own sharing.
   setupScreen() {
-    if (this.interview || !this.hasScreenGateTarget || !screenShareSupported()) return
+    if (this.interview || !this.hasScreenGateTarget) return
+    if (!screenShareSupported()) return this.report("screen_share_unavailable", "Phone / tablet — screen sharing is not possible in a mobile browser")
     const existing = getScreenStream()
     if (existing) this.useScreen(existing)
     else this.screenGateTarget.classList.remove("hidden")
@@ -101,6 +102,10 @@ export default class extends Controller {
       this.useScreen(await requestScreen())
       this.enterFullscreen()
     } catch (e) {
+      if (screenShareImpossible(e)) { // this device can't share at all: continue without it
+        this.screenGateTarget.classList.add("hidden")
+        return this.report("screen_share_unavailable", `Screen sharing failed on this device (${e.name})`)
+      }
       if (e.name === "NotEntireScreen") this.violation("screen_not_entire", `Picked a ${e.surface}`, { overlay: false })
       if (this.hasScreenErrorTarget) this.screenErrorTarget.textContent = e.name === "NotEntireScreen" ? e.message : "Screen sharing is required. Click the button and choose “Entire screen”."
     } finally {

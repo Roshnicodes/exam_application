@@ -14,6 +14,7 @@
           <div class="step <%= 'current' if otp_step %>"><span class="n">2</span><div><b>Get OTP from HR</b><p>The OTP goes to your HR. Call or message them to get the code.</p></div></div>
           <div class="step"><span class="n">3</span><div><b>Camera check &amp; start</b><p>Allow camera access, sit in a well-lit room and begin.</p></div></div>
         </div>
+        <%= link_to candidate_guide_path, class: "guide-link", target: "_blank", rel: "noopener" do %><%= icon("file") %> Read the test guide — what gives a warning, pen &amp; paper rules <span>टेस्ट गाइड पढ़ें</span><% end %>
         <% if @invitation.location.present? || @invitation.notes.present? %>
           <div class="kv" style="margin-top:1.5rem;grid-template-columns:1fr">
             <% if @invitation.location.present? %><div><span>Interview location</span><b><%= @invitation.location %></b></div><% end %>

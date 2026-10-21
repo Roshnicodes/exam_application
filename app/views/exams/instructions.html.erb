@@ -24,6 +24,7 @@
 
       <div>
         <h2>Exam rules</h2>
+        <%= link_to candidate_guide_path, class: "guide-link", target: "_blank", rel: "noopener" do %><%= icon("file") %> Read the test guide — what gives a warning, pen &amp; paper rules <span>टेस्ट गाइड पढ़ें</span><% end %>
         <p class="muted small" style="margin:.35rem 0 1.2rem">Breaking a rule triggers a warning, alerts HR instantly, and too many warnings end the exam automatically<%= " (#{@invitation.max_warnings} warnings)" if @invitation.max_warnings.positive? %>.</p>
         <div class="rules">
           <div class="rule"><%= icon("user") %> Stay in front of the camera, alone</div>

@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 import { cable } from "@hotwired/turbo-rails"
 import { ICE_SERVERS, newViewerId } from "lib/live_video"
-import { getStream, cameraHelp, screenShareSupported, getScreenStream, requestScreen } from "lib/media"
+import { getStream, cameraHelp, screenShareSupported, screenShareImpossible, getScreenStream, requestScreen } from "lib/media"
 import { alarm, chime } from "lib/sound"
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
@@ -50,6 +50,10 @@ export default class extends Controller {
       await this.useScreen(await requestScreen())
       document.documentElement.requestFullscreen?.({ navigationUI: "hide" }).catch(() => {})
     } catch (e) {
+      if (screenShareImpossible(e)) { // this device can't share at all: join without it
+        this.screenGateTarget.classList.add("hidden")
+        return this.join()
+      }
       if (e.name === "NotEntireScreen") {
         this.screenErrorTarget.textContent = e.message
         window.dispatchEvent(new CustomEvent("proctor:violation", { detail: { kind: "screen_not_entire", message: `Picked a ${e.surface}` } }))

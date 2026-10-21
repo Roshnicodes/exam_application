@@ -1789,3 +1789,47 @@ a:hover { color: var(--brand); }
 .q-review-text { font-weight: 600; flex: 1; min-width: 0; }
 .q-review-text > b { margin-right: .2rem; }
 .q-review-text .q-lines { display: inline; }
+
+/* ---------- Candidate guide ---------- */
+.cg { max-width: 900px; }
+.cg-hero .top h1 { color: #fff; font-size: clamp(1.4rem, 3vw, 1.9rem); margin-top: .3rem; }
+.cg-hero .top p { color: #d1fae5; margin-top: .3rem; }
+.cg-hero .eyebrow { font-size: .72rem; font-weight: 800; letter-spacing: .14em; color: #86efac; }
+.cg-actions { display: flex; gap: .5rem; margin-top: 1rem; }
+.cg-card { padding: 1.3rem 1.4rem; margin-top: 1rem; }
+.cg-card h2 { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; font-size: 1.1rem; }
+.cg-card h2 small, .cg-card h3 small { font-weight: 600; color: var(--muted); font-size: .85rem; }
+.cg-num { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--grad); color: #fff; font-size: .9rem; flex-shrink: 0; }
+.cg-list { margin: .8rem 0 0; padding-left: 1.2rem; display: grid; gap: .65rem; font-size: .92rem; }
+.cg-list span, .cg-two li span, .cg-warn span, .cg-alert span, .cg-note span { display: block; color: var(--muted); font-family: "Noto Sans Devanagari", var(--font); font-size: .88rem; margin-top: .1rem; }
+.cg-two { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-top: .9rem; }
+.cg-two > div { border-radius: 14px; padding: .9rem 1rem; }
+.cg-two h3 { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; font-size: .95rem; }
+.cg-two ul { margin: .6rem 0 0; padding-left: 1.1rem; display: grid; gap: .45rem; font-size: .9rem; }
+.cg-ok { background: #ecfdf5; border: 1px solid #a7f3d0; } .cg-ok h3 { color: #047857; }
+.cg-no { background: #fef2f2; border: 1px solid #fecaca; } .cg-no h3 { color: #b91c1c; }
+.cg-tips { margin-top: 1rem; }
+.cg-note { margin-top: .7rem; font-size: .92rem; }
+.cg-warn { list-style: none; margin: .9rem 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
+.cg-warn li { display: flex; gap: .6rem; align-items: flex-start; padding: .6rem .7rem; border-radius: 12px; background: rgba(255, 255, 255, .7); border: 1px solid var(--line); font-size: .88rem; }
+.cg-ico { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: #fee2e2; color: #b91c1c; flex-shrink: 0; }
+.cg-alert { display: flex; gap: .7rem; margin-top: 1rem; padding: .85rem 1rem; border-radius: 14px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: .9rem; }
+.cg-alert > svg.icon { width: 1.4em; height: 1.4em; flex-shrink: 0; margin-top: .1rem; }
+.cg-foot { text-align: center; color: var(--muted); font-weight: 700; margin: 1.5rem 0 .5rem; }
+@media (max-width: 640px) { .cg-two, .cg-warn { grid-template-columns: 1fr; } .cg-card { padding: 1rem; } }
+@media print {
+  .no-print, .exam-brand .pill { display: none !important; }
+  .exam-body, html { background: #fff !important; }
+  @page { margin: 12mm; }
+  .exam-wrap.cg { padding: 0; max-width: none; }
+  .cg-card, .candidate-hero { box-shadow: none !important; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .cg-card { margin-top: .6rem; padding: .9rem 1rem; border: 1px solid #d1e7dd !important; }
+  .cg-card h2 { break-after: avoid; }
+  .cg-list li, .cg-two, .cg-alert { break-inside: avoid; }
+  .cg-warn li { break-inside: avoid; }
+  .cg-hero .top { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cg-ok, .cg-no, .cg-alert, .cg-ico, .cg-num { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+.guide-link { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin: .9rem 0; padding: .65rem .85rem; border-radius: 12px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; font-weight: 700; font-size: .86rem; }
+.guide-link:hover { background: #d1fae5; color: #065f46; }
+.guide-link span { font-weight: 600; color: #059669; }

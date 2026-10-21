@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { getStream, cameraHelp, screenShareSupported, getScreenStream, requestScreen } from "lib/media"
+import { getStream, cameraHelp, screenShareSupported, screenShareImpossible, getScreenStream, requestScreen } from "lib/media"
 import { loadFaceDetector } from "lib/face_detector"
 import { unlockAudio } from "lib/sound"
 
@@ -73,7 +73,7 @@ export default class extends Controller {
   checkShare() {
     if (!screenShareSupported()) {
       this.state.share = true
-      this.set("shareCheck", true, "Not needed on mobile")
+      this.set("shareCheck", true, "Not possible on phone / tablet")
       this.shareBtnTarget.classList.add("hidden")
     } else if (getScreenStream()) {
       this.state.share = true
@@ -96,6 +96,7 @@ export default class extends Controller {
       this.set("shareCheck", true, "Shared ✓")
       this.shareBtnTarget.classList.add("hidden")
     } catch (e) {
+      if (screenShareImpossible(e)) return this.checkShare() // this device can't share: carry on without it
       this.state.share = false
       this.set("shareCheck", false, e.name === "NotEntireScreen" ? "Choose “Entire screen”" : "Not shared")
     }

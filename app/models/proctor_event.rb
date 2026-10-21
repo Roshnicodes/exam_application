@@ -29,6 +29,7 @@ class ProctorEvent < ApplicationRecord
     "time_up"           => [ "Time is up - auto submitted", "info", false ],
     "snapshot"          => [ "Periodic camera snapshot", "info", false ],
     "detector_unavailable" => [ "Face detection unavailable on candidate device", "medium", false ],
+    "screen_share_unavailable" => [ "Screen sharing not possible on this device (phone / tablet)", "info", false ],
     "switching_allowed" => [ "Panel allowed switching apps (e.g. an online editor)", "info", false ],
     "switching_blocked" => [ "Panel turned app-switching checks back on", "info", false ]
   }.freeze

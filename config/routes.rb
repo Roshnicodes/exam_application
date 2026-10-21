@@ -46,6 +46,7 @@ Rails.application.routes.draw do
   get "pipeline" => "pipeline#index", as: :pipeline
   get "schedule" => "schedule#index", as: :schedule
   get "guide" => "pages#guide", as: :guide
+  get "candidate-guide" => "pages#candidate_guide", as: :candidate_guide
   get "team" => "team#index", as: :team
   post "team" => "team#create"
   delete "team/:id" => "team#destroy", as: :team_member
