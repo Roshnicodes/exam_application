@@ -25,7 +25,7 @@
       title: @invitation.candidate_name, avatar: initials_for(@invitation.candidate_name),
       subtitle: [ @invitation.vacancy, @invitation.department.presence, @invitation.quiz.title ].compact.join(" · "),
       crumbs: [ [ "Candidates", invitations_path ] ], chips: chips, extra: share } do %>
-  <%= link_to export_invitation_path(@invitation), class: "btn btn-light btn-sm", data: { turbo: false } do %><%= icon("download") %> Excel<% end %>
+  <%= link_to export_invitation_path(@invitation), class: "btn btn-light btn-sm", data: { turbo: false } do %><%= icon("download") %> Download Excel<% end %>
   <%= link_to edit_invitation_path(@invitation), class: "btn btn-light btn-sm" do %><%= icon("edit") %> Edit<% end %>
   <%= button_to invitation_path(@invitation), method: :delete, class: "btn btn-light btn-sm", form: { data: { turbo_confirm: "Delete this invitation and all its recordings?" } } do %><%= icon("trash") %> Delete<% end %>
 <% end %>
@@ -43,6 +43,7 @@
       </div>
     <% end %>
     <%= render "interview_rounds/list", invitation: @invitation %>
+    <% if @invitation.finished? %><%= render "invitations/answer_sheet", invitation: @invitation, collapsible: true %><% end %>
     <%= render "interview_feedbacks/summary", invitation: @invitation %>
     <%= render "invitations/call_chat", invitation: @invitation %>
     <%= render "invitations/code_pads", invitation: @invitation %>

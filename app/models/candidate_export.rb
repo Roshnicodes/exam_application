@@ -11,7 +11,9 @@ class CandidateExport
   end
 
   def to_xlsx
-    Spreadsheet.build_book([ candidates, positions, warnings, interview_scores, answers, chat ])
+    sheets = [ candidates, positions, warnings, interview_scores, answers, chat ]
+    sheets.unshift(summary(@invitations.first)) if @invitations.one? # one candidate: a readable summary first
+    Spreadsheet.build_book(sheets)
   end
 
   private
@@ -68,17 +70,46 @@ class CandidateExport
         rows: rows, widths: [ 22, 24, 20, 22, 16, 12, 40, 50, 20 ] }
     end
 
+    # The full question paper (every option) with what each candidate chose.
     def answers
-      rows = @invitations.select(&:finished?).flat_map do |i|
+      done = @invitations.select(&:finished?)
+      letters = Question::LETTERS.first(done.flat_map { |i| i.quiz.questions.map { |q| q.options.size } }.max || 4)
+      rows = done.flat_map do |i|
         i.quiz.questions.each_with_index.map do |q, n|
           picked = i.answers[q.id.to_s]
-          [ i.candidate_name, i.vacancy, n + 1, q.body, picked.nil? ? "Skipped" : "#{Question::LETTERS[picked]}. #{q.options[picked]}",
-            "#{Question::LETTERS[q.correct_index]}. #{q.correct_option}", picked.nil? ? "Skipped" : (q.correct?(picked) ? "Correct" : "Wrong"),
-            q.correct?(picked) ? q.marks : 0 ]
+          result = picked.nil? ? "Skipped" : (q.correct?(picked) ? "Correct" : "Wrong")
+          [ i.candidate_name, i.quiz.title, n + 1, q.body, *letters.each_index.map { |k| q.options[k] },
+            picked.nil? ? "—" : "#{Question::LETTERS[picked]}. #{q.options[picked]}", "#{Question::LETTERS[q.correct_index]}. #{q.correct_option}",
+            result, q.marks, (q.correct?(picked) ? q.marks : 0) ]
         end
       end
-      { name: "Answers", headers: [ "Candidate", "Position", "Q no.", "Question", "Answered", "Correct answer", "Result", "Marks" ],
-        rows: rows, widths: [ 22, 24, 7, 60, 30, 30, 10, 7 ], highlight: [ 6 ] }
+      headers = [ "Candidate", "Question paper", "Q no.", "Question", *letters.map { |l| "Option #{l}" },
+                  "Candidate's answer", "Correct answer", "Result", "Marks", "Marks got" ]
+      { name: "Answers", headers: headers, rows: rows, highlight: [ headers.index("Result") ],
+        widths: [ 22, 24, 7, 60, *Array.new(letters.size, 22), 28, 28, 10, 7, 9 ] }
+    end
+
+    # One candidate as "Field | Value" rows, easy to read and print.
+    def summary(i)
+      done = i.finished?
+      picked = i.quiz.questions.map { |q| i.answers[q.id.to_s] }
+      correct = i.quiz.questions.each_with_index.count { |q, n| !picked[n].nil? && q.correct?(picked[n]) }
+      rows = [
+        [ "Candidate", i.candidate_name ], [ "Email", i.candidate_email ], [ "Mobile", i.entered_phone.presence || i.candidate_phone ],
+        [ "Experience", i.experience ], [ "Position", i.vacancy ], [ "Department", i.department ], [ "Invited for", i.invited_for ],
+        [ "Invited on", fmt(i.created_at) ], [ "Status", i.status_label ], [ "", "" ],
+        [ "Question paper", i.quiz.title ], [ "Questions", i.quiz.questions.size ], [ "Duration (min)", i.quiz.duration_minutes ],
+        [ "Test started", fmt(i.started_at) ], [ "Test submitted", fmt(i.submitted_at) ],
+        [ "Time taken (min)", i.time_taken && (i.time_taken / 60.0).round(1) ],
+        [ "Correct / Wrong / Skipped", done ? "#{correct} / #{picked.compact.size - correct} / #{picked.count(&:nil?)}" : "" ],
+        [ "Marks", done ? "#{i.score} / #{i.total_marks}" : "" ], [ "Pass mark", "#{i.quiz.pass_percentage}%" ],
+        [ "Result", done ? (i.passed? ? "Qualified" : "Disqualified") : "Not taken" ],
+        [ "Warnings", i.warnings_count ], [ "Terminated because", i.termination_reason ], [ "", "" ],
+        [ "Interview rounds", i.interview_rounds.map { |r| "#{r.name}: #{r.status_label}#{" (#{r.average}/10)" if r.average}" }.join("; ") ],
+        [ "Interview average (/10)", i.interview_average ], [ "Final selection score %", i.final_score[:percent] ],
+        [ "Decision", i.decision_label ], [ "Decision note", i.decision_note ], [ "Test link", @link.(i) ]
+      ]
+      { name: "Summary", headers: [ "Field", "Value" ], rows: rows, widths: [ 28, 70 ] }
     end
 
     def chat

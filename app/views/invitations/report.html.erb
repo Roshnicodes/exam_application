@@ -8,29 +8,8 @@
         { label: "Warnings", value: @invitation.warnings_count, icon: "alert", tone: "amber" },
         { label: "Time taken", value: duration_between(@invitation.started_at, @invitation.submitted_at), icon: "clock", tone: "blue" }
       ] } do %>
+  <%= link_to export_invitation_path(@invitation), class: "btn btn-primary", data: { turbo: false } do %><%= icon("download") %> Download Excel<% end %>
   <button class="btn btn-light" onclick="window.print()"><%= icon("file") %> Print</button>
 <% end %>
 
-<div class="card">
-  <% @questions.each_with_index do |q, i| %>
-    <% given = @invitation.answers[q.id.to_s] %>
-    <div class="review-q">
-      <div class="row between" style="align-items:flex-start">
-        <b>Q<%= i + 1 %>. <%= q.body %></b>
-        <% if given.nil? %>
-          <span class="badge">Not answered</span>
-        <% elsif q.correct?(given) %>
-          <span class="badge sev-success">+<%= q.marks %> Correct</span>
-        <% else %>
-          <span class="badge sev-high">Wrong</span>
-        <% end %>
-      </div>
-      <% q.options.each_with_index do |opt, idx| %>
-        <div class="review-opt <%= 'correct' if idx == q.correct_index %> <%= 'wrong' if idx == given && idx != q.correct_index %>">
-          <b><%= Question::LETTERS[idx] %>.</b> <%= opt %>
-          <% if idx == given %><span class="tiny" style="margin-left:auto">Candidate's answer</span><% end %>
-        </div>
-      <% end %>
-    </div>
-  <% end %>
-</div>
+<%= render "invitations/answer_sheet", invitation: @invitation %>

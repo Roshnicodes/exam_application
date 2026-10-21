@@ -1764,3 +1764,8 @@ a:hover { color: var(--brand); }
 @media (min-width: 641px) { .test-only .cand-input-head, .test-only .cand-input-row { grid-template-columns: 30px 1.3fr 1.3fr 1fr auto; } }
 .watch-round .it-join { margin-top: 0; }
 .watch-round .it-room .it-stage { position: relative; top: auto; }
+.answer-sheet details > summary { list-style: none; cursor: pointer; }
+.answer-sheet details > summary::-webkit-details-marker { display: none; }
+.answer-sheet details > summary h2::after { content: "Show ▾"; margin-left: .5rem; font-size: .72rem; font-weight: 700; color: var(--brand-2); }
+.answer-sheet details[open] > summary h2::after { content: "Hide ▴"; }
+.answer-sheet .card-head { flex-wrap: wrap; }
