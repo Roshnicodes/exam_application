@@ -46,6 +46,10 @@ class Invitation < ApplicationRecord
   scope :recent, -> { order(created_at: :desc) }
   scope :live, -> { where(status: "in_progress") }
   scope :completed, -> { where(status: %w[submitted terminated]) }
+  # still "in progress" although the time ran out (the candidate closed the page / lost the connection)
+  scope :overdue, -> {
+    live.joins(:quiz).where("invitations.started_at + quizzes.duration_minutes * interval '1 minute' < ?", 2.minutes.ago)
+  }
   # finished the test at or above the paper's pass mark (same rounding as #percentage)
   scope :qualified, -> {
     completed.joins(:quiz).where("invitations.total_marks > 0 AND ROUND(invitations.score * 100.0 / invitations.total_marks) >= quizzes.pass_percentage")
@@ -117,6 +121,11 @@ class Invitation < ApplicationRecord
 
     update!(status: "in_progress", started_at: Time.current, answers: {})
     log!("exam_started", "#{quiz.questions.size} questions - #{quiz.duration_minutes} minutes")
+  end
+
+  # Submits tests whose time is over but which were never submitted from the candidate's browser.
+  def self.submit_overdue!
+    overdue.find_each { |invitation| invitation.submit!(reason: "time_up") }
   end
 
   def deadline

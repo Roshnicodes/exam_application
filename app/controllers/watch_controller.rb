@@ -46,6 +46,7 @@ class WatchController < ApplicationController
 
   def batch
     @batch = ExamBatch.find_by!(watch_token: params[:watch_token])
+    Invitation.submit_overdue!
     @invitations = @batch.invitations.includes(:quiz).to_a
                          .sort_by { |i| [ { "in_progress" => 0, "otp_requested" => 1, "verified" => 2 }.fetch(i.status, 3), i.candidate_name ] }
   end

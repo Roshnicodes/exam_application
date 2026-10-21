@@ -75,7 +75,10 @@ class ExamBatchesController < ApplicationController
   end
 
   def monitor
-    @invitations = @batch.invitations.includes(:quiz)
+    Invitation.submit_overdue!
+    @invitations = @batch.invitations.live.includes(:quiz)
+    @getting_ready = @batch.invitations.where(status: %w[otp_requested verified]).order(:updated_at)
+    @completed_count = @batch.invitations.completed.count
     render "monitor/index"
   end
 

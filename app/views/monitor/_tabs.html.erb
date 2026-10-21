@@ -1,0 +1,10 @@
+<%# Live / Completed switch. locals: active:, live_count:, completed_count:, batch: %>
+<% batch = local_assigns[:batch] %>
+<nav class="mon-tabs" aria-label="Monitor view">
+  <%= link_to (batch ? monitor_exam_batch_path(batch) : live_monitor_path), class: ("active" if active == :live) do %>
+    <span class="live-dot"></span> Live now <b><%= live_count %></b>
+  <% end %>
+  <%= link_to completed_monitor_path(batch_id: batch&.id), class: ("active" if active == :completed) do %>
+    <%= icon("check-circle") %> Completed <b><%= completed_count %></b>
+  <% end %>
+</nav>

@@ -1,0 +1,27 @@
+<%# A finished test on the Completed page. locals: invitation: %>
+<% snap = invitation.latest_snapshot_event %>
+<%= link_to invitation_path(invitation), class: "mon-tile done-tile #{invitation.passed? ? 'is-pass' : 'is-fail'}" do %>
+  <div class="mon-cam">
+    <% if snap&.snapshot&.attached? %>
+      <%= image_tag rails_blob_path(snap.snapshot, disposition: "inline"), alt: "", loading: "lazy", class: "mon-snap" %>
+    <% else %>
+      <div class="mon-nocam"><span class="avatar" style="background: <%= gradient_for(invitation.candidate_name) %>"><%= initials_for(invitation.candidate_name) %></span></div>
+    <% end %>
+    <span class="done-result"><%= icon(invitation.passed? ? "check-circle" : "x-circle") %> <%= invitation.passed? ? "Qualified" : "Disqualified" %></span>
+    <% if invitation.warnings_count.positive? %><span class="mon-warn"><%= icon("alert") %> <%= invitation.warnings_count %></span><% end %>
+  </div>
+  <div class="mon-body">
+    <b><%= invitation.candidate_name %></b>
+    <small><%= invitation.vacancy %><%= " · #{invitation.exam_batch.name}" if invitation.exam_batch %></small>
+    <div class="done-score">
+      <span><b><%= invitation.score %></b>/<%= invitation.total_marks %> marks</span>
+      <span class="state-pill <%= invitation.passed? ? 'green' : '' %>" <%= 'style="background:#fee2e2;color:#b91c1c"'.html_safe unless invitation.passed? %>><%= invitation.percentage %>%</span>
+    </div>
+    <div class="mon-last">
+      <% how = invitation.termination_reason == "time_up" ? "Time up — auto-submitted" : (invitation.terminated? ? "Auto-terminated (warnings)" : "Submitted") %>
+      <%= icon(invitation.terminated? ? "alert" : (invitation.termination_reason == "time_up" ? "clock" : "check-circle")) %>
+      <span><%= how %></span>
+      <em><%= invitation.submitted_at&.strftime("%d %b, %-I:%M %p") %></em>
+    </div>
+  </div>
+<% end %>

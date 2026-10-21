@@ -24,6 +24,7 @@ Rails.application.routes.draw do
     end
   end
   get "monitor" => "monitor#index", as: :live_monitor
+  get "monitor/completed" => "monitor#completed", as: :completed_monitor
   resources :results, only: :index do
     get :export, on: :collection
   end

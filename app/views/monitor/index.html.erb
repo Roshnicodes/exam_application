@@ -1,26 +1,48 @@
 <% content_for :title, @batch ? "Monitor · #{@batch.name}" : "Live monitor" %>
 <% content_for :head do %><meta name="turbo-refresh-method" content="morph"><meta name="turbo-refresh-scroll" content="preserve"><% end %>
 <%= turbo_stream_from Current.user, :invitations %>
-<% list = @invitations.to_a.sort_by { |i| [ { "in_progress" => 0, "otp_requested" => 1, "verified" => 2 }.fetch(i.status, 3), -i.warnings_count, i.candidate_name ] } %>
+<% list = @invitations.to_a.sort_by { |i| [ -i.warnings_count, i.candidate_name ] } %>
 <%= render layout: "shared/page_header", locals: {
-      title: @batch ? "Live monitor — #{@batch.name}" : "Live monitor",
-      icon: "video",
+      title: @batch ? "Live monitor — #{@batch.name}" : "Live monitor", icon: "video",
       crumbs: @batch ? [ [ "Batches", exam_batches_path ], [ @batch.name, exam_batch_path(@batch) ] ] : [ [ "Dashboard", root_path ] ],
       stats: [
-        { label: "On screen", value: list.size, icon: "users", tone: "violet" },
-        { label: "Writing exam", value: list.count(&:in_progress?), icon: "video", tone: "red" },
-        { label: "Awaiting OTP / check", value: list.count { |i| i.otp_requested? || i.verified? }, icon: "key", tone: "amber" },
-        { label: "Finished", value: list.count(&:finished?), icon: "check-circle", tone: "green" }
+        { label: "Writing the test now", value: list.size, icon: "video", tone: "red" },
+        { label: "Getting ready (OTP / check)", value: @getting_ready.size, icon: "key", tone: "amber" },
+        { label: "With warnings", value: list.count { |i| i.warnings_count.positive? }, icon: "alert", tone: "violet" },
+        { label: @batch ? "Completed" : "Completed today", value: @completed_count, icon: "check-circle", tone: "green",
+          path: completed_monitor_path(batch_id: @batch&.id) }
       ] } do %>
-  <span class="pill" style="color:#e0e7ff"><span class="live-dot"></span> Live</span>
   <% if @batch %><%= link_to exam_batch_path(@batch), class: "btn btn-light" do %><%= icon("link") %> Links<% end %><% end %>
+<% end %>
+
+<div class="mon-toolbar">
+  <%= render "monitor/tabs", active: :live, live_count: list.size, completed_count: @completed_count, batch: @batch %>
+  <% if list.size > 1 %>
+    <label class="mon-search"><%= icon("search") %><input type="search" placeholder="Find a candidate…" data-controller="tile-filter" data-action="input->tile-filter#filter" aria-label="Find a candidate"></label>
+  <% end %>
+</div>
+
+<% if @getting_ready.any? %>
+  <div class="ready-strip">
+    <span class="ready-label"><%= icon("key") %> Getting ready</span>
+    <% @getting_ready.each do |inv| %>
+      <%= link_to invitation_path(inv), class: "ready-chip" do %>
+        <span class="avatar xs" style="background: <%= gradient_for(inv.candidate_name) %>"><%= initials_for(inv.candidate_name) %></span>
+        <span><b><%= inv.candidate_name %></b><small><%= inv.otp_active? ? "OTP #{inv.otp_code}" : (inv.verified? ? "System check" : "Awaiting OTP") %></small></span>
+      <% end %>
+    <% end %>
+  </div>
 <% end %>
 
 <div data-controller="autorefresh" data-autorefresh-interval-value="45000">
   <% if list.any? %>
     <div class="mon-grid"><%= render partial: "monitor/tile", collection: list, as: :invitation %></div>
-    <p class="tiny muted" style="text-align:center;margin-top:1rem">New candidates appear automatically every 45 seconds · Click a tile to open full timeline, recordings and snapshots</p>
+    <p class="mon-hint"><%= icon("activity") %> Updates live · new candidates appear within 45 seconds · finished tests move to <%= link_to "Completed", completed_monitor_path(batch_id: @batch&.id) %> · 🎤 on a tile talks to that candidate</p>
   <% else %>
-    <div class="card empty"><div class="ico"><%= icon("video") %></div><h3>Nobody is taking an exam right now</h3><p>Candidates show up here as soon as they request their OTP.</p></div>
+    <div class="card mon-empty">
+      <div class="ico"><%= icon("video") %></div>
+      <h3>Nobody is writing a test right now</h3>
+      <p>Candidates appear here the moment they start. Finished tests are on the <%= link_to "Completed", completed_monitor_path(batch_id: @batch&.id) %> page.</p>
+    </div>
   <% end %>
 </div>

@@ -1,14 +1,41 @@
 <% content_for :title, "Live · #{@batch.name}" %>
 <% content_for :head do %><meta name="turbo-refresh-method" content="morph"><meta name="turbo-refresh-scroll" content="preserve"><% end %>
 <%= turbo_stream_from @batch, :live %>
+<% live = @invitations.select(&:in_progress?) %>
+<% done = @invitations.select(&:finished?).sort_by { |i| i.submitted_at || Time.at(0) }.reverse %>
+<% waiting = @invitations - live - done %>
 <%= render layout: "shared/page_header", locals: {
       title: "Live — #{@batch.name}", icon: "video",
-      subtitle: "#{@batch.post_name} · #{@batch.quiz.title}" } do %>
+      subtitle: "#{@batch.post_name} · #{@batch.quiz.title}",
+      stats: [
+        { label: "Writing the test now", value: live.size, icon: "video", tone: "red" },
+        { label: "Not started yet", value: waiting.size, icon: "clock", tone: "amber" },
+        { label: "Completed", value: done.size, icon: "check-circle", tone: "green" }
+      ] } do %>
 <% end %>
 <div data-controller="autorefresh" data-autorefresh-interval-value="60000">
-  <div class="mon-grid">
-    <% @invitations.each do |inv| %>
-      <%= render "monitor/tile", invitation: inv, link: watch_path(inv.watch_token), watch_token: params[:watch_token] %>
-    <% end %>
-  </div>
+  <h2 class="mon-section"><span class="live-dot"></span> Live now</h2>
+  <% if live.any? %>
+    <div class="mon-grid">
+      <% live.each do |inv| %>
+        <%= render "monitor/tile", invitation: inv, link: watch_path(inv.watch_token), watch_token: params[:watch_token] %>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="card mon-empty small-empty"><p>Nobody from this batch is writing the test right now.</p></div>
+  <% end %>
+  <% if done.any? %>
+    <h2 class="mon-section"><%= icon("check-circle") %> Completed</h2>
+    <div class="mon-grid">
+      <% done.each do |inv| %>
+        <%= link_to watch_path(inv.watch_token), class: "mon-tile done-tile #{inv.passed? ? 'is-pass' : 'is-fail'}" do %>
+          <div class="mon-cam">
+            <div class="mon-nocam"><span class="avatar" style="background: <%= gradient_for(inv.candidate_name) %>"><%= initials_for(inv.candidate_name) %></span></div>
+            <span class="done-result"><%= icon(inv.passed? ? "check-circle" : "x-circle") %> <%= inv.passed? ? "Qualified" : "Disqualified" %></span>
+          </div>
+          <div class="mon-body"><b><%= inv.candidate_name %></b><small><%= inv.score %>/<%= inv.total_marks %> marks · <%= inv.percentage %>%</small></div>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
 </div>
