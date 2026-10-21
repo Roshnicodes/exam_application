@@ -1,5 +1,5 @@
 /* ==========================================================================
-   HireProctor design system
+   ASA HireHub design system
    ========================================================================== */
 
 :root {
@@ -1769,3 +1769,5 @@ a:hover { color: var(--brand); }
 .answer-sheet details > summary h2::after { content: "Show ▾"; margin-left: .5rem; font-size: .72rem; font-weight: 700; color: var(--brand-2); }
 .answer-sheet details[open] > summary h2::after { content: "Hide ▴"; }
 .answer-sheet .card-head { flex-wrap: wrap; }
+.brand .brand-asa { font-weight: 800; color: #4ade80; }
+.exam-brand .brand .brand-asa { color: var(--brand); }
