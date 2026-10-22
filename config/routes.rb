@@ -38,6 +38,7 @@ Rails.application.routes.draw do
       get :report
       get :export, action: :export_one
       patch :language
+      patch :remove
       post :send_email
       post :decide
     end

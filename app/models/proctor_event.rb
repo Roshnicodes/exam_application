@@ -25,13 +25,14 @@ class ProctorEvent < ApplicationRecord
     "verified"          => [ "Candidate verified with OTP", "info", false ],
     "exam_started"      => [ "Exam started", "info", false ],
     "exam_submitted"    => [ "Exam submitted", "success", false ],
-    "exam_terminated"   => [ "Exam auto-terminated", "critical", false ],
+    "exam_terminated"   => [ "Exam ended early (terminated / removed)", "critical", false ],
     "time_up"           => [ "Time is up - auto submitted", "info", false ],
     "snapshot"          => [ "Periodic camera snapshot", "info", false ],
     "detector_unavailable" => [ "Face detection unavailable on candidate device", "medium", false ],
     "screen_share_unavailable" => [ "Screen sharing not possible on this device (phone / tablet)", "info", false ],
     "switching_allowed" => [ "Panel allowed switching apps (e.g. an online editor)", "info", false ],
-    "switching_blocked" => [ "Panel turned app-switching checks back on", "info", false ]
+    "switching_blocked" => [ "Panel turned app-switching checks back on", "info", false ],
+    "call_ended"        => [ "Video call ended for everyone", "info", false ]
   }.freeze
 
   ALERT_KINDS = (KINDS.select { |_, v| v[2] }.keys + %w[otp_requested otp_failed exam_started exam_submitted exam_terminated time_up detector_unavailable]).freeze

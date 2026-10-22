@@ -138,7 +138,7 @@ export default class extends Controller {
     if (this.submitted) return
     this.submitted = true
     clearInterval(this.timer)
-    this.submittingTitleTarget.textContent = "Exam terminated"
+    this.submittingTitleTarget.textContent = event.detail?.reason === "removed" ? "HR has ended your test" : "Exam terminated"
     this.submittingTarget.classList.remove("hidden")
     const waits = []
     this.dispatch("before-submit", { detail: { waits } })

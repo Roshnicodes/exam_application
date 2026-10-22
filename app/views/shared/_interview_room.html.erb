@@ -84,6 +84,9 @@
           <a class="it-btn" href="<%= round.meeting_link %>" target="_blank" rel="noopener" title="Open the external meeting link"><%= icon("link") %><span>Meet / Zoom</span></a>
         <% end %>
         <% unless test_call && local_assigns[:token] %>
+          <% unless local_assigns[:token] %>
+            <button type="button" class="it-btn end-all" data-action="interview-room#endForAll" title="End the call for everyone, including the candidate"><%= icon("x-circle") %><span>End for all</span></button>
+          <% end %>
           <button type="button" class="it-btn leave" data-action="interview-room#leave"><%= icon("x") %><span><%= test_call ? "Leave call" : "Leave" %></span></button>
         <% end %>
       </div>

@@ -64,6 +64,15 @@ class InterviewChannel < ApplicationCable::Channel
                                          screen: data["screen"] == true })
   end
 
+  # HR / a panelist ends the call for everyone (the candidate's call window closes; in an
+  # interview round the candidate leaves the room).
+  def end_call(_data = nil)
+    return if @role == "candidate"
+
+    ActionCable.server.broadcast(room, { type: "end-call", by: @name, from: @peer_id })
+    @invitation.proctor_events.create!(kind: "call_ended", message: "Call ended by #{@name}", metadata: { round_id: @round&.id }.compact)
+  end
+
   # Panel lets the candidate leave the room window (e.g. to code in an online editor) without
   # tab-switch / full-screen warnings. Their screen stays shared, so the panel still sees it.
   def allow_switch(data)

@@ -1,5 +1,5 @@
 class InvitationsController < ApplicationController
-  before_action :set_invitation, only: %i[show report edit update destroy decide language send_email]
+  before_action :set_invitation, only: %i[show report edit update destroy decide language send_email remove]
 
   def index
     @invitations = filtered_invitations
@@ -18,6 +18,16 @@ class InvitationsController < ApplicationController
     @invitation.broadcast_language
     note = @invitation.hindi? && !@invitation.quiz.hindi_ready? ? " The paper has Hindi for #{@invitation.quiz.hindi_count}/#{@invitation.quiz.questions.size} questions — the rest stay in English." : ""
     redirect_to @invitation, notice: "Test language set to #{Invitation::LANGUAGES[@invitation.language]}.#{note}"
+  end
+
+  # HR takes the candidate out of a running test: it ends now and is marked on the answers given so far.
+  def remove
+    return redirect_to(@invitation, alert: "The test isn't running.") unless @invitation.in_progress?
+
+    @invitation.submit!(reason: "Removed by HR (#{Current.user.name})")
+    Turbo::StreamsChannel.broadcast_replace_to [ @invitation, :candidate ], target: "exam_control",
+      html: %(<div id="exam_control" data-controller="exam-ended" data-exam-ended-url-value="#{exam_finished_path(@invitation.token)}" hidden></div>)
+    redirect_to @invitation, notice: "#{@invitation.candidate_name} was removed from the test."
   end
 
   # Emails the test link with the candidate guide PDF attached (needs SMTP on the server).

@@ -37,6 +37,10 @@
       subtitle: [ @invitation.vacancy, @invitation.department.presence, @invitation.quiz.title ].compact.join(" · "),
       crumbs: [ [ "Candidates", invitations_path ] ], chips: chips, extra: share } do %>
   <%= link_to export_invitation_path(@invitation), class: "btn btn-light btn-sm", data: { turbo: false } do %><%= icon("download") %> Download Excel<% end %>
+  <% if @invitation.in_progress? %>
+    <%= button_to remove_invitation_path(@invitation), method: :patch, class: "btn btn-danger btn-sm",
+          form: { data: { turbo_confirm: "Remove #{@invitation.candidate_name} from the test? The test ends now and is marked on the answers given so far." } } do %><%= icon("x-circle") %> Remove from test<% end %>
+  <% end %>
   <%= link_to edit_invitation_path(@invitation), class: "btn btn-light btn-sm" do %><%= icon("edit") %> Edit<% end %>
   <%= button_to invitation_path(@invitation), method: :delete, class: "btn btn-light btn-sm", form: { data: { turbo_confirm: "Delete this invitation and all its recordings?" } } do %><%= icon("trash") %> Delete<% end %>
 <% end %>

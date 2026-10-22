@@ -1,5 +1,6 @@
 <% content_for :title, "Exam in progress" %>
 <%= turbo_stream_from @invitation, :candidate %>
+<div id="exam_control" hidden></div>
 <div id="exam_language" data-controller="exam-language" data-exam-language-lang-value="<%= @invitation.language %>" hidden></div>
 <div data-controller="exam proctor rough-sheet" data-exam-lang="<%= @invitation.language %>"
      data-rough-sheet-url-value="<%= exam_rough_path(@invitation.token) %>"

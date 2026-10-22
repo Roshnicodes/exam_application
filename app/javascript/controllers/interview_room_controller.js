@@ -182,6 +182,7 @@ export default class extends Controller {
   received(message) {
     if (message.type === "welcome") { this.myKey = message.key; return }
     if (message.type === "allow-switch") return this.switchAllowed(message.on, message.by)
+    if (message.type === "end-call") return this.callEnded(message)
     if (message.type === "code") return this.codeReceived(message)
     if (message.type === "peer-joined" && message.peer.id !== this.peerId && message.peer.key) {
       // the same person joined again (refresh / another tab)
@@ -642,6 +643,26 @@ export default class extends Controller {
       if (!inCall) this.element.classList.remove("minimized")
       window.dispatchEvent(new CustomEvent("proctor:call", { detail: { active: inCall } }))
     }
+  }
+
+  // HR: end the call for everyone — the candidate's call window closes (their test goes on)
+  endForAll() {
+    const what = this.testValue ? "the video call (the candidate's test continues)" : "this interview for everyone"
+    if (!window.confirm(`End ${what}?`)) return
+    this.subscription?.perform("end_call", {})
+    setTimeout(() => this.leave(), 300)
+  }
+
+  callEnded(message) {
+    if (message.from === this.peerId) return
+    if (this.waitingCandidate) {
+      // stay connected quietly (proctoring, HR can call again) but close the window
+      this.chatActive = this.panelSpoke = false
+      this.peers.forEach((_, id) => this.drop(id))
+      this.refreshCount()
+      return
+    }
+    this.leave()
   }
 
   leave(redirect = true) {

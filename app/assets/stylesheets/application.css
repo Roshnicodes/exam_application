@@ -1176,6 +1176,7 @@ a.stat-card:hover .sc-go { opacity: 1; transform: translateX(3px); }
 .it-btn:hover { background: rgba(255, 255, 255, .24); color: #fff; }
 .it-btn.off { background: #ef4444; }
 .it-btn.leave { background: #dc2626; }
+.it-btn.end-all { background: #7f1d1d; }
 .it-count { color: #bbf7d0; font-size: .8rem; font-weight: 600; padding: 0 .4rem; }
 .it-side { display: grid; gap: 1rem; }
 .score-row { display: grid; gap: .3rem; }
