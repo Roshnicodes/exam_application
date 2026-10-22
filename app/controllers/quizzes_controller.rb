@@ -1,11 +1,33 @@
 class QuizzesController < ApplicationController
-  before_action :set_quiz, only: %i[show edit update destroy export]
+  before_action :set_quiz, only: %i[show edit update destroy export hindi_upload translate]
 
   def index
     @quizzes = Current.user.quizzes.includes(:questions).order(created_at: :desc)
   end
 
   def show
+    @lang = params[:lang] == "hi" ? "hi" : "en"
+    @translation_result = Rails.cache.read("quiz:#{@quiz.id}:translation_result")
+  end
+
+  # A Hindi copy of the paper (Word / PDF / Excel / text, same order) fills the Hindi version.
+  def hindi_upload
+    filled, notes = @quiz.import_hindi(params[:file])
+    message = "Hindi added to #{filled} of #{@quiz.questions.size} questions."
+    message += " #{notes.first(3).join(' ')}" if notes.any?
+    redirect_to quiz_path(@quiz, lang: "hi"), (filled.positive? ? { notice: message } : { alert: message })
+  rescue QuestionPaperParser::Error => e
+    redirect_to quiz_path(@quiz), alert: e.message
+  end
+
+  # Auto-translate the questions that don't have Hindi yet (Claude, in the background).
+  def translate
+    return redirect_to(quiz_path(@quiz), alert: "Auto-translation needs ANTHROPIC_API_KEY on the server. Upload a Hindi copy or type the Hindi instead.") unless HindiTranslator.available?
+
+    Rails.cache.delete("quiz:#{@quiz.id}:translation_result")
+    Rails.cache.write(@quiz.translation_key, true, expires_in: 30.minutes)
+    TranslateQuizJob.perform_later(@quiz)
+    redirect_to quiz_path(@quiz, lang: "hi"), notice: "Translating to Hindi… this page updates by itself."
   end
 
   def new
@@ -80,6 +102,6 @@ class QuizzesController < ApplicationController
 
     def quiz_params
       params.expect(quiz: [ :title, :description, :duration_minutes, :pass_percentage, :show_result_to_candidate,
-                            questions_attributes: [ [ :id, :body, :correct_index, :marks, :position, :_destroy, options: [] ] ] ])
+                            questions_attributes: [ [ :id, :body, :body_hi, :correct_index, :marks, :position, :_destroy, options: [], options_hi: [] ] ] ])
     end
 end

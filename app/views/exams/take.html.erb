@@ -1,5 +1,7 @@
 <% content_for :title, "Exam in progress" %>
-<div data-controller="exam proctor rough-sheet"
+<%= turbo_stream_from @invitation, :candidate %>
+<div id="exam_language" data-controller="exam-language" data-exam-language-lang-value="<%= @invitation.language %>" hidden></div>
+<div data-controller="exam proctor rough-sheet" data-exam-lang="<%= @invitation.language %>"
      data-rough-sheet-url-value="<%= exam_rough_path(@invitation.token) %>"
      <% if @invitation.rough_sheet.attached? %>data-rough-sheet-image-value="<%= rails_blob_path(@invitation.rough_sheet, disposition: "inline") %>"<% end %>
      data-exam-seconds-left-value="<%= @invitation.seconds_left %>"
@@ -35,13 +37,19 @@
               <button type="button" class="btn btn-ghost btn-sm" data-action="exam#flag"><%= icon("flag") %> Mark for review</button>
             </div>
           </div>
-          <div class="q-text"><%= question_text(q.body) %></div>
+          <div class="q-text">
+            <% if q.hindi? %>
+              <div class="q-en"><%= question_text(q.body) %></div><div class="q-hi"><%= question_text(q.body_hi) %></div>
+            <% else %>
+              <%= question_text(q.body) %>
+            <% end %>
+          </div>
           <div class="options">
             <% q.options.each_with_index do |opt, idx| %>
               <label class="option">
                 <input type="radio" name="answers[<%= q.id %>]" value="<%= idx %>" <%= "checked" if @invitation.answers[q.id.to_s] == idx %> data-action="change->exam#answer">
                 <span class="letter"><%= Question::LETTERS[idx] %></span>
-                <span><%= opt %></span>
+                <% if q.hindi? %><span><span class="q-en"><%= opt %></span><span class="q-hi"><%= q.options_hi[idx] %></span></span><% else %><span><%= opt %></span><% end %>
               </label>
             <% end %>
           </div>

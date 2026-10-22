@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_22_044806) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_22_061807) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -120,6 +120,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_22_044806) do
     t.string "watch_token"
     t.string "meeting_link"
     t.string "interview_plan", default: "separate", null: false
+    t.string "language", default: "en", null: false
     t.index ["quiz_id"], name: "index_exam_batches_on_quiz_id"
     t.index ["user_id"], name: "index_exam_batches_on_user_id"
     t.index ["vacancy_id"], name: "index_exam_batches_on_vacancy_id"
@@ -223,6 +224,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_22_044806) do
     t.text "decision_note"
     t.datetime "decided_at"
     t.text "rough_notes"
+    t.string "language", default: "en", null: false
     t.index ["exam_batch_id"], name: "index_invitations_on_exam_batch_id"
     t.index ["quiz_id"], name: "index_invitations_on_quiz_id"
     t.index ["token"], name: "index_invitations_on_token", unique: true
@@ -252,6 +254,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_22_044806) do
     t.integer "position"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "body_hi"
+    t.jsonb "options_hi", default: [], null: false
     t.index ["quiz_id"], name: "index_questions_on_quiz_id"
   end
 

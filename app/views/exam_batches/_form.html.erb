@@ -60,6 +60,11 @@
         <%= f.url_field :meeting_link, class: "input", placeholder: "Google Meet / Zoom" %>
       </div>
       <div class="field">
+        <%= f.label :language, "Test language" %>
+        <%= f.select :language, Invitation::LANGUAGES.invert, {}, class: "input" %>
+        <span class="hint">Hindi shows the paper's Hindi version (add it on the question paper page).</span>
+      </div>
+      <div class="field">
         <%= f.label :max_warnings, "Auto-terminate after" %>
         <%= f.select :max_warnings, [ [ "3 warnings", 3 ], [ "5 warnings", 5 ], [ "8 warnings", 8 ], [ "10 warnings", 10 ], [ "Never (only alert)", 0 ] ], {}, class: "input" %>
       </div>

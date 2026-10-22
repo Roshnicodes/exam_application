@@ -5,7 +5,11 @@ Rails.application.routes.draw do
 
   resources :quizzes do
     get :template, on: :collection
-    get :export, on: :member
+    member do
+      get :export
+      post :hindi_upload
+      post :translate
+    end
   end
   resources :departments, except: :show
   resources :vacancies
@@ -33,6 +37,7 @@ Rails.application.routes.draw do
     member do
       get :report
       get :export, action: :export_one
+      patch :language
       post :decide
     end
     resources :interview_rounds, path: "rounds", only: %i[create update destroy] do

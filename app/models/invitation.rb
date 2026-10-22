@@ -40,6 +40,7 @@ class Invitation < ApplicationRecord
   validates :status, inclusion: { in: STATUSES }
   validates :max_warnings, numericality: { only_integer: true, in: 0..50 }
   validates :interview_plan, inclusion: { in: INTERVIEW_PLANS.keys }
+  validates :language, inclusion: { in: %w[en hi] }
   validates :decision, inclusion: { in: DECISIONS.keys }, allow_nil: true
   validate :resume_is_a_document
   validates :meeting_link, format: { with: %r{\Ahttps?://}i, message: "must start with http:// or https://" }, allow_blank: true
@@ -192,6 +193,18 @@ class Invitation < ApplicationRecord
   # What the candidate was invited for: the online test only, or the test followed by interviews.
   def invited_for
     interview_plan == "none" && interview_rounds.none? ? "Online test" : "Test + Interview"
+  end
+
+  LANGUAGES = { "en" => "English", "hi" => "हिंदी (Hindi)" }.freeze
+
+  def hindi?
+    language == "hi"
+  end
+
+  # HR switched the test language: the candidate's open test page follows straight away.
+  def broadcast_language
+    Turbo::StreamsChannel.broadcast_replace_to [ self, :candidate ], target: "exam_language",
+      html: %(<div id="exam_language" data-controller="exam-language" data-exam-language-lang-value="#{language}" hidden></div>)
   end
 
   def test_only?

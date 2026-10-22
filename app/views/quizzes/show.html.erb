@@ -9,11 +9,44 @@
   <%= link_to new_invitation_path(quiz_id: @quiz.id), class: "btn btn-primary" do %><%= icon("send") %> Invite with this paper<% end %>
 <% end %>
 
-<div class="card">
+<% hindi = @quiz.hindi_count %>
+<% total = @quiz.questions.size %>
+<section class="card hindi-card" <% if @quiz.translation_running? %>data-controller="autorefresh" data-autorefresh-interval-value="5000"<% end %>>
+  <div class="hindi-head">
+    <span class="hindi-ico">अ</span>
+    <div class="grow">
+      <h2>Hindi version <small>हिंदी</small></h2>
+      <p><b><%= hindi %>/<%= total %></b> questions in Hindi<%= " — candidates can take this paper in Hindi" if @quiz.hindi_ready? %>.
+        <% if @quiz.translation_running? %><span class="state-pill blue"><span class="spinner"></span> Translating…</span><% end %></p>
+      <div class="progress" style="margin-top:.4rem"><div style="width:<%= total.zero? ? 0 : hindi * 100 / total %>%"></div></div>
+      <% if @translation_result %><p class="tiny" style="margin-top:.4rem"><%= @translation_result %></p><% end %>
+    </div>
+    <nav class="tabs hindi-view">
+      <%= link_to "English", quiz_path(@quiz), class: ("active" if @lang == "en") %>
+      <%= link_to "हिंदी", quiz_path(@quiz, lang: "hi"), class: ("active" if @lang == "hi") %>
+    </nav>
+  </div>
+  <div class="hindi-actions">
+    <%= form_with url: hindi_upload_quiz_path(@quiz), multipart: true, class: "hindi-upload", data: { controller: "autosubmit" } do %>
+      <label class="btn btn-light btn-sm"><%= icon("upload") %> Upload Hindi copy (Word / PDF / Excel)
+        <input type="file" name="file" accept=".docx,.pdf,.txt,.xlsx,.xls,.csv" hidden data-action="change->autosubmit#submit">
+      </label>
+    <% end %>
+    <% if HindiTranslator.available? %>
+      <%= button_to translate_quiz_path(@quiz), class: "btn btn-primary btn-sm", disabled: @quiz.translation_running? || @quiz.hindi_ready?,
+            form: { data: { turbo_confirm: "Translate the #{total - hindi} questions without Hindi automatically? Check the Hindi afterwards." } } do %>✨ Auto-translate to Hindi<% end %>
+    <% else %>
+      <span class="btn btn-light btn-sm" title="Ask IT to add ANTHROPIC_API_KEY on the server to enable this" style="opacity:.6;cursor:not-allowed">✨ Auto-translate (not set up)</span>
+    <% end %>
+    <%= link_to edit_quiz_path(@quiz), class: "btn btn-light btn-sm" do %><%= icon("edit") %> Type / fix Hindi<% end %>
+  </div>
+</section>
+
+<div class="card <%= 'lang-hi-text' if @lang == "hi" %>">
   <% @quiz.questions.each_with_index do |q, i| %>
     <div class="review-q">
-      <div class="row between" style="align-items:flex-start"><div class="q-review-text"><b>Q<%= i + 1 %>.</b> <%= question_text(q.body) %></div><span class="badge"><%= pluralize(q.marks, "mark") %></span></div>
-      <% q.options.each_with_index do |opt, idx| %>
+      <div class="row between" style="align-items:flex-start"><div class="q-review-text"><b>Q<%= i + 1 %>.</b> <%= question_text(q.text_in(@lang)) %><% if @lang == "hi" && !q.hindi? %> <span class="state-pill" style="background:#fef3c7;color:#92400e">Hindi missing</span><% end %></div><span class="badge"><%= pluralize(q.marks, "mark") %></span></div>
+      <% q.options_in(@lang).each_with_index do |opt, idx| %>
         <div class="review-opt <%= 'correct' if idx == q.correct_index %>"><b><%= Question::LETTERS[idx] %>.</b> <%= opt %><% if idx == q.correct_index %><span class="tiny" style="margin-left:auto">Correct</span><% end %></div>
       <% end %>
     </div>

@@ -18,6 +18,18 @@
           </label>
         <% end %>
       </div>
+      <% hi = (Array(f.object.options_hi) + Array.new(opts.size, "")).first(opts.size) %>
+      <details class="q-hindi" <%= "open" if f.object.body_hi.present? %>>
+        <summary><span class="q-hindi-mark">अ</span> Hindi version <small><%= f.object.hindi? ? "✓ ready" : "optional — for candidates taking the test in Hindi" %></small></summary>
+        <%= f.text_area :body_hi, rows: [ f.object.body_hi.to_s.lines.size + 1, 2 ].max.clamp(2, 12), placeholder: "प्रश्न हिंदी में लिखें…", class: "input" %>
+        <div class="opt-grid">
+          <% hi.each_with_index do |opt, i| %>
+            <label class="opt-input"><span class="letter"><%= Question::LETTERS[i] %></span>
+              <input type="text" name="<%= f.object_name %>[options_hi][]" value="<%= opt %>" placeholder="विकल्प <%= Question::LETTERS[i] %>">
+            </label>
+          <% end %>
+        </div>
+      </details>
       <div class="row" style="margin-top:.75rem">
         <span class="small muted">Marks</span>
         <%= f.number_field :marks, min: 1, max: 20, class: "input", style: "width:90px;padding:.45rem .7rem" %>

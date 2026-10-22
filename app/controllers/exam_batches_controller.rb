@@ -114,6 +114,6 @@ class ExamBatchesController < ApplicationController
 
     def batch_params
       params.expect(exam_batch: [ :name, :quiz_id, :vacancy_id, :vacancy_title, :department, :interview_date, :interview_mode,
-                                 :location, :notes, :max_warnings, :link_expires_at, :meeting_link, :interview_plan, panelist_ids: [] ])
+                                 :location, :notes, :max_warnings, :link_expires_at, :meeting_link, :interview_plan, :language, panelist_ids: [] ])
     end
 end

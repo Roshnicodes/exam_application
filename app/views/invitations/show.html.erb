@@ -97,6 +97,19 @@
   </div>
 
   <div class="stack">
+    <% unless @invitation.finished? %>
+      <div class="card card-pad lang-card">
+        <div class="row between"><b><%= icon("file") %> Test language</b>
+          <span class="tiny muted">Hindi ready: <%= @invitation.quiz.hindi_count %>/<%= @invitation.quiz.questions.size %></span></div>
+        <div class="lang-switch">
+          <% Invitation::LANGUAGES.each do |key, label| %>
+            <%= button_to language_invitation_path(@invitation, language: key), method: :patch, class: ("active" if @invitation.language == key),
+                  disabled: @invitation.language == key do %><%= key == "hi" ? "हिंदी" : "English" %><% end %>
+          <% end %>
+        </div>
+        <p class="tiny muted"><%= @invitation.in_progress? ? "Switching changes the candidate's screen right away." : "The candidate sees the test in this language." %></p>
+      </div>
+    <% end %>
     <%= render "invitations/live_state", invitation: @invitation %>
     <%= render "invitations/selection_card", invitation: @invitation %>
     <%= render "invitations/decision_card", invitation: @invitation %>

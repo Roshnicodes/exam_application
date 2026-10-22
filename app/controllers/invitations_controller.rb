@@ -1,5 +1,5 @@
 class InvitationsController < ApplicationController
-  before_action :set_invitation, only: %i[show report edit update destroy decide]
+  before_action :set_invitation, only: %i[show report edit update destroy decide language]
 
   def index
     @invitations = filtered_invitations
@@ -10,6 +10,14 @@ class InvitationsController < ApplicationController
   def export
     label = [ params[:status], params[:q] ].compact_blank.join("-").parameterize.presence
     send_xlsx CandidateExport.new(filtered_invitations, link: exam_link).to_xlsx, [ "candidates", label, Date.current ].compact.join("-") + ".xlsx"
+  end
+
+  # HR switches the test language (the candidate's page follows, even mid-test).
+  def language
+    @invitation.update!(language: params[:language] == "hi" ? "hi" : "en")
+    @invitation.broadcast_language
+    note = @invitation.hindi? && !@invitation.quiz.hindi_ready? ? " The paper has Hindi for #{@invitation.quiz.hindi_count}/#{@invitation.quiz.questions.size} questions — the rest stay in English." : ""
+    redirect_to @invitation, notice: "Test language set to #{Invitation::LANGUAGES[@invitation.language]}.#{note}"
   end
 
   # Excel for one candidate.
@@ -127,6 +135,6 @@ class InvitationsController < ApplicationController
     def invitation_params
       params.expect(invitation: [ :candidate_name, :candidate_email, :candidate_phone, :vacancy, :department, :experience,
                                   :interview_date, :interview_mode, :location, :notes, :quiz_id, :vacancy_id, :max_warnings,
-                                  :link_expires_at, :meeting_link, :interview_plan, :resume, panelist_ids: [] ])
+                                  :link_expires_at, :meeting_link, :interview_plan, :resume, :language, panelist_ids: [] ])
     end
 end

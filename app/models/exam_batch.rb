@@ -22,6 +22,7 @@ class ExamBatch < ApplicationRecord
   validates :name, presence: true
   validates :max_warnings, numericality: { only_integer: true, in: 0..50 }
   validates :interview_plan, inclusion: { in: Invitation::INTERVIEW_PLANS.keys }
+  validates :language, inclusion: { in: %w[en hi] }
   validate :vacancy_given
   validate :owned_by_user
 
@@ -62,7 +63,7 @@ class ExamBatch < ApplicationRecord
         row.merge(user: user, quiz: quiz, opening: opening, vacancy: vacancy_title, department: department,
                   interview_date: interview_date, interview_mode: interview_mode, location: location, notes: notes,
                   max_warnings: max_warnings, link_expires_at: link_expires_at, meeting_link: meeting_link,
-                  interview_plan: interview_plan)
+                  interview_plan: interview_plan, language: language)
       )
       errors << "Candidate #{i + 1} (#{row[:candidate_name].presence || 'no name'}): #{invitation.errors.full_messages.to_sentence}" unless invitation.valid?
       invitation
