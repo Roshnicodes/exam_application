@@ -1,0 +1,9 @@
+<%# Candidate picks the paper language. Shown only when the paper has a Hindi version. %>
+<% if @invitation.quiz.hindi_count.positive? %>
+  <div class="lang-pick <%= local_assigns[:css] %>" role="group" aria-label="Test language / टेस्ट की भाषा"
+       data-controller="lang-pick" data-lang-pick-url-value="<%= exam_language_path(@invitation.token) %>">
+    <% if local_assigns[:label] %><span class="lang-pick-label"><%= icon("file") %> Test language · टेस्ट की भाषा</span><% end %>
+    <button type="button" class="<%= 'active' if @invitation.language == 'en' %>" data-lang="en" data-action="lang-pick#choose" aria-pressed="<%= @invitation.language == 'en' %>">English</button>
+    <button type="button" class="hi <%= 'active' if @invitation.language == 'hi' %>" data-lang="hi" data-action="lang-pick#choose" aria-pressed="<%= @invitation.language == 'hi' %>">हिंदी</button>
+  </div>
+<% end %>

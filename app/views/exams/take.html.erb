@@ -21,6 +21,7 @@
     </div>
     <span class="grow" style="display:none"></span>
     <span class="warn-meter" title="Warnings"><%= icon("alert") %> <span data-proctor-target="warnLabel"><%= @invitation.warnings_count %><%= "/#{@invitation.max_warnings}" if @invitation.max_warnings.positive? %></span></span>
+    <%= render "exams/language_pick", css: "in-head" %>
     <button type="button" class="btn btn-light btn-sm rough-btn" data-action="rough-sheet#toggle" title="Rough sheet for calculations"><%= icon("edit") %><span class="hide-sm">Rough sheet</span></button>
     <span class="timer" data-exam-target="timer"><%= icon("clock") %> <span data-exam-target="clock">--:--</span></span>
     <button type="button" class="btn btn-primary btn-sm" data-action="exam#confirmSubmit"><%= icon("send") %><span class="hide-sm">Submit</span></button>

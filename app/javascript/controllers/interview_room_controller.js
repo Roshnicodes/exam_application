@@ -9,12 +9,20 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 // Meet-style interview room: everyone sees and hears everyone (WebRTC mesh, best for up to ~6 people).
 // With test: true it is the video call during the online test: HR / panelists press "Join", the
 // candidate's exam page is always waiting in the room and the call pops up as soon as someone joins.
+// Meet-style mic icon: crossed out (red button) while muted
+const MIC_ON = '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/>'
+const MIC_OFF = MIC_ON + '<path d="M3 3l18 18"/>'
+function setMicIcon(button, on) {
+  const svg = button?.querySelector("svg")
+  if (svg) svg.innerHTML = on ? MIC_ON : MIC_OFF
+}
+
 export default class extends Controller {
   static targets = [ "grid", "localVideo", "micBtn", "camBtn", "status", "nameInput", "joinPanel", "room", "count",
                      "screenGate", "screenError", "alerts", "tap", "chat", "chatBtn", "unread", "messages", "chatInput",
                      "presentBtn", "codeBtn", "switchBtn", "switchNote", "code", "codeLang", "codeBy", "codeInput", "tileMic" ]
   static values = { roundId: Number, invitationId: Number, test: Boolean, token: String, watchToken: String, name: String,
-                    needsName: Boolean, leaveUrl: String, autoJoin: Boolean, talk: Boolean, audioOnly: Boolean }
+                    needsName: Boolean, leaveUrl: String, autoJoin: Boolean, audioOnly: Boolean }
 
   connect() {
     this.peers = new Map() // peerId -> { pc, pending, tile, name, role, screenStreamId, screenTile }
@@ -107,7 +115,6 @@ export default class extends Controller {
     }
     this.joinPanelTarget.classList.add("hidden")
     this.quietJoin = false // joined by hand: camera on, mic still muted until "Unmute"
-    this.talkValue = false
     this.join()
   }
 
@@ -128,10 +135,14 @@ export default class extends Controller {
     }
     // HR / panelists always join muted (like Meet): the mic opens only when they press Unmute
     // (or the 🎤 on a monitor tile, which is that click). The candidate's mic stays on for proctoring.
-    if (!this.candidate) this.stream.getAudioTracks().forEach((t) => (t.enabled = this.talkValue))
+    // Only a click made right now (the monitor tile 🎤) can open it — never a page reload, tab switch
+    // or coming back from another menu (kept on the instance, not in a data attribute Turbo could cache).
+    const unmute = this.unmuteOnJoin === true
+    this.unmuteOnJoin = false
+    if (!this.candidate) this.stream.getAudioTracks().forEach((t) => (t.enabled = unmute))
     if (this.quietJoin) { // joined automatically from the candidate's page: camera off too
       this.stream.getVideoTracks().forEach((t) => (t.enabled = false))
-      this.hearOthers = this.talkValue
+      this.hearOthers = unmute
     }
     this.localVideoTarget.srcObject = this.stream
     this.updateButtons()
@@ -571,7 +582,7 @@ export default class extends Controller {
     }
     this.joining = true
     this.quietJoin = true
-    this.talkValue = true
+    this.unmuteOnJoin = true
     this.tileMicTarget.classList.add("connecting")
     await this.join()
     this.joining = false
@@ -601,12 +612,14 @@ export default class extends Controller {
     const mic = this.stream?.getAudioTracks().some((t) => t.enabled)
     if (this.hasTileMicTarget) {
       this.tileMicTarget.classList.toggle("off", !mic)
-      this.tileMicTarget.setAttribute("aria-label", mic ? "Mute" : "Unmute to talk")
-      this.tileMicTarget.title = mic ? "Mute" : "Unmute to talk"
+      this.tileMicTarget.setAttribute("aria-label", mic ? "Mute" : "Muted — click to talk")
+      this.tileMicTarget.title = mic ? "You're talking — click to mute" : "Muted — click to talk"
+      setMicIcon(this.tileMicTarget, mic)
     }
+    setMicIcon(this.micBtnTarget, mic)
     const cam = this.stream?.getVideoTracks().some((t) => t.enabled)
     this.micBtnTarget.classList.toggle("off", !mic)
-    this.micBtnTarget.querySelector("span").textContent = mic ? "Mute" : (this.testValue && !this.candidate ? "Unmute to talk" : "Unmute")
+    this.micBtnTarget.querySelector("span").textContent = mic ? "Mute" : (this.testValue && !this.candidate ? "Muted · Unmute" : "Unmute")
     this.camBtnTarget.classList.toggle("off", !cam)
     this.camBtnTarget.querySelector("span").textContent = cam ? "Stop video" : "Start video"
     this.element.querySelector(".it-self")?.classList.toggle("cam-off", !cam)

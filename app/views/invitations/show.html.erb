@@ -50,7 +50,7 @@
       </div>
       <div class="card" id="test-call">
         <div class="card-head"><h2><%= icon("users") %> Video call during the test</h2></div>
-        <div class="card-body"><%= render "shared/interview_room", invitation: @invitation, test_call: true, name: Current.user.name, auto_join: @invitation.in_progress?, talk: params[:talk].present? %></div>
+        <div class="card-body"><%= render "shared/interview_room", invitation: @invitation, test_call: true, name: Current.user.name, auto_join: @invitation.in_progress? %></div>
       </div>
     <% end %>
     <%= render "interview_rounds/list", invitation: @invitation %>

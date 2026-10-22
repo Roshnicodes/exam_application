@@ -1837,12 +1837,13 @@ a:hover { color: var(--brand); }
 /* ---------- One-click talk ---------- */
 
 
-.test-call .it-btn[data-interview-room-target="micBtn"].off { background: #16a34a; }
-.test-call .it-btn[data-interview-room-target="micBtn"]:not(.off) { background: #ef4444; }
+/* Meet colours: red = muted, green = your mic is on */
+.test-call .it-btn[data-interview-room-target="micBtn"].off { background: #dc2626; }
+.test-call .it-btn[data-interview-room-target="micBtn"]:not(.off) { background: #16a34a; }
 /* Meet-style mic on live monitor tiles */
 .mon-mic { position: absolute; top: 2.4rem; right: .45rem; z-index: 4; width: 38px; height: 38px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; color: #fff; background: #16a34a; box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .55); transition: .15s; }
 .mon-mic svg.icon { width: 1.1em; height: 1.1em; }
-.mon-mic.off { background: rgba(15, 23, 42, .75); }
+.mon-mic.off { background: #dc2626; }
 .mon-mic.off::after { content: ""; position: absolute; width: 22px; height: 2px; background: #f87171; transform: rotate(-45deg); border-radius: 2px; }
 .mon-mic:not(.off) { animation: pulse-bg 1.4s infinite; }
 .mon-mic.connecting { opacity: .6; cursor: progress; }
@@ -1975,3 +1976,12 @@ a:hover { color: var(--brand); }
 .lang-switch button.active { background: linear-gradient(135deg, #22c55e, #059669); color: #fff; cursor: default; }
 .lang-switch form:last-child button { font-family: "Noto Sans Devanagari", var(--font); }
 .share-actions form { display: contents; }
+
+/* Candidate's own test-language choice */
+.lang-pick { display: inline-flex; align-items: center; gap: .25rem; padding: .22rem; border-radius: 11px; background: #f1f5f9; border: 1px solid var(--line, #e2e8f0); }
+.lang-pick button { border: 0; cursor: pointer; padding: .4rem .75rem; border-radius: 8px; background: transparent; font: inherit; font-weight: 700; font-size: .82rem; color: var(--ink-2); transition: .15s; }
+.lang-pick button.hi { font-family: "Noto Sans Devanagari", var(--font); }
+.lang-pick button.active { background: linear-gradient(135deg, #22c55e, #059669); color: #fff; box-shadow: 0 4px 10px -6px rgba(5, 150, 105, .7); }
+.lang-pick-label { display: inline-flex; align-items: center; gap: .35rem; padding: 0 .5rem 0 .35rem; font-size: .8rem; font-weight: 700; color: var(--ink-2); }
+.instructions .lang-pick, .lang-pick:not(.in-head) { display: flex; flex-wrap: wrap; width: fit-content; margin: 0 0 1rem; }
+.lang-pick.in-head button { padding: .35rem .6rem; font-size: .78rem; }

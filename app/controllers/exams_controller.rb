@@ -10,7 +10,7 @@ class ExamsController < ApplicationController
 
   before_action :set_invitation
   before_action :redirect_if_finished, except: %i[finished events recordings interview]
-  before_action :require_verified, only: %i[instructions start take answer rough submit interview]
+  before_action :require_verified, only: %i[instructions start take answer rough language submit interview]
   before_action :auto_submit_if_time_up, only: %i[take answer submit]
 
   rescue_from ActiveRecord::RecordNotFound do
@@ -66,6 +66,15 @@ class ExamsController < ApplicationController
   end
 
   # Digital rough sheet: typed notes and the hand-written page (PNG), saved while the test runs.
+  # The candidate picks English or Hindi for the paper (before or during the test)
+  def language
+    lang = params[:language].to_s
+    return head :unprocessable_entity unless Invitation::LANGUAGES.key?(lang)
+
+    @invitation.update!(language: lang) unless @invitation.language == lang
+    head :no_content
+  end
+
   def rough
     return head :unprocessable_entity unless @invitation.in_progress?
 
