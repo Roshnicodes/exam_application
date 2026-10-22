@@ -106,7 +106,8 @@ export default class extends Controller {
       this.nameValue = name
     }
     this.joinPanelTarget.classList.add("hidden")
-    this.quietJoin = false // joined by hand: mic and camera on as usual
+    this.quietJoin = false // joined by hand: camera on, mic still muted until "Unmute"
+    this.talkValue = false
     this.join()
   }
 
@@ -125,8 +126,10 @@ export default class extends Controller {
       const help = cameraHelp(e)
       this.mediaNote = `${help.title}. ${help.help} You can still watch and listen.`
     }
-    if (this.quietJoin) { // joined automatically: mic off (unless "Talk" was clicked) and camera off
-      this.stream.getAudioTracks().forEach((t) => (t.enabled = this.talkValue))
+    // HR / panelists always join muted (like Meet): the mic opens only when they press Unmute
+    // (or the 🎤 on a monitor tile, which is that click). The candidate's mic stays on for proctoring.
+    if (!this.candidate) this.stream.getAudioTracks().forEach((t) => (t.enabled = this.talkValue))
+    if (this.quietJoin) { // joined automatically from the candidate's page: camera off too
       this.stream.getVideoTracks().forEach((t) => (t.enabled = false))
       this.hearOthers = this.talkValue
     }
