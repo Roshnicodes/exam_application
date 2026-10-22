@@ -1,0 +1,69 @@
+<div class="guide-grid">
+  <section class="card guide-card">
+    <div class="guide-num">1</div>
+    <h2>One-time set-up</h2>
+    <ol>
+      <li><b>Employees</b> — upload your staff list (Excel). Panelists are picked from here.</li>
+      <li><b>Departments</b> — e.g. Engineering, HR, Sales.</li>
+      <li><b>Vacancies</b> — post, dates, number of posts and <b>selection parameters</b> with weightage, e.g. <i>Online test 30% · Technical interview 50% · HR interview 20%</i>, plus the default interview panel.</li>
+      <li><b>Question papers</b> — MCQs typed in, or uploaded as Word, PDF, Excel or text — answers are read from the file when marked, the rest you tick on the review screen. Add a <b>Hindi version</b> of the paper (upload it, auto-translate or type it) so candidates can take the test in Hindi.</li>
+    </ol>
+    <p class="guide-tip"><%= icon("target") %> A stage whose name contains “test” takes the exam score automatically; every other stage is scored 1–10 by the panel.</p>
+  </section>
+
+  <section class="card guide-card">
+    <div class="guide-num">2</div>
+    <h2>Invite candidates</h2>
+    <ol>
+      <li><b>Invite candidate</b> (one) or <b>Bulk invite</b> (many) — pick the vacancy, question paper, panel and the <b>interview plan</b>.</li>
+      <li>Share each candidate's link (copy / WhatsApp / email).</li>
+      <li>Candidate enters their mobile → the <b>OTP pops up on your screen with a ring</b> → tell them the code.</li>
+      <li>They pass the camera check and take the test. Watch it on <b>Live monitor</b>; you get an alarm on every warning. Finished tests move to the <b>Completed</b> tab.</li>
+      <li>To talk to a candidate during the test, press the <b>🎤 mic</b> on their tile (or <b>Unmute to talk</b> on their page) — no joining needed.</li>
+      <li>Want the test in Hindi? Set <b>Test language: हिंदी</b> on the invite (or switch it on the candidate's page).</li>
+    </ol>
+  </section>
+
+  <section class="card guide-card">
+    <div class="guide-num">3</div>
+    <h2>Interviews — choose a plan</h2>
+    <div class="guide-plans">
+      <div><b><%= icon("list") %> Separate rounds</b><p>Test → Technical round → HR round. Each round has its own date, panel, video room, Meet link and scorecard. Ideal when rounds happen on different days or with different panels.</p></div>
+      <div><b><%= icon("users") %> One combined interview</b><p>Test → one “Panel interview” where everyone joins together and each panelist scores Technical <i>and</i> HR (or skips what they didn't judge).</p></div>
+      <div><b><%= icon("file") %> Test only</b><p>No rounds; you can still add a round later from the candidate page.</p></div>
+    </div>
+    <ol>
+      <li>Open the candidate → <b>Interview rounds</b> → set date/time and panel (✏️).</li>
+      <li>At interview time press <b>Start now</b>. The candidate's page shows <b>Join now</b>; panelists join from their watch link (send it from the <b>Interview panel</b> card).</li>
+      <li>In the room everyone sees and hears everyone; each panelist fills the <b>scorecard</b> without leaving the call.</li>
+      <li>Press <b>End round</b>, then start the next round when it's time.</li>
+    </ol>
+    <p class="guide-tip"><%= icon("shield") %> Every round is proctored too: on a laptop the candidate must share their <b>entire screen</b> (the panel sees it live), stay in full screen, and face/eye/phone/tab-switch checks run like in the test. Each warning beeps for the candidate and pops up red in the room for the panel; counts show per round on the candidate page.</p>
+    <p class="guide-tip"><%= icon("link") %> Prefer Google Meet / Zoom? Paste a meeting link on the round (or the invite) — everyone gets a Meet button, and scorecards still work from the watch link.</p>
+  </section>
+
+  <section class="card guide-card">
+    <div class="guide-num">4</div>
+    <h2>Decide &amp; report</h2>
+    <ol>
+      <li>The <b>Selection score</b> card combines test + round scores by weightage into a final %.</li>
+      <li>Record the <b>Final decision</b> — Selected / On hold / Rejected — and tell the candidate on WhatsApp in one click.</li>
+      <li>Track everyone on the <b>Pipeline</b> board, upcoming rounds on <b>Schedule</b>, and export everything from <b>Results</b> (Excel).</li>
+    </ol>
+  </section>
+</div>
+
+<section class="card guide-card guide-test">
+  <h2><%= icon("check-circle") %> Quick test checklist (15 minutes)</h2>
+  <div class="guide-steps">
+    <div><b>1. Set-up</b><p>Create a vacancy with “Online test 30 / Technical interview 50 / HR interview 20” and two panelists from Employees.</p></div>
+    <div><b>2. Invite</b><p>Invite yourself with your mobile number, plan “Separate rounds”, and attach any PDF as resume.</p></div>
+    <div><b>3. OTP</b><p>Open the exam link on your phone (or another browser). Enter the mobile — the OTP rings here. Enter it on the phone.</p></div>
+    <div><b>4. Proctoring</b><p>Start the test. Switch tab, keep looking down, left, right or up for 30+ seconds, show a phone to the camera — warnings beep there and ring here; watch <b>Live monitor</b>.</p></div>
+    <div><b>5. Result</b><p>Submit. Check <b>Results</b> and the answer sheet; the Online test stage is done.</p></div>
+    <div><b>6. Technical round</b><p>On the candidate page press <b>Start now</b> on “Technical interview”. Join as the candidate from a <b>laptop</b> (share entire screen) and as a panelist from the watch link in another browser. Switch tabs / stop sharing as the candidate — the panel gets a red alert. Then score.</p></div>
+    <div><b>7. HR round</b><p>End the technical round, start “HR interview”, score it.</p></div>
+    <div><b>8. Decide</b><p>See the final % in Selection score, mark Selected and send the WhatsApp message. Check Pipeline & Results.</p></div>
+  </div>
+  <p class="guide-tip"><%= icon("alert") %> Camera, mic and live video need <b>https://</b> (or localhost). Allow camera/mic when the browser asks. Use headphones in interviews to avoid echo.</p>
+</section>

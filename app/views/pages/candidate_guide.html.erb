@@ -1,5 +1,4 @@
 <% content_for :title, "Candidate guide" %>
-<% content_for :head do %><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet"><% end %>
 <%# Shared with candidates before the online test (link + PDF). English with Hindi below each point. %>
 <% warnings = [
      [ "monitor", "Switching to another tab, window or app, or minimising the test", "दूसरा टैब, विंडो या ऐप खोलना, या टेस्ट को छोटा (minimise) करना" ],
@@ -19,116 +18,121 @@
      [ "monitor", "A second monitor connected, or resizing / splitting the window", "दूसरा मॉनिटर जोड़ना, या विंडो को छोटा-बड़ा / स्प्लिट करना" ]
    ] %>
 
-<div class="exam-wrap cg">
+<div class="exam-wrap cg lang-<%= @lang %>">
   <%= render "exams/header" %>
 
   <section class="candidate-hero cg-hero">
     <div class="top">
       <span class="eyebrow">ONLINE TEST · CANDIDATE GUIDE</span>
-      <h1>Before you start your online test</h1>
-      <p>ऑनलाइन टेस्ट शुरू करने से पहले इसे ध्यान से पढ़ें</p>
+      <h1><span class="en">Before you start your online test</span><span class="hi">ऑनलाइन टेस्ट शुरू करने से पहले</span></h1>
+      <p class="cg-sub"><span class="en">Read this carefully — it explains what you need and what gives a warning.</span><span class="hi">इसे ध्यान से पढ़ें — इसमें बताया गया है कि क्या चाहिए और किन बातों पर चेतावनी आती है।</span></p>
       <div class="cg-actions no-print">
-        <a class="btn btn-light btn-sm" href="<%= request.script_name %>/candidate-guide.pdf" download><%= icon("download") %> Download PDF</a>
+        <nav class="cg-lang" aria-label="Language">
+          <%= link_to "English + हिंदी", candidate_guide_path, class: ("active" if @lang == "both") %>
+          <%= link_to "English", candidate_guide_path(lang: "en"), class: ("active" if @lang == "en") %>
+          <%= link_to "हिंदी", candidate_guide_path(lang: "hi"), class: ("active" if @lang == "hi") %>
+        </nav>
+        <a class="btn btn-light btn-sm" href="<%= request.script_name %>/<%= { "both" => "candidate-guide", "en" => "candidate-guide-en", "hi" => "candidate-guide-hi" }[@lang] %>.pdf" download><%= icon("download") %> Download PDF</a>
         <button class="btn btn-light btn-sm" onclick="window.print()"><%= icon("file") %> Print</button>
       </div>
     </div>
   </section>
 
   <section class="card cg-card">
-    <h2><span class="cg-num">1</span> What you need <small>आपको क्या चाहिए</small></h2>
+    <h2><span class="cg-num">1</span> <span class="en">What you need</span><span class="hi">आपको क्या चाहिए</span></h2>
     <ul class="cg-list">
-      <li><b>A laptop or desktop with a webcam and microphone</b> (recommended), with the latest <b>Google Chrome</b> or <b>Microsoft Edge</b>. A phone also works, but on a phone screen sharing is not possible.
-        <span>वेबकैम और माइक वाला <b>लैपटॉप या कंप्यूटर</b> (सबसे अच्छा), नए <b>Google Chrome</b> या <b>Microsoft Edge</b> के साथ। फ़ोन से भी टेस्ट हो सकता है, पर फ़ोन पर स्क्रीन शेयर नहीं होता।</span></li>
-      <li><b>Taking the test on a phone?</b> Keep it on a stand or against something, front camera facing you, face fully visible. Turn on <b>Do Not Disturb</b> so calls and notifications don't take you out of the test.
-        <span><b>फ़ोन से टेस्ट दे रहे हैं?</b> फ़ोन को स्टैंड या किसी सहारे पर रखें, फ्रंट कैमरा आपकी ओर हो और पूरा चेहरा दिखे। <b>Do Not Disturb</b> चालू करें ताकि कॉल या नोटिफ़िकेशन से टेस्ट न छूटे।</span></li>
-      <li><b>Stable internet</b> and a charged laptop / phone (keep the charger connected).
-        <span><b>अच्छा इंटरनेट</b> और चार्ज लैपटॉप / फ़ोन (चार्जर लगा कर रखें)।</span></li>
-      <li><b>A quiet room where you are alone</b>, with light on your face (the light should be in front of you, not behind you).
-        <span><b>शांत कमरा जहाँ आप अकेले हों</b>, चेहरे पर रोशनी हो (रोशनी सामने से आए, पीछे से नहीं)।</span></li>
-      <li>Open the test link in <b>Chrome</b>. If it opens inside WhatsApp, tap <b>⋮ → Open in Chrome</b>.
-        <span>टेस्ट लिंक <b>Chrome</b> में खोलें। अगर लिंक WhatsApp के अंदर खुले, तो <b>⋮ → Open in Chrome</b> दबाएँ।</span></li>
-      <li>Keep your <b>mobile number</b> ready — <b>HR will tell you the OTP</b>.
-        <span>अपना <b>मोबाइल नंबर</b> तैयार रखें — <b>OTP आपको HR बताएँगे</b>।</span></li>
+      <li><span class="en"><b>A laptop or desktop with a webcam and microphone</b> (recommended), with the latest <b>Google Chrome</b> or <b>Microsoft Edge</b>. A phone also works, but on a phone screen sharing is not possible.</span>
+        <span class="hi">वेबकैम और माइक वाला <b>लैपटॉप या कंप्यूटर</b> (सबसे अच्छा), नए <b>Google Chrome</b> या <b>Microsoft Edge</b> के साथ। फ़ोन से भी टेस्ट हो सकता है, पर फ़ोन पर स्क्रीन शेयर नहीं होता।</span></li>
+      <li><span class="en"><b>Taking the test on a phone?</b> Keep it on a stand or against something, front camera facing you, face fully visible. Turn on <b>Do Not Disturb</b> so calls and notifications don't take you out of the test.</span>
+        <span class="hi"><b>फ़ोन से टेस्ट दे रहे हैं?</b> फ़ोन को स्टैंड या किसी सहारे पर रखें, फ्रंट कैमरा आपकी ओर हो और पूरा चेहरा दिखे। <b>Do Not Disturb</b> चालू करें ताकि कॉल या नोटिफ़िकेशन से टेस्ट न छूटे।</span></li>
+      <li><span class="en"><b>Stable internet</b> and a charged laptop / phone (keep the charger connected).</span>
+        <span class="hi"><b>अच्छा इंटरनेट</b> और चार्ज लैपटॉप / फ़ोन (चार्जर लगा कर रखें)।</span></li>
+      <li><span class="en"><b>A quiet room where you are alone</b>, with light on your face (the light should be in front of you, not behind you).</span>
+        <span class="hi"><b>शांत कमरा जहाँ आप अकेले हों</b>, चेहरे पर रोशनी हो (रोशनी सामने से आए, पीछे से नहीं)।</span></li>
+      <li><span class="en">Open the test link in <b>Chrome</b>. If it opens inside WhatsApp, tap <b>⋮ → Open in Chrome</b>.</span>
+        <span class="hi">टेस्ट लिंक <b>Chrome</b> में खोलें। अगर लिंक WhatsApp के अंदर खुले, तो <b>⋮ → Open in Chrome</b> दबाएँ।</span></li>
+      <li><span class="en">Keep your <b>mobile number</b> ready — <b>HR will tell you the OTP</b>.</span>
+        <span class="hi">अपना <b>मोबाइल नंबर</b> तैयार रखें — <b>OTP आपको HR बताएँगे</b>।</span></li>
     </ul>
   </section>
 
   <section class="card cg-card">
-    <h2><span class="cg-num">2</span> Pen, paper &amp; stationery <small>पेन, पेपर और स्टेशनरी</small></h2>
+    <h2><span class="cg-num">2</span> <span class="en">Pen, paper &amp; stationery</span><span class="hi">पेन, पेपर और स्टेशनरी</span></h2>
     <div class="cg-two">
       <div class="cg-ok">
-        <h3><%= icon("check-circle") %> Allowed <small>अनुमति है</small></h3>
+        <h3><%= icon("check-circle") %> <span class="en">Allowed</span><span class="hi">अनुमति है</span></h3>
         <ul>
-          <li>1–2 <b>blank sheets</b> for rough work <span>रफ़ काम के लिए 1–2 <b>खाली कागज़</b></span></li>
-          <li><b>Pen or pencil</b>, eraser <span><b>पेन या पेंसिल</b>, रबर</span></li>
-          <li>A glass of water <span>पानी का गिलास</span></li>
+          <li><span class="en">1–2 <b>blank sheets</b> for rough work</span> <span class="hi">रफ़ काम के लिए 1–2 <b>खाली कागज़</b></span></li>
+          <li><span class="en"><b>Pen or pencil</b>, eraser</span> <span class="hi"><b>पेन या पेंसिल</b>, रबर</span></li>
+          <li><span class="en">A glass of water</span> <span class="hi">पानी का गिलास</span></li>
         </ul>
       </div>
       <div class="cg-no">
-        <h3><%= icon("x-circle") %> Not allowed <small>अनुमति नहीं है</small></h3>
+        <h3><%= icon("x-circle") %> <span class="en">Not allowed</span><span class="hi">अनुमति नहीं है</span></h3>
         <ul>
-          <li><b>Mobile phone</b> (switch it off and keep it out of reach) <span><b>मोबाइल फ़ोन</b> (बंद करके दूर रखें)</span></li>
-          <li><b>Calculator</b>, smartwatch, earphones <span><b>कैलकुलेटर</b>, स्मार्टवॉच, ईयरफ़ोन</span></li>
-          <li>Books, notebooks, notes, printed papers <span>किताबें, नोटबुक, नोट्स, छपे हुए कागज़</span></li>
-          <li>Another laptop, tablet or second screen <span>दूसरा लैपटॉप, टैबलेट या दूसरी स्क्रीन</span></li>
+          <li><span class="en"><b>Mobile phone</b> (switch it off and keep it out of reach)</span> <span class="hi"><b>मोबाइल फ़ोन</b> (बंद करके दूर रखें)</span></li>
+          <li><span class="en"><b>Calculator</b>, smartwatch, earphones</span> <span class="hi"><b>कैलकुलेटर</b>, स्मार्टवॉच, ईयरफ़ोन</span></li>
+          <li><span class="en">Books, notebooks, notes, printed papers</span> <span class="hi">किताबें, नोटबुक, नोट्स, छपे हुए कागज़</span></li>
+          <li><span class="en">Another laptop, tablet or second screen</span> <span class="hi">दूसरा लैपटॉप, टैबलेट या दूसरी स्क्रीन</span></li>
         </ul>
       </div>
     </div>
     <ul class="cg-list cg-tips">
-      <li><b>No paper? Use the on-screen Rough sheet</b> — click <b>✏️ Rough sheet</b> at the top of the test to write with the mouse / finger, or type your calculations. It is saved automatically.
-        <span><b>कागज़ नहीं है? स्क्रीन पर Rough sheet इस्तेमाल करें</b> — टेस्ट में ऊपर <b>✏️ Rough sheet</b> दबाकर माउस / उंगली से लिखें, या हिसाब टाइप करें। यह अपने-आप सेव होता है।</span></li>
-      <li>Before starting, <b>show both sides of your blank sheets to the camera</b> for a few seconds.
-        <span>टेस्ट शुरू करने से पहले अपने <b>खाली कागज़ दोनों तरफ़ से कैमरे को दिखाएँ</b>।</span></li>
-      <li>Use <b>loose sheets, not a notebook</b> — a notebook or book in view can be flagged as “Book / notes”.
-        <span><b>नोटबुक नहीं, खुले कागज़</b> इस्तेमाल करें — कैमरे में नोटबुक या किताब दिखने पर “Book / notes” की चेतावनी आ सकती है।</span></li>
-      <li>While writing rough work, <b>look up at the screen regularly</b>. Looking down for more than 30 seconds at a stretch gives a warning.
-        <span>रफ़ काम लिखते समय <b>बीच-बीच में स्क्रीन की ओर देखते रहें</b>। लगातार 30 सेकंड से ज़्यादा नीचे देखने पर चेतावनी आती है।</span></li>
+      <li><span class="en"><b>No paper? Use the on-screen Rough sheet</b> — click <b>✏️ Rough sheet</b> at the top of the test to write with the mouse / finger, or type your calculations. It is saved automatically.</span>
+        <span class="hi"><b>कागज़ नहीं है? स्क्रीन पर Rough sheet इस्तेमाल करें</b> — टेस्ट में ऊपर <b>✏️ Rough sheet</b> दबाकर माउस / उंगली से लिखें, या हिसाब टाइप करें। यह अपने-आप सेव होता है।</span></li>
+      <li><span class="en">Before starting, <b>show both sides of your blank sheets to the camera</b> for a few seconds.</span>
+        <span class="hi">टेस्ट शुरू करने से पहले अपने <b>खाली कागज़ दोनों तरफ़ से कैमरे को दिखाएँ</b>।</span></li>
+      <li><span class="en">Use <b>loose sheets, not a notebook</b> — a notebook or book in view can be flagged as “Book / notes”.</span>
+        <span class="hi"><b>नोटबुक नहीं, खुले कागज़</b> इस्तेमाल करें — कैमरे में नोटबुक या किताब दिखने पर “Book / notes” की चेतावनी आ सकती है।</span></li>
+      <li><span class="en">While writing rough work, <b>look up at the screen regularly</b>. Looking down for more than 30 seconds at a stretch gives a warning.</span>
+        <span class="hi">रफ़ काम लिखते समय <b>बीच-बीच में स्क्रीन की ओर देखते रहें</b>। लगातार 30 सेकंड से ज़्यादा नीचे देखने पर चेतावनी आती है।</span></li>
     </ul>
   </section>
 
   <section class="card cg-card">
-    <h2><span class="cg-num">3</span> What gives a warning <small>किन बातों पर चेतावनी (Warning) आती है</small></h2>
-    <p class="cg-note">Your camera, microphone and (on a laptop) your whole screen are recorded during the test. Each of these gives a <b>warning with a beep</b>, and <b>HR is alerted live</b> with a photo:
-      <span>टेस्ट के दौरान आपका कैमरा, माइक और (लैपटॉप पर) पूरी स्क्रीन रिकॉर्ड होती है। नीचे दी गई हर बात पर <b>बीप के साथ चेतावनी</b> आती है और <b>HR को तुरंत फ़ोटो के साथ सूचना</b> जाती है:</span></p>
+    <h2><span class="cg-num">3</span> <span class="en">What gives a warning</span><span class="hi">किन बातों पर चेतावनी (Warning) आती है</span></h2>
+    <p class="cg-note"><span class="en">Your camera, microphone and (on a laptop) your whole screen are recorded during the test. Each of these gives a <b>warning with a beep</b>, and <b>HR is alerted live</b> with a photo:</span>
+      <span class="hi">टेस्ट के दौरान आपका कैमरा, माइक और (लैपटॉप पर) पूरी स्क्रीन रिकॉर्ड होती है। नीचे दी गई हर बात पर <b>बीप के साथ चेतावनी</b> आती है और <b>HR को तुरंत फ़ोटो के साथ सूचना</b> जाती है:</span></p>
     <ol class="cg-warn">
       <% warnings.each do |ico, en, hi| %>
-        <li><span class="cg-ico"><%= icon(ico) %></span><div><b><%= en %></b><span><%= hi %></span></div></li>
+        <li><span class="cg-ico"><%= icon(ico) %></span><div><b class="en"><%= en %></b><span class="hi"><%= hi %></span></div></li>
       <% end %>
     </ol>
     <div class="cg-alert"><%= icon("alert") %>
-      <div><b>Too many warnings end the test automatically</b> (the limit is set by HR — usually 5). Your answers up to that point are submitted.
-        <span><b>तय सीमा से ज़्यादा चेतावनियाँ होने पर टेस्ट अपने-आप खत्म हो जाता है</b> (सीमा HR तय करते हैं — आमतौर पर 5)। तब तक के उत्तर जमा हो जाते हैं।</span></div>
+      <div><span class="en"><b>Too many warnings end the test automatically</b> (the limit is set by HR — usually 5). Your answers up to that point are submitted.</span>
+        <span class="hi"><b>तय सीमा से ज़्यादा चेतावनियाँ होने पर टेस्ट अपने-आप खत्म हो जाता है</b> (सीमा HR तय करते हैं — आमतौर पर 5)। तब तक के उत्तर जमा हो जाते हैं।</span></div>
     </div>
   </section>
 
   <section class="card cg-card">
-    <h2><span class="cg-num">4</span> During the test <small>टेस्ट के दौरान</small></h2>
+    <h2><span class="cg-num">4</span> <span class="en">During the test</span><span class="hi">टेस्ट के दौरान</span></h2>
     <ul class="cg-list">
-      <li>Allow the <b>camera and microphone</b> when the browser asks. On a laptop, click <b>Share entire screen</b> and choose <b>“Entire screen”</b>.
-        <span>ब्राउज़र पूछे तो <b>कैमरा और माइक</b> की अनुमति दें। लैपटॉप पर <b>Share entire screen</b> दबाकर <b>“Entire screen”</b> चुनें।</span></li>
-      <li>The test runs in <b>full screen</b> with a <b>timer</b>. It is <b>submitted automatically</b> when the time ends.
-        <span>टेस्ट <b>फुल स्क्रीन</b> में और <b>टाइमर</b> के साथ चलता है। समय खत्म होते ही <b>अपने-आप जमा</b> हो जाता है।</span></li>
-      <li>You can answer in any order: <b>Skip</b> a question and come back to it with <b>Previous</b> or the question numbers. Skipped questions show in red.
-        <span>प्रश्न किसी भी क्रम में कर सकते हैं: <b>Skip</b> करें और बाद में <b>Previous</b> या प्रश्न-संख्या से वापस आएँ। छोड़े गए प्रश्न लाल दिखते हैं।</span></li>
-      <li>Answers are <b>saved automatically</b>. If the page closes by mistake, open the <b>same link</b> again — the timer keeps running.
-        <span>उत्तर <b>अपने-आप सेव</b> होते हैं। गलती से पेज बंद हो जाए तो <b>वही लिंक</b> दोबारा खोलें — टाइमर चलता रहता है।</span></li>
-      <li>There is <b>no negative marking</b> — a wrong or skipped answer gets 0.
-        <span><b>कोई नेगेटिव मार्किंग नहीं</b> है — गलत या छोड़े गए उत्तर के 0 अंक।</span></li>
-      <li>HR may start a <b>video call or chat</b> during the test — answering them is allowed.
-        <span>टेस्ट के दौरान HR <b>वीडियो कॉल या चैट</b> शुरू कर सकते हैं — उनसे बात करना मना नहीं है।</span></li>
+      <li><span class="en">Allow the <b>camera and microphone</b> when the browser asks. On a laptop, click <b>Share entire screen</b> and choose <b>“Entire screen”</b>.</span>
+        <span class="hi">ब्राउज़र पूछे तो <b>कैमरा और माइक</b> की अनुमति दें। लैपटॉप पर <b>Share entire screen</b> दबाकर <b>“Entire screen”</b> चुनें।</span></li>
+      <li><span class="en">The test runs in <b>full screen</b> with a <b>timer</b>. It is <b>submitted automatically</b> when the time ends.</span>
+        <span class="hi">टेस्ट <b>फुल स्क्रीन</b> में और <b>टाइमर</b> के साथ चलता है। समय खत्म होते ही <b>अपने-आप जमा</b> हो जाता है।</span></li>
+      <li><span class="en">You can answer in any order: <b>Skip</b> a question and come back to it with <b>Previous</b> or the question numbers. Skipped questions show in red.</span>
+        <span class="hi">प्रश्न किसी भी क्रम में कर सकते हैं: <b>Skip</b> करें और बाद में <b>Previous</b> या प्रश्न-संख्या से वापस आएँ। छोड़े गए प्रश्न लाल दिखते हैं।</span></li>
+      <li><span class="en">Answers are <b>saved automatically</b>. If the page closes by mistake, open the <b>same link</b> again — the timer keeps running.</span>
+        <span class="hi">उत्तर <b>अपने-आप सेव</b> होते हैं। गलती से पेज बंद हो जाए तो <b>वही लिंक</b> दोबारा खोलें — टाइमर चलता रहता है।</span></li>
+      <li><span class="en">There is <b>no negative marking</b> — a wrong or skipped answer gets 0.</span>
+        <span class="hi"><b>कोई नेगेटिव मार्किंग नहीं</b> है — गलत या छोड़े गए उत्तर के 0 अंक।</span></li>
+      <li><span class="en">HR may start a <b>video call or chat</b> during the test — answering them is allowed.</span>
+        <span class="hi">टेस्ट के दौरान HR <b>वीडियो कॉल या चैट</b> शुरू कर सकते हैं — उनसे बात करना मना नहीं है।</span></li>
     </ul>
   </section>
 
   <section class="card cg-card">
-    <h2><span class="cg-num">5</span> If something doesn't work <small>कोई दिक्कत हो तो</small></h2>
+    <h2><span class="cg-num">5</span> <span class="en">If something doesn't work</span><span class="hi">कोई दिक्कत हो तो</span></h2>
     <ul class="cg-list">
-      <li><b>Camera blocked:</b> click the 🔒 / camera icon in the address bar → allow Camera and Microphone → reload the page.
-        <span><b>कैमरा ब्लॉक:</b> एड्रेस बार में 🔒 / कैमरा आइकन दबाएँ → Camera और Microphone को Allow करें → पेज रीलोड करें।</span></li>
-      <li><b>Camera busy:</b> close Zoom, Meet, Teams or any other app using the camera.
-        <span><b>कैमरा व्यस्त:</b> Zoom, Meet, Teams या कैमरा इस्तेमाल करने वाला कोई और ऐप बंद करें।</span></li>
-      <li>For any other problem, <b>contact HR before starting</b> the test.
-        <span>कोई और दिक्कत हो तो टेस्ट शुरू करने से <b>पहले HR से संपर्क</b> करें।</span></li>
+      <li><span class="en"><b>Camera blocked:</b> click the 🔒 / camera icon in the address bar → allow Camera and Microphone → reload the page.</span>
+        <span class="hi"><b>कैमरा ब्लॉक:</b> एड्रेस बार में 🔒 / कैमरा आइकन दबाएँ → Camera और Microphone को Allow करें → पेज रीलोड करें।</span></li>
+      <li><span class="en"><b>Camera busy:</b> close Zoom, Meet, Teams or any other app using the camera.</span>
+        <span class="hi"><b>कैमरा व्यस्त:</b> Zoom, Meet, Teams या कैमरा इस्तेमाल करने वाला कोई और ऐप बंद करें।</span></li>
+      <li><span class="en">For any other problem, <b>contact HR before starting</b> the test.</span>
+        <span class="hi">कोई और दिक्कत हो तो टेस्ट शुरू करने से <b>पहले HR से संपर्क</b> करें।</span></li>
     </ul>
   </section>
 
-  <p class="cg-foot">All the best! · शुभकामनाएँ!</p>
+  <p class="cg-foot"><span class="en">All the best!</span> <span class="hi">शुभकामनाएँ!</span></p>
 </div>

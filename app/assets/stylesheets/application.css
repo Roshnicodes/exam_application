@@ -1922,3 +1922,26 @@ a:hover { color: var(--brand); }
 .rough-review { display: grid; gap: .8rem; }
 .rough-review img { max-height: 520px; width: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
 .rough-review pre { margin: 0; padding: .8rem 1rem; border-radius: 10px; background: #fff; border: 1px solid var(--line); font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; max-height: 320px; overflow: auto; }
+/* candidate guide: English / Hindi / both */
+.cg .hi { font-family: "Noto Sans Devanagari", var(--font); }
+.cg.lang-both h1 .hi, .cg.lang-both .cg-sub .en { display: none; }
+.cg.lang-both h2 .hi, .cg.lang-both h3 .hi { display: inline; font-weight: 600; color: var(--muted); font-size: .85rem; margin-left: .2rem; }
+.cg.lang-en .hi, .cg.lang-hi .en { display: none !important; }
+.cg.lang-hi .hi { display: inline; color: inherit; font-size: inherit; margin: 0; }
+.cg.lang-hi .cg-warn .hi { display: block; color: var(--ink); font-weight: 700; }
+.cg .cg-sub .hi, .cg .cg-sub .en { color: #d1fae5; }
+.cg-lang { display: inline-flex; gap: .2rem; padding: .2rem; border-radius: 10px; background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .25); }
+.cg-lang a { padding: .35rem .7rem; border-radius: 8px; font-size: .8rem; font-weight: 700; color: #ecfdf5; }
+.cg-lang a.active { background: #fff; color: #065f46; }
+.cg-actions { flex-wrap: wrap; align-items: center; }
+/* HR guide: language switch + candidate guide card */
+.guide-lang { display: inline-flex; gap: .2rem; padding: .2rem; border-radius: 10px; background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .25); }
+.guide-lang a { padding: .4rem .8rem; border-radius: 8px; font-size: .82rem; font-weight: 700; color: #ecfdf5; }
+.guide-lang a.active { background: #fff; color: #065f46; }
+.lang-hi-text { font-family: "Noto Sans Devanagari", var(--font); }
+.send-guide { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; padding: 1.1rem 1.3rem; margin-bottom: 1rem; border: 1.5px solid rgba(34, 197, 94, .45); background: linear-gradient(135deg, rgba(236, 253, 245, .9), rgba(255, 255, 255, .7)); }
+.send-guide-ico { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: var(--grad); color: #fff; font-size: 1.4rem; flex-shrink: 0; }
+.send-guide h2 { font-size: 1.05rem; }
+.send-guide p { color: var(--muted); font-size: .86rem; margin-top: .2rem; max-width: 640px; }
+.send-guide-actions { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+@media print { .send-guide-actions, .guide-lang { display: none !important; } }
