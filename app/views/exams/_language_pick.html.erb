@@ -1,9 +1,13 @@
-<%# Candidate picks the paper language. Shown only when the paper has a Hindi version. %>
-<% if @invitation.quiz.hindi_count.positive? %>
-  <div class="lang-pick <%= local_assigns[:css] %>" role="group" aria-label="Test language / टेस्ट की भाषा"
-       data-controller="lang-pick" data-lang-pick-url-value="<%= exam_language_path(@invitation.token) %>">
-    <% if local_assigns[:label] %><span class="lang-pick-label"><%= icon("file") %> Test language · टेस्ट की भाषा</span><% end %>
-    <button type="button" class="<%= 'active' if @invitation.language == 'en' %>" data-lang="en" data-action="lang-pick#choose" aria-pressed="<%= @invitation.language == 'en' %>">English</button>
-    <button type="button" class="hi <%= 'active' if @invitation.language == 'hi' %>" data-lang="hi" data-action="lang-pick#choose" aria-pressed="<%= @invitation.language == 'hi' %>">हिंदी</button>
-  </div>
+<%# Candidate picks the paper language (always shown; Hindi needs the paper's Hindi version) %>
+<% hindi = @invitation.quiz.hindi_count.positive? %>
+<% lang = hindi ? @invitation.language : "en" %>
+<div class="lang-pick <%= local_assigns[:css] %>" role="group" aria-label="Test language / टेस्ट की भाषा"
+     data-controller="lang-pick" data-lang-pick-url-value="<%= exam_language_path(@invitation.token) %>">
+  <% if local_assigns[:label] %><span class="lang-pick-label"><%= icon("file") %> Test language · टेस्ट की भाषा</span><% end %>
+  <button type="button" class="<%= 'active' if lang == 'en' %>" data-lang="en" data-action="lang-pick#choose" aria-pressed="<%= lang == 'en' %>">English</button>
+  <button type="button" class="hi <%= 'active' if lang == 'hi' %>" data-lang="hi" data-action="lang-pick#choose" aria-pressed="<%= lang == 'hi' %>"
+          <% unless hindi %>disabled title="Hindi version of this paper is not ready yet — ask HR"<% end %>>हिंदी</button>
+</div>
+<% if !hindi && local_assigns[:label] %>
+  <p class="tiny muted lang-pick-note">हिंदी में टेस्ट देना है? इस पेपर का हिंदी संस्करण अभी तैयार नहीं है — HR से कहें। · Hindi version not ready yet — ask HR.</p>
 <% end %>
