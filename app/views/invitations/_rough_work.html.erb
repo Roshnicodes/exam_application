@@ -1,0 +1,14 @@
+<%# The candidate's digital rough sheet from the test. locals: invitation: %>
+<% if invitation.rough_sheet.attached? || invitation.rough_notes.present? %>
+  <div class="card">
+    <div class="card-head"><h2><%= icon("edit") %> Rough work</h2><span class="tiny muted">From the test's rough sheet</span></div>
+    <div class="card-body rough-review">
+      <% if invitation.rough_sheet.attached? %>
+        <%= link_to rails_blob_path(invitation.rough_sheet, disposition: "inline"), target: "_blank", rel: "noopener" do %>
+          <%= image_tag rails_blob_path(invitation.rough_sheet, disposition: "inline"), alt: "Hand-written rough work", loading: "lazy" %>
+        <% end %>
+      <% end %>
+      <% if invitation.rough_notes.present? %><pre><%= invitation.rough_notes %></pre><% end %>
+    </div>
+  </div>
+<% end %>

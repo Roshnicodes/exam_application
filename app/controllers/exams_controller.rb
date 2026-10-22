@@ -10,7 +10,7 @@ class ExamsController < ApplicationController
 
   before_action :set_invitation
   before_action :redirect_if_finished, except: %i[finished events recordings interview]
-  before_action :require_verified, only: %i[instructions start take answer submit interview]
+  before_action :require_verified, only: %i[instructions start take answer rough submit interview]
   before_action :auto_submit_if_time_up, only: %i[take answer submit]
 
   rescue_from ActiveRecord::RecordNotFound do
@@ -63,6 +63,18 @@ class ExamsController < ApplicationController
   def answer
     @invitation.save_answer!(params[:question_id], params[:option])
     render json: { ok: true, answered: @invitation.answered_count, seconds_left: @invitation.seconds_left }
+  end
+
+  # Digital rough sheet: typed notes and the hand-written page (PNG), saved while the test runs.
+  def rough
+    return head :unprocessable_entity unless @invitation.in_progress?
+
+    @invitation.update!(rough_notes: params[:notes].to_s.first(20_000)) if params.key?(:notes)
+    sheet = params[:sheet]
+    if sheet.respond_to?(:read) && sheet.size.between?(1, 5.megabytes)
+      @invitation.rough_sheet.attach(io: sheet, filename: "rough-sheet.png", content_type: "image/png")
+    end
+    head :no_content
   end
 
   def events

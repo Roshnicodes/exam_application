@@ -1,5 +1,7 @@
 <% content_for :title, "Exam in progress" %>
-<div data-controller="exam proctor"
+<div data-controller="exam proctor rough-sheet"
+     data-rough-sheet-url-value="<%= exam_rough_path(@invitation.token) %>"
+     <% if @invitation.rough_sheet.attached? %>data-rough-sheet-image-value="<%= rails_blob_path(@invitation.rough_sheet, disposition: "inline") %>"<% end %>
      data-exam-seconds-left-value="<%= @invitation.seconds_left %>"
      data-exam-answer-url-value="<%= exam_answer_path(@invitation.token) %>"
      data-proctor-events-url-value="<%= exam_events_path(@invitation.token) %>"
@@ -7,7 +9,7 @@
      data-proctor-warnings-value="<%= @invitation.warnings_count %>"
      data-proctor-max-warnings-value="<%= @invitation.max_warnings %>"
      data-proctor-token-value="<%= @invitation.token %>"
-     data-action="proctor:terminated->exam#forceSubmit exam:before-submit->proctor#finish">
+     data-action="proctor:terminated->exam#forceSubmit exam:before-submit->proctor#finish exam:before-submit->rough-sheet#flush">
 
   <header class="exam-top">
     <%= render "shared/brand" %>
@@ -17,6 +19,7 @@
     </div>
     <span class="grow" style="display:none"></span>
     <span class="warn-meter" title="Warnings"><%= icon("alert") %> <span data-proctor-target="warnLabel"><%= @invitation.warnings_count %><%= "/#{@invitation.max_warnings}" if @invitation.max_warnings.positive? %></span></span>
+    <button type="button" class="btn btn-light btn-sm rough-btn" data-action="rough-sheet#toggle" title="Rough sheet for calculations"><%= icon("edit") %><span class="hide-sm">Rough sheet</span></button>
     <span class="timer" data-exam-target="timer"><%= icon("clock") %> <span data-exam-target="clock">--:--</span></span>
     <button type="button" class="btn btn-primary btn-sm" data-action="exam#confirmSubmit"><%= icon("send") %><span class="hide-sm">Submit</span></button>
   </header>
@@ -78,6 +81,34 @@
       </div>
     </aside>
   </div>
+
+  <%# Digital rough sheet: write like on a copy, or type; saved for HR %>
+  <aside class="rough-panel" data-rough-sheet-target="panel" aria-label="Rough sheet">
+    <header class="rough-head">
+      <b><%= icon("edit") %> Rough sheet</b>
+      <nav class="rough-tabs">
+        <button type="button" class="active" data-rough-sheet-target="writeTab" data-action="rough-sheet#showWrite">✏️ Write</button>
+        <button type="button" data-rough-sheet-target="typeTab" data-action="rough-sheet#showType">⌨️ Type</button>
+      </nav>
+      <span class="rough-status" data-rough-sheet-target="status"></span>
+      <button type="button" class="rough-close" data-action="rough-sheet#close" aria-label="Close rough sheet">×</button>
+    </header>
+    <div class="rough-pane" data-rough-sheet-target="writePane">
+      <div class="rough-tools">
+        <button type="button" class="active" data-rough-sheet-target="penBtn" data-action="rough-sheet#pen"><%= icon("edit") %> Pen</button>
+        <button type="button" data-rough-sheet-target="eraserBtn" data-action="rough-sheet#eraser">⌫ Eraser</button>
+        <button type="button" data-action="rough-sheet#undo">↶ Undo</button>
+        <button type="button" data-action="rough-sheet#clear"><%= icon("trash") %> Clear</button>
+        <button type="button" data-action="rough-sheet#moreSpace"><%= icon("plus") %> More space</button>
+      </div>
+      <div class="rough-wrap" data-rough-sheet-target="wrap"><canvas class="rough-canvas" data-rough-sheet-target="canvas"></canvas></div>
+    </div>
+    <div class="rough-pane" data-rough-sheet-target="typePane" hidden>
+      <textarea class="rough-notes" data-rough-sheet-target="notes" data-action="input->rough-sheet#notesChanged" spellcheck="false"
+                placeholder="Type your calculations here…&#10;e.g. 1250 × 72% = 900&#10;900 × 40% = 360"><%= @invitation.rough_notes %></textarea>
+    </div>
+    <p class="rough-foot">Saved automatically · HR can see your rough work</p>
+  </aside>
 
   <div class="modal-backdrop hidden" data-exam-target="confirm">
     <div class="modal">

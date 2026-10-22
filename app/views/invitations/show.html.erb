@@ -44,6 +44,7 @@
     <% end %>
     <%= render "interview_rounds/list", invitation: @invitation %>
     <% if @invitation.finished? %><%= render "invitations/answer_sheet", invitation: @invitation, collapsible: true %><% end %>
+    <%= render "invitations/rough_work", invitation: @invitation %>
     <%= render "interview_feedbacks/summary", invitation: @invitation %>
     <%= render "invitations/call_chat", invitation: @invitation %>
     <%= render "invitations/code_pads", invitation: @invitation %>

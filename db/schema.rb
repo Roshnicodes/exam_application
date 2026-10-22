@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_17_100252) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_22_044806) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -222,6 +222,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_100252) do
     t.string "decision"
     t.text "decision_note"
     t.datetime "decided_at"
+    t.text "rough_notes"
     t.index ["exam_batch_id"], name: "index_invitations_on_exam_batch_id"
     t.index ["quiz_id"], name: "index_invitations_on_quiz_id"
     t.index ["token"], name: "index_invitations_on_token", unique: true

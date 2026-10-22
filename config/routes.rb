@@ -67,6 +67,7 @@ Rails.application.routes.draw do
     post :start
     get :take
     patch :answer
+    patch :rough
     post :events
     post :recordings
     post :submit
