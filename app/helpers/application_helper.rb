@@ -168,8 +168,14 @@ module ApplicationHelper
 
   def candidate_share_text(invitation)
     "Hi #{invitation.candidate_name}, please take your online assessment for the #{invitation.vacancy} role here: " \
-      "#{exam_url(invitation.token)} (Your HR will share the OTP with you.) Please read the test guide first: #{candidate_guide_url}" +
+      "#{exam_url(invitation.token)} (Your HR will share the OTP with you.) Please read the test guide (PDF) first: " \
+      "#{candidate_guide_pdf_url(invitation.language)}" +
       (invitation.meeting_link.present? ? " Interview meeting link: #{invitation.meeting_link}" : "")
+  end
+
+  # The candidate guide PDF in the candidate's test language.
+  def candidate_guide_pdf_url(language = "en")
+    "#{root_url.chomp('/')}/#{CandidateMailer.guide_file(language)}"
   end
 
   def panelist_share_text(employee, invitation: nil, batch: nil)

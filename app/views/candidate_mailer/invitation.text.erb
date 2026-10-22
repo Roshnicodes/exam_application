@@ -1,0 +1,13 @@
+Dear <%= @invitation.candidate_name %>,
+
+You are invited to the online assessment for the <%= @invitation.vacancy %> role.
+
+Start your online test: <%= exam_url(@invitation.token) %>
+Your HR will share the OTP with you when you open the link.
+<% if @invitation.link_expires_at %>The link is valid until <%= @invitation.link_expires_at.strftime("%d %b %Y, %-I:%M %p") %>.
+<% end %>
+Please read the attached candidate guide before you start - it explains what you need, the pen & paper rules and what gives a warning during the test.
+<% if @invitation.meeting_link.present? %>Interview meeting link: <%= @invitation.meeting_link %>
+<% end %>
+All the best!
+HR team

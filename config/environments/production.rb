@@ -62,6 +62,18 @@ Rails.application.configure do
   # Set host to be used by links generated in mailer templates.
   config.action_mailer.default_url_options = { host: ENV.fetch("APP_HOST", "example.com"), protocol: ENV["FORCE_SSL"] == "true" ? "https" : "http" }
 
+  # Outgoing mail (candidate invitations with the guide PDF): set SMTP_ADDRESS, SMTP_PORT, SMTP_USERNAME,
+  # SMTP_PASSWORD and SMTP_FROM in .env — e.g. the company Gmail / Outlook / Zoho account.
+  if ENV["SMTP_ADDRESS"].present?
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.raise_delivery_errors = true
+    config.action_mailer.smtp_settings = {
+      address: ENV["SMTP_ADDRESS"], port: ENV.fetch("SMTP_PORT", 587).to_i,
+      user_name: ENV["SMTP_USERNAME"], password: ENV["SMTP_PASSWORD"],
+      authentication: :login, enable_starttls_auto: true
+    }
+  end
+
   # Specify outgoing SMTP server. Remember to add smtp/* credentials via bin/rails credentials:edit.
   # config.action_mailer.smtp_settings = {
   #   user_name: Rails.application.credentials.dig(:smtp, :user_name),

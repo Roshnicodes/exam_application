@@ -1,5 +1,5 @@
 class InvitationsController < ApplicationController
-  before_action :set_invitation, only: %i[show report edit update destroy decide language]
+  before_action :set_invitation, only: %i[show report edit update destroy decide language send_email]
 
   def index
     @invitations = filtered_invitations
@@ -18,6 +18,15 @@ class InvitationsController < ApplicationController
     @invitation.broadcast_language
     note = @invitation.hindi? && !@invitation.quiz.hindi_ready? ? " The paper has Hindi for #{@invitation.quiz.hindi_count}/#{@invitation.quiz.questions.size} questions — the rest stay in English." : ""
     redirect_to @invitation, notice: "Test language set to #{Invitation::LANGUAGES[@invitation.language]}.#{note}"
+  end
+
+  # Emails the test link with the candidate guide PDF attached (needs SMTP on the server).
+  def send_email
+    return redirect_to(@invitation, alert: "Add the candidate's email first (Edit).") if @invitation.candidate_email.blank?
+    return redirect_to(@invitation, alert: "Email isn't set up on the server yet — ask IT to add the SMTP settings to .env.") unless CandidateMailer.configured?
+
+    CandidateMailer.invitation(@invitation).deliver_later
+    redirect_to @invitation, notice: "Email with the test link and candidate guide PDF sent to #{@invitation.candidate_email}."
   end
 
   # Excel for one candidate.

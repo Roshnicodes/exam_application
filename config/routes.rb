@@ -38,6 +38,7 @@ Rails.application.routes.draw do
       get :report
       get :export, action: :export_one
       patch :language
+      post :send_email
       post :decide
     end
     resources :interview_rounds, path: "rounds", only: %i[create update destroy] do
