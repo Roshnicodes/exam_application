@@ -50,17 +50,26 @@ function untranslated() {
 
 // Puts a Hindi copy next to every question HR didn't translate. `fromClick` may download the
 // Hindi pack (Chrome needs a click for that); otherwise it only runs when the pack is already there.
+// Only one run at a time — two at once (page load + a click) used to add the Hindi twice.
+let running = null
+
 export async function translatePaper(fromClick = false, onBusy = null) {
-  const pending = untranslated()
-  if (!pending.length) return true
+  while (running) await running.catch(() => {})
+  if (!untranslated().length) return true
+  running = runTranslation(fromClick, onBusy)
+  try { return await running } finally { running = null }
+}
+
+async function runTranslation(fromClick, onBusy) {
   if (!fromClick && !(await hindiReady())) return false
   let translator
   try {
     onBusy?.("हिंदी…")
     translator = await hindiTranslator((pct) => onBusy?.(`हिंदी ${pct}%`))
   } catch { return false }
+  const pending = untranslated()
   for (const [ i, el ] of pending.entries()) {
-    if (!el.classList.contains("no-hi")) continue
+    if (!el.classList.contains("no-hi") || el.nextElementSibling?.classList.contains("q-hi")) { el.classList.remove("no-hi"); continue }
     onBusy?.(`हिंदी ${Math.round((i / pending.length) * 100)}%`)
     const copy = await translateElement(translator, el)
     copy.classList.remove("q-en", "no-hi")
@@ -69,6 +78,10 @@ export async function translatePaper(fromClick = false, onBusy = null) {
     el.classList.remove("no-hi")
   }
   return true
+}
+
+export function hasUntranslated() {
+  return untranslated().length > 0
 }
 
 export function showLanguage(lang) {

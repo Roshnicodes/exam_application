@@ -1988,3 +1988,5 @@ a:hover { color: var(--brand); }
 .lang-pick button:disabled { opacity: .45; cursor: not-allowed; }
 .lang-pick-note { flex-basis: 100%; margin: .2rem .4rem; }
 .lang-pick button.busy { opacity: .8; cursor: progress; }
+.hi-prompt { display: flex; align-items: center; justify-content: center; gap: .8rem; flex-wrap: wrap; margin: .8rem auto 0; max-width: 1200px; padding: .7rem 1rem; border-radius: 14px; background: #fff7ed; border: 1px solid #fdba74; color: #9a3412; font-weight: 700; font-size: .9rem; font-family: "Noto Sans Devanagari", var(--font); }
+.hi-prompt button { border: 0; cursor: pointer; padding: .5rem 1rem; border-radius: 10px; background: linear-gradient(135deg, #22c55e, #059669); color: #fff; font: inherit; }
