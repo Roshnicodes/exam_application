@@ -20,10 +20,12 @@ export default class extends Controller {
   async choose(event) {
     const lang = event.currentTarget.dataset.lang
     if (lang === "hi" && untranslated().length) {
+      showLanguage("hi") // flips now; each question turns Hindi as soon as it is translated
       const ok = await translatePaper(true, (text) => this.busy(text))
       this.busy(null)
       if (!ok) {
-        window.alert("Hindi isn't available in this browser. Please use the latest Google Chrome on a computer, or ask HR for the Hindi paper.\n\nइस ब्राउज़र में हिंदी उपलब्ध नहीं है। कंप्यूटर पर नया Google Chrome इस्तेमाल करें या HR से हिंदी पेपर माँगें।")
+        showLanguage("en")
+        window.alert("Couldn't translate to Hindi — please check the internet and try again, or ask HR for the Hindi paper.\n\nहिंदी में नहीं बदल पाए — इंटरनेट चेक करके फिर से कोशिश करें या HR से हिंदी पेपर माँगें।")
         return
       }
     }
@@ -65,18 +67,24 @@ async function runTranslation(fromClick, onBusy) {
   let translator
   try {
     onBusy?.("हिंदी…")
-    translator = await hindiTranslator((pct) => onBusy?.(`हिंदी ${pct}%`))
+    translator = await hindiTranslator((pct) => onBusy?.(`हिंदी ${pct}%`), fromClick)
   } catch { return false }
   const pending = untranslated()
-  for (const [ i, el ] of pending.entries()) {
-    if (!el.classList.contains("no-hi") || el.nextElementSibling?.classList.contains("q-hi")) { el.classList.remove("no-hi"); continue }
-    onBusy?.(`हिंदी ${Math.round((i / pending.length) * 100)}%`)
+  let done = 0
+  const one = async (el) => {
+    if (!el.classList.contains("no-hi") || el.nextElementSibling?.classList.contains("q-hi")) return el.classList.remove("no-hi")
     const copy = await translateElement(translator, el)
     copy.classList.remove("q-en", "no-hi")
     copy.classList.add("q-hi")
     el.after(copy)
     el.classList.remove("no-hi")
+    onBusy?.(`हिंदी ${Math.round((++done / pending.length) * 100)}%`)
   }
+  // the question on screen first, then the rest a few at a time
+  const current = pending.filter((el) => el.offsetParent)
+  const rest = pending.filter((el) => !el.offsetParent)
+  await Promise.all(current.map(one))
+  for (let i = 0; i < rest.length; i += 6) await Promise.all(rest.slice(i, i + 6).map(one))
   return true
 }
 

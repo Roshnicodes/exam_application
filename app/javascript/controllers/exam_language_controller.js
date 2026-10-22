@@ -32,7 +32,7 @@ function showPrompt() {
     button.disabled = true
     const ok = await translatePaper(true, (text) => { button.textContent = text })
     if (ok) { showLanguage("hi"); bar.remove() } else {
-      bar.querySelector("span").textContent = "Hindi isn't available in this browser — please use the latest Google Chrome on a computer."
+      bar.querySelector("span").textContent = "Couldn't translate to Hindi — check the internet and try again. · हिंदी में नहीं बदल पाए — इंटरनेट चेक करें।"
       button.remove()
     }
   })
