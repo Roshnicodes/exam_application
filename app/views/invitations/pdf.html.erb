@@ -22,7 +22,7 @@
             --red: #dc2626; --red-soft: #fef2f2; --amber: #b45309; }
     * { box-sizing: border-box; }
     html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    body { margin: 0; background: #eef2f0; color: var(--ink); font: 13px/1.5 "Segoe UI", system-ui, -apple-system, Roboto, "Noto Sans", "Noto Sans Devanagari", Arial, sans-serif; }
+    body { margin: 0; background: #eef2f0; color: var(--ink); font: 11.5px/1.38 "Segoe UI", system-ui, -apple-system, Roboto, "Noto Sans", "Noto Sans Devanagari", Arial, sans-serif; }
     .toolbar { position: sticky; top: 0; z-index: 5; display: flex; gap: .6rem; align-items: center; justify-content: center; flex-wrap: wrap;
                padding: .7rem 1rem; background: #0f172a; color: #e2e8f0; font-size: 13px; }
     .toolbar button, .toolbar a { border: 0; cursor: pointer; padding: .55rem 1rem; border-radius: 9px; font: inherit; font-weight: 700; text-decoration: none; }
@@ -30,73 +30,72 @@
     .toolbar .light { background: rgba(255, 255, 255, .12); color: #fff; }
     .toolbar label { display: inline-flex; gap: .35rem; align-items: center; cursor: pointer; }
     .toolbar small { color: #94a3b8; }
-    .sheet { width: 210mm; max-width: 100%; margin: 18px auto; background: #fff; padding: 14mm 14mm 12mm; box-shadow: 0 10px 40px -20px rgba(15, 23, 42, .4); }
+    .sheet { width: 210mm; max-width: 100%; margin: 18px auto; background: #fff; padding: 10mm 11mm 9mm; box-shadow: 0 10px 40px -20px rgba(15, 23, 42, .4); }
 
-    header.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding-bottom: 10px; border-bottom: 3px solid var(--brand); }
+    header.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding-bottom: 6px; border-bottom: 2.5px solid var(--brand); }
     .logo { display: flex; gap: .6rem; align-items: center; }
-    .logo .mark { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(135deg, #22c55e, #047857); color: #fff; font-weight: 800; font-size: 15px; }
-    .logo b { font-size: 18px; letter-spacing: -.01em; } .logo b span { color: var(--brand); }
+    .logo .mark { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(135deg, #22c55e, #047857); color: #fff; font-weight: 800; font-size: 15px; }
+    .logo b { font-size: 15px; letter-spacing: -.01em; } .logo b span { color: var(--brand); }
     .logo small { display: block; color: var(--muted); font-size: 11px; }
     .doc-title { text-align: right; }
-    .doc-title h1 { margin: 0; font-size: 17px; } .doc-title p { margin: 2px 0 0; color: var(--muted); font-size: 11px; }
+    .doc-title h1 { margin: 0; font-size: 14px; } .doc-title p { margin: 0; color: var(--muted); font-size: 10px; }
 
-    h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--brand); margin: 16px 0 8px; display: flex; align-items: center; gap: .5rem; }
+    h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--brand); margin: 10px 0 5px; display: flex; align-items: center; gap: .5rem; }
     h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
-    .cand { display: grid; grid-template-columns: 1fr 190px; gap: 14px; margin-top: 12px; }
-    .kv { display: grid; grid-template-columns: repeat(2, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-    .kv div { padding: 6px 10px; border-bottom: 1px solid var(--line); }
-    .kv div:nth-child(odd) { border-right: 1px solid var(--line); }
-    .kv div.wide { grid-column: 1 / -1; border-right: 0; }
-    .kv span { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+    .cand { display: grid; grid-template-columns: 1fr 150px; gap: 8px; margin-top: 8px; }
+    .kv { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    .kv { border-right: 0; border-bottom: 0; }
+    .kv div { padding: 3px 8px; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); }
+    .kv div.wide { grid-column: 1 / -1; }
+    .kv span { display: block; font-size: 8.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
     .kv b { font-weight: 600; word-break: break-word; }
-    .verdict { border-radius: 12px; padding: 12px; text-align: center; border: 2px solid var(--line); display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+    .verdict { border-radius: 10px; padding: 8px; text-align: center; border: 2px solid var(--line); display: flex; flex-direction: column; justify-content: center; gap: 4px; }
     .verdict.pass { border-color: #86efac; background: var(--brand-soft); } .verdict.fail { border-color: #fca5a5; background: var(--red-soft); }
-    .verdict .big { font-size: 30px; font-weight: 800; line-height: 1; }
-    .verdict .lbl { font-weight: 800; font-size: 15px; } .verdict.pass .lbl { color: var(--brand); } .verdict.fail .lbl { color: var(--red); }
-    .verdict small { color: var(--muted); font-size: 11px; }
+    .verdict .big { font-size: 24px; font-weight: 800; line-height: 1; }
+    .verdict .lbl { font-weight: 800; font-size: 13px; } .verdict.pass .lbl { color: var(--brand); } .verdict.fail .lbl { color: var(--red); }
+    .verdict small { color: var(--muted); font-size: 9.5px; }
 
-    .stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 10px; }
-    .stat { border: 1px solid var(--line); border-radius: 9px; padding: 6px 8px; }
-    .stat span { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-    .stat b { font-size: 15px; } .stat.g b { color: var(--brand); } .stat.r b { color: var(--red); }
+    .stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin-top: 6px; }
+    .stat { border: 1px solid var(--line); border-radius: 8px; padding: 3px 8px; }
+    .stat span { display: block; font-size: 8.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .stat b { font-size: 13px; } .stat.g b { color: var(--brand); } .stat.r b { color: var(--red); }
 
-    table.grid { width: 100%; border-collapse: collapse; font-size: 12px; }
-    table.grid th, table.grid td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
-    table.grid th { background: #f8fafc; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); }
+    table.grid { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+    table.grid th, table.grid td { border: 1px solid var(--line); padding: 2px 7px; text-align: left; vertical-align: top; }
+    table.grid th { background: #f8fafc; font-size: 9px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); }
     .num { text-align: right !important; white-space: nowrap; }
 
-    .q { border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; margin-bottom: 8px; break-inside: avoid; page-break-inside: avoid; }
+    .q { border-bottom: 1px solid var(--line); padding: 5px 2px 6px; break-inside: avoid; page-break-inside: avoid; }
     .q-head { display: flex; justify-content: space-between; gap: .8rem; align-items: flex-start; }
     .q-text { font-weight: 600; display: flex; gap: .4rem; align-items: flex-start; }
     .q-no { flex: none; color: var(--brand); }
     .q-text .q-hi-line { display: block; font-weight: 500; color: var(--ink-2); margin-top: 2px; }
-    .q-text table { border-collapse: collapse; margin: 6px 0; font-weight: 500; font-size: 12px; }
-    .q-text table td, .q-text table th { border: 1px solid #cbd5e1; padding: 3px 7px; }
-    .tag { flex: none; font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+    .q-text table { border-collapse: collapse; margin: 3px 0; font-weight: 500; font-size: 10.5px; }
+    .q-text table td, .q-text table th { border: 1px solid #cbd5e1; padding: 1px 6px; }
+    .tag { flex: none; font-size: 9px; font-weight: 800; padding: 1px 7px; border-radius: 99px; white-space: nowrap; }
     .tag.ok { background: #dcfce7; color: #166534; } .tag.bad { background: #fee2e2; color: #b91c1c; } .tag.skip { background: #f1f5f9; color: var(--muted); }
-    .opts { margin-top: 6px; display: grid; gap: 3px; }
-    .opt { display: flex; gap: .55rem; align-items: baseline; padding: 4px 8px; border-radius: 7px; border: 1px solid transparent; }
-    .opt .l { flex: none; width: 20px; height: 20px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 11px; font-weight: 800; border: 1.5px solid #cbd5e1; color: var(--ink-2); }
+    .opts { margin-top: 3px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 8px; padding-left: 1.4rem; }
+    .opts.long { grid-template-columns: 1fr; }
+    .opt { display: flex; gap: .45rem; align-items: baseline; padding: 1px 6px; border-radius: 6px; border: 1px solid transparent; }
+    .opt .l { flex: none; width: 15px; height: 15px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 8.5px; font-weight: 800; border: 1.5px solid #cbd5e1; color: var(--ink-2); }
     .opt .t { flex: 1; } .opt .t .hi { color: var(--muted); }
-    .opt .note { flex: none; font-size: 10.5px; font-weight: 700; }
+    .opt .note { flex: none; font-size: 9px; font-weight: 700; }
     .opt.correct { background: var(--brand-soft); border-color: #bbf7d0; } .opt.correct .l { background: var(--brand); border-color: var(--brand); color: #fff; } .opt.correct .note { color: var(--brand); }
     .opt.wrong { background: var(--red-soft); border-color: #fecaca; } .opt.wrong .l { background: var(--red); border-color: var(--red); color: #fff; } .opt.wrong .note { color: var(--red); }
     .opt.picked.correct .note::before { content: "✓ "; } .opt.wrong .note::before { content: "✗ "; }
-    .legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin: -2px 0 8px; }
+    .legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 9.5px; color: var(--muted); margin: -2px 0 2px; }
     .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
 
-    .rough img { max-width: 100%; max-height: 240mm; border: 1px solid var(--line); border-radius: 8px; }
-    .rough pre { white-space: pre-wrap; font: inherit; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 0 0 8px; }
-    .sign { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 34px; break-inside: avoid; }
-    .sign div { border-top: 1px solid var(--ink-2); padding-top: 4px; font-size: 11px; color: var(--muted); text-align: center; }
-    footer { margin-top: 16px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 10px; color: var(--muted); display: flex; justify-content: space-between; gap: 1rem; }
+    .sign { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 26px; break-inside: avoid; }
+    .sign div { border-top: 1px solid var(--ink-2); padding-top: 3px; font-size: 9.5px; color: var(--muted); text-align: center; }
+    footer { margin-top: 8px; padding-top: 4px; border-top: 1px solid var(--line); font-size: 8.5px; color: var(--muted); display: flex; justify-content: space-between; gap: 1rem; }
     .muted { color: var(--muted); }
     body.no-answers .opt .note, body.no-answers .tag { display: none; }
     body.no-answers .opt.correct:not(.picked) { background: none; border-color: transparent; }
     body.no-answers .opt.correct:not(.picked) .l { background: none; border-color: #cbd5e1; color: var(--ink-2); }
 
-    @page { size: A4; margin: 10mm; }
+    @page { size: A4; margin: 8mm; }
     @media print {
       body { background: #fff; }
       .toolbar { display: none; }
@@ -106,6 +105,8 @@
     @media (max-width: 640px) {
       .sheet { padding: 16px; margin: 0; }
       .cand { grid-template-columns: 1fr; }
+      .kv { grid-template-columns: repeat(2, 1fr); }
+      .opts { grid-template-columns: 1fr; }
       .stats { grid-template-columns: repeat(3, 1fr); }
       header.top { flex-direction: column; } .doc-title { text-align: left; }
     }
@@ -187,7 +188,7 @@
     <div class="legend">
       <span><i style="background:#059669"></i>Correct answer</span>
       <span><i style="background:#dc2626"></i>Candidate's wrong answer</span>
-      <span>✓ / ✗ marks the option the candidate chose</span>
+      <span>“Candidate” ✓ / ✗ = the option the candidate chose</span>
     </div>
     <% questions.each_with_index do |q, i| %>
       <% given = picked[i] %>
@@ -199,15 +200,16 @@
           <% elsif q.correct?(given) %><span class="tag ok">Correct · +<%= q.marks %></span>
           <% else %><span class="tag bad">Wrong · 0/<%= q.marks %></span><% end %>
         </div>
-        <div class="opts">
+        <% long = q.options.any? { |o| o.to_s.length > 42 } || (hindi && q.hindi?) %>
+        <div class="opts <%= 'long' if long %>">
           <% q.options.each_with_index do |opt, idx| %>
             <% is_correct = idx == q.correct_index %>
             <% is_picked = idx == given %>
             <div class="opt <%= 'correct' if is_correct %> <%= 'wrong' if is_picked && !is_correct %> <%= 'picked' if is_picked %>">
               <span class="l"><%= Question::LETTERS[idx] %></span>
               <span class="t"><%= opt %><% if hindi && q.hindi? && q.options_hi[idx].present? %> <span class="hi">/ <%= q.options_hi[idx] %></span><% end %></span>
-              <% if is_picked %><span class="note">Candidate's answer<%= " (correct)" if is_correct %></span>
-              <% elsif is_correct %><span class="note">Correct answer</span><% end %>
+              <% if is_picked %><span class="note">Candidate</span>
+              <% elsif is_correct %><span class="note">Correct</span><% end %>
             </div>
           <% end %>
         </div>
@@ -217,21 +219,14 @@
     <% if @violations.any? %>
       <h2>Proctoring warnings</h2>
       <table class="grid">
-        <thead><tr><th style="width:80px">Time</th><th>Warning</th><th>Details</th></tr></thead>
+        <thead><tr><th>Warning</th><th class="num" style="width:50px">Times</th><th>When</th></tr></thead>
         <tbody>
-          <% @violations.each do |ev| %>
-            <tr><td><%= ev.created_at.strftime("%-I:%M:%S %p") %></td><td><%= ev.label %></td><td class="muted"><%= ev.message %></td></tr>
+          <% @violations.group_by(&:label).each do |label, list| %>
+            <tr><td><%= label %></td><td class="num"><%= list.size %></td>
+                <td class="muted"><%= list.first(8).map { |ev| ev.created_at.strftime("%-I:%M %p") }.join(", ") %><%= " +#{list.size - 8} more" if list.size > 8 %></td></tr>
           <% end %>
         </tbody>
       </table>
-    <% end %>
-
-    <% if inv.rough_notes.present? || inv.rough_sheet.attached? %>
-      <h2>Rough work</h2>
-      <div class="rough">
-        <% if inv.rough_notes.present? %><pre><%= inv.rough_notes %></pre><% end %>
-        <% if inv.rough_sheet.attached? %><img src="<%= rails_blob_path(inv.rough_sheet, disposition: "inline") %>" alt="Rough sheet"><% end %>
-      </div>
     <% end %>
 
     <div class="sign">
