@@ -22,7 +22,7 @@
     <section class="kb-col kb-<%= key %>">
       <header><span class="kb-dot"></span><b><%= label %></b><span class="kb-count"><%= totals[key] %></span></header>
       <div class="kb-cards">
-        <% @columns[key].each do |inv| %>
+        <% @columns[key].first(PipelineController::PER_COLUMN).each do |inv| %>
           <% final = inv.final_score %>
           <% next_round = inv.interview_rounds.find { |r| !r.done? } %>
           <%= link_to invitation_path(inv), class: "kb-card" do %>
@@ -43,6 +43,9 @@
           <% end %>
         <% end %>
         <% if @columns[key].empty? %><p class="kb-empty">No one here</p><% end %>
+        <% if (more = @columns[key].size - PipelineController::PER_COLUMN).positive? %>
+          <p class="kb-empty kb-more">+<%= more %> more — pick a vacancy above to narrow the board</p>
+        <% end %>
       </div>
     </section>
   <% end %>

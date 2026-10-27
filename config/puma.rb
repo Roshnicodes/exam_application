@@ -25,7 +25,10 @@
 # Any libraries that use a connection pool or another resource pool should
 # be configured to provide at least as many connections as the number of
 # threads. This includes Active Record's `pool` parameter in `database.yml`.
-threads_count = ENV.fetch("RAILS_MAX_THREADS", 3)
+# During tests every candidate's browser keeps sending snapshots, events and recordings while HR
+# browses: 8 threads keep HR pages from queueing behind those uploads (one process, because live
+# video uses the in-memory cable adapter).
+threads_count = ENV.fetch("RAILS_MAX_THREADS", 8)
 threads threads_count, threads_count
 
 # Specifies the `port` that Puma will listen on to receive requests; default is 3000.

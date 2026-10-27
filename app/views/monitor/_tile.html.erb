@@ -1,7 +1,7 @@
 <%# Monitor tile. The camera part stays put (keeps the live video connected);
     only the info part (#monitor_tile_<id>) is replaced by live broadcasts.
     locals: invitation:, link: (defaults to the HR page), watch_token: (panelist view) %>
-<% snap = invitation.latest_snapshot_event %>
+<% snap = local_assigns[:snaps] ? local_assigns[:snaps][invitation.id] : invitation.latest_snapshot_event %>
 <%= link_to local_assigns[:link] || invitation_path(invitation), id: "mon_wrap_#{invitation.id}", class: "mon-tile", data: { turbo_frame: "_top" } do %>
   <div class="mon-cam">
     <% if snap&.snapshot&.attached? %>

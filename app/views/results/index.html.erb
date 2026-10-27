@@ -27,7 +27,7 @@
     <div class="result-head">
       <span>Rank</span><span>Candidate</span><span class="hide-md">Paper</span><span>Test score</span><span>Result / final</span><span class="hide-md">Warnings</span><span class="hide-md">Time</span><span></span>
     </div>
-    <% @results.each do |i| %>
+    <% @page_results.each do |i| %>
       <% rank = @ranks[i.id] %>
       <%= link_to report_invitation_path(i), class: "result-row" do %>
         <span class="rank rank-<%= rank <= 3 ? rank : 'n' %>"><%= rank <= 3 ? %w[🥇 🥈 🥉][rank - 1] : "##{rank}" %></span>
@@ -53,6 +53,7 @@
       <% end %>
     <% end %>
   </div>
+  <%= render "shared/pager" %>
 <% else %>
   <div class="card empty"><div class="ico"><%= icon("award") %></div><h3>No results yet</h3><p>Results appear here as soon as candidates submit their exams.</p></div>
 <% end %>

@@ -1,5 +1,7 @@
 # Kanban board of every candidate by hiring stage.
 class PipelineController < ApplicationController
+  PER_COLUMN = 40 # newest cards per column; the counts still cover everyone
+
   def index
     scope = Current.user.invitations.includes(:quiz, :opening, :interview_feedbacks, interview_rounds: :interview_feedbacks).recent
     scope = scope.where(vacancy: params[:vacancy]) if params[:vacancy].present?

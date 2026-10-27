@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_22_061807) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_27_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -51,6 +51,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_22_061807) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["interview_round_id"], name: "index_call_messages_on_interview_round_id"
+    t.index ["invitation_id", "created_at"], name: "index_call_messages_on_invitation_id_and_created_at"
     t.index ["invitation_id"], name: "index_call_messages_on_invitation_id"
   end
 
@@ -170,6 +171,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_22_061807) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["invitation_id"], name: "index_interview_rounds_on_invitation_id"
+    t.index ["scheduled_at"], name: "index_interview_rounds_on_scheduled_at"
+    t.index ["status"], name: "index_interview_rounds_on_status"
   end
 
   create_table "invitation_panelists", force: :cascade do |t|
@@ -227,7 +230,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_22_061807) do
     t.string "language", default: "en", null: false
     t.index ["exam_batch_id"], name: "index_invitations_on_exam_batch_id"
     t.index ["quiz_id"], name: "index_invitations_on_quiz_id"
+    t.index ["status", "started_at"], name: "index_invitations_on_status_and_started_at"
     t.index ["token"], name: "index_invitations_on_token", unique: true
+    t.index ["user_id", "created_at"], name: "index_invitations_on_user_id_and_created_at"
+    t.index ["user_id", "status", "submitted_at"], name: "index_invitations_on_user_id_and_status_and_submitted_at"
+    t.index ["user_id", "vacancy"], name: "index_invitations_on_user_id_and_vacancy"
     t.index ["user_id"], name: "index_invitations_on_user_id"
     t.index ["vacancy_id"], name: "index_invitations_on_vacancy_id"
     t.index ["watch_token"], name: "index_invitations_on_watch_token", unique: true
@@ -242,6 +249,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_22_061807) do
     t.datetime "acknowledged_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_proctor_events_on_created_at"
+    t.index ["invitation_id", "created_at"], name: "index_proctor_events_on_invitation_id_and_created_at"
+    t.index ["invitation_id", "kind", "created_at"], name: "index_proctor_events_on_invitation_id_and_kind_and_created_at"
     t.index ["invitation_id"], name: "index_proctor_events_on_invitation_id"
   end
 
@@ -256,6 +266,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_22_061807) do
     t.datetime "updated_at", null: false
     t.text "body_hi"
     t.jsonb "options_hi", default: [], null: false
+    t.index ["quiz_id", "position"], name: "index_questions_on_quiz_id_and_position"
     t.index ["quiz_id"], name: "index_questions_on_quiz_id"
   end
 

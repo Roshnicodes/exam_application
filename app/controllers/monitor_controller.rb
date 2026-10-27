@@ -22,7 +22,9 @@ class MonitorController < ApplicationController
       q = "%#{Invitation.sanitize_sql_like(params[:q])}%"
       scope = scope.where("candidate_name ILIKE :q OR vacancy ILIKE :q", q: q)
     end
-    @invitations = scope.order(submitted_at: :desc).to_a
+    plain = scope.except(:includes)
+    @stats = { total: plain.count, qualified: plain.qualified.count, terminated: plain.where(status: "terminated").count }
+    @invitations = paginate(scope.order(submitted_at: :desc), per: 48).to_a
     @live_count = Current.user.invitations.live.count
   end
 

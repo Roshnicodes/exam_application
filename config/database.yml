@@ -17,7 +17,8 @@ default: &default
   encoding: unicode
   # For details on connection pooling, see Rails configuration guide
   # https://guides.rubyonrails.org/configuring.html#database-pooling
-  max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  # web threads + Action Cable workers (calls, live video) share this pool
+  max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 8 }.to_i + 6 %>
 
 
 development:

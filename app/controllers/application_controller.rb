@@ -23,6 +23,16 @@ class ApplicationController < ActionController::Base
       root_path
     end
 
+    # One page of a long list (a relation or an array); sets @page, @pages, @total, @per for shared/_pager.
+    def paginate(records, per: 50)
+      @per = per
+      @total = records.is_a?(Array) ? records.size : records.count
+      @pages = [ (@total / per.to_f).ceil, 1 ].max
+      @page = params[:page].to_i.clamp(1, @pages)
+      offset = (@page - 1) * per
+      records.is_a?(Array) ? records[offset, per] || [] : records.offset(offset).limit(per)
+    end
+
     def send_xlsx(data, filename)
       send_data data, filename: filename, type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     end

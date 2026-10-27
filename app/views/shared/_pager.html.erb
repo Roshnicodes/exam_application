@@ -1,0 +1,13 @@
+<%# Page links (same look as Employees). Uses @page / @pages / @total from ApplicationController#paginate. %>
+<% if @pages.to_i > 1 %>
+  <% link = ->(n) { url_for(request.query_parameters.merge("page" => n)) } %>
+  <nav class="pager" aria-label="Pages">
+    <%= link_to link.(@page - 1), class: "btn btn-light btn-sm #{'disabled' if @page == 1}" do %><%= icon("chevron-left") %> Prev<% end %>
+    <% window = ([ 1, @page - 2 ].max..[ @pages, @page + 2 ].min) %>
+    <% if window.first > 1 %><%= link_to "1", link.(1), class: "pager-num" %><% if window.first > 2 %><span class="muted">…</span><% end %><% end %>
+    <% window.each do |n| %><%= link_to n, link.(n), class: "pager-num #{'active' if n == @page}" %><% end %>
+    <% if window.last < @pages %><% if window.last < @pages - 1 %><span class="muted">…</span><% end %><%= link_to @pages, link.(@pages), class: "pager-num" %><% end %>
+    <%= link_to link.(@page + 1), class: "btn btn-light btn-sm #{'disabled' if @page == @pages}" do %>Next <%= icon("chevron-right") %><% end %>
+    <span class="tiny muted pager-info"><%= (@page - 1) * @per + 1 %>–<%= [ @page * @per, @total ].min %> of <%= @total %></span>
+  </nav>
+<% end %>

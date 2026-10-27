@@ -1,9 +1,25 @@
 class InvitationsController < ApplicationController
   before_action :set_invitation, only: %i[show report edit update destroy decide language send_email remove pdf]
 
+  PER_POSITION = 6
+
+  # One page of candidates (lists can grow to thousands), or each position with its first few
+  # candidates and a link to see all of them.
   def index
-    @invitations = filtered_invitations
-    @by_position = params[:group] == "position"
+    scope = filtered_invitations
+    @by_position = params[:group] == "position" && params[:position].blank?
+    if @by_position
+      plain = scope.except(:includes, :order)
+      counts = plain.group(:vacancy).count
+      qualified = plain.qualified.group(:vacancy).count
+      @positions = counts.sort_by { |pos, _| pos.to_s.downcase }.map do |pos, n|
+        { name: pos, count: n, qualified: qualified[pos].to_i, list: scope.where(vacancy: pos).limit(PER_POSITION).to_a }
+      end
+      @any = counts.any?
+    else
+      @invitations = paginate(scope).to_a
+      @any = @invitations.any?
+    end
   end
 
   # Excel of the candidates on screen (same filters / search), with results, warnings, scores, answers and chat.
@@ -139,6 +155,7 @@ class InvitationsController < ApplicationController
       end
       scope = scope.qualified if params[:status] == "qualified"
       scope = scope.disqualified if params[:status] == "disqualified"
+      scope = scope.where(vacancy: params[:position]) if params[:position].present?
       if params[:q].present?
         q = "%#{Invitation.sanitize_sql_like(params[:q])}%"
         scope = scope.where("candidate_name ILIKE :q OR vacancy ILIKE :q OR candidate_email ILIKE :q", q: q)

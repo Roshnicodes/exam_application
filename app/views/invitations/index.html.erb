@@ -2,7 +2,7 @@
 <%= turbo_stream_from Current.user, :invitations %>
 
 <% all = Current.user.invitations %>
-<% keep = { q: params[:q], group: params[:group] }.compact_blank %>
+<% keep = { q: params[:q], group: params[:group], position: params[:position] }.compact_blank %>
 <%= render layout: "shared/page_header", locals: {
       title: "Candidates", icon: "users",
       crumbs: [ [ "Dashboard", root_path ] ],
@@ -35,29 +35,39 @@
       <%= icon("search") %>
       <%= hidden_field_tag :status, params[:status] if params[:status].present? %>
       <%= hidden_field_tag :group, params[:group] if params[:group].present? %>
+      <%= hidden_field_tag :position, params[:position] if params[:position].present? %>
       <%= f.search_field :q, value: params[:q], placeholder: "Search name, email or vacancy…", class: "input" %>
     <% end %>
   </div>
 </div>
 
-<% if @invitations.none? %>
+<% if params[:position].present? %>
+  <div class="card card-pad row between position-filter">
+    <b><%= icon("briefcase") %> Candidates for <%= params[:position] %></b>
+    <%= link_to invitations_path(keep.merge(status: params[:status]).compact_blank), class: "btn btn-light btn-sm" do %><%= icon("x") %> All positions<% end %>
+  </div>
+<% end %>
+<% if !@any %>
   <div class="card"><div class="empty"><div class="ico"><%= icon("users") %></div><h3>No candidates found</h3><p>Try a different filter or invite someone new.</p></div></div>
 <% elsif @by_position %>
-  <% @invitations.group_by { |i| i.vacancy.presence || "No position" }.sort_by { |pos, _| pos.downcase }.each do |position, list| %>
+  <% @positions.each do |pos| %>
     <section class="card position-group">
       <div class="card-head">
-        <h2><%= icon("briefcase") %> Candidates for <%= position %></h2>
+        <h2><%= icon("briefcase") %> Candidates for <%= pos[:name].presence || "No position" %></h2>
         <div class="row" style="gap:.4rem">
-          <span class="state-pill blue"><%= pluralize(list.size, "candidate") %></span>
-          <% done = list.select(&:finished?) %>
-          <% if done.any? %><span class="state-pill green"><%= done.count(&:passed?) %> qualified</span><% end %>
+          <span class="state-pill blue"><%= pluralize(pos[:count], "candidate") %></span>
+          <% if pos[:qualified].positive? %><span class="state-pill green"><%= pos[:qualified] %> qualified</span><% end %>
         </div>
       </div>
-      <div class="cand-list"><% list.each do |inv| %><%= render "invitations/manage_row", invitation: inv %><% end %></div>
+      <div class="cand-list"><% pos[:list].each do |inv| %><%= render "invitations/manage_row", invitation: inv %><% end %></div>
+      <% if pos[:count] > pos[:list].size %>
+        <%= link_to invitations_path(keep.except(:group).merge(status: params[:status], position: pos[:name]).compact_blank), class: "position-more" do %>View all <%= pos[:count] %> candidates for <%= pos[:name] %> <%= icon("chevron-right") %><% end %>
+      <% end %>
     </section>
   <% end %>
 <% else %>
   <div class="card">
     <div class="cand-list"><% @invitations.each do |inv| %><%= render "invitations/manage_row", invitation: inv %><% end %></div>
   </div>
+  <%= render "shared/pager" %>
 <% end %>

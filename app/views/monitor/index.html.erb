@@ -36,7 +36,7 @@
 
 <div data-controller="autorefresh" data-autorefresh-interval-value="45000">
   <% if list.any? %>
-    <div class="mon-grid"><%= render partial: "monitor/tile", collection: list, as: :invitation %></div>
+    <div class="mon-grid"><%= render partial: "monitor/tile", collection: list, as: :invitation, locals: { snaps: Invitation.latest_snapshots(list.map(&:id)) } %></div>
     <p class="mon-hint"><%= icon("activity") %> Updates live · new candidates appear within 45 seconds · finished tests move to <%= link_to "Completed", completed_monitor_path(batch_id: @batch&.id) %> · 🎤 on a tile talks to that candidate</p>
   <% else %>
     <div class="card mon-empty">

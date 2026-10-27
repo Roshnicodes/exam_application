@@ -3,16 +3,16 @@
       title: @batch ? "Completed — #{@batch.name}" : "Completed tests", icon: "check-circle",
       crumbs: [ [ "Live monitor", live_monitor_path ] ],
       stats: [
-        { label: "Completed", value: @invitations.size, icon: "check-circle", tone: "blue" },
-        { label: "Qualified", value: @invitations.count(&:passed?), icon: "award", tone: "green" },
-        { label: "Disqualified", value: @invitations.count { |i| !i.passed? }, icon: "x-circle", tone: "amber" },
-        { label: "Auto-terminated", value: @invitations.count(&:terminated?), icon: "alert", tone: "red" }
+        { label: "Completed", value: @stats[:total], icon: "check-circle", tone: "blue" },
+        { label: "Qualified", value: @stats[:qualified], icon: "award", tone: "green" },
+        { label: "Disqualified", value: @stats[:total] - @stats[:qualified], icon: "x-circle", tone: "amber" },
+        { label: "Terminated", value: @stats[:terminated], icon: "alert", tone: "red" }
       ] } do %>
   <%= link_to export_invitations_path(status: "submitted"), class: "btn btn-light", data: { turbo: false } do %><%= icon("download") %> Excel<% end %>
 <% end %>
 
 <div class="mon-toolbar">
-  <%= render "monitor/tabs", active: :completed, live_count: @live_count, completed_count: @invitations.size, batch: @batch %>
+  <%= render "monitor/tabs", active: :completed, live_count: @live_count, completed_count: @stats[:total], batch: @batch %>
   <%= form_with url: completed_monitor_path, method: :get, class: "mon-filters", data: { controller: "autosubmit" } do %>
     <select name="period" class="input" data-action="change->autosubmit#submit" aria-label="Period">
       <% MonitorController::PERIODS.each do |key, label| %><option value="<%= key %>" <%= "selected" if key == @period %>><%= label %></option><% end %>
@@ -28,7 +28,8 @@
 </div>
 
 <% if @invitations.any? %>
-  <div class="mon-grid"><%= render partial: "monitor/done_tile", collection: @invitations, as: :invitation %></div>
+  <div class="mon-grid"><%= render partial: "monitor/done_tile", collection: @invitations, as: :invitation, locals: { snaps: Invitation.latest_snapshots(@invitations.map(&:id)) } %></div>
+  <%= render "shared/pager" %>
 <% else %>
   <div class="card mon-empty">
     <div class="ico"><%= icon("check-circle") %></div>

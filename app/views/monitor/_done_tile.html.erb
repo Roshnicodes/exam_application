@@ -1,5 +1,5 @@
 <%# A finished test on the Completed page. locals: invitation: %>
-<% snap = invitation.latest_snapshot_event %>
+<% snap = local_assigns[:snaps] ? local_assigns[:snaps][invitation.id] : invitation.latest_snapshot_event %>
 <%= link_to invitation_path(invitation), class: "mon-tile done-tile #{invitation.passed? ? 'is-pass' : 'is-fail'}" do %>
   <div class="mon-cam">
     <% if snap&.snapshot&.attached? %>
@@ -18,7 +18,7 @@
       <span class="state-pill <%= invitation.passed? ? 'green' : '' %>" <%= 'style="background:#fee2e2;color:#b91c1c"'.html_safe unless invitation.passed? %>><%= invitation.percentage %>%</span>
     </div>
     <div class="mon-last">
-      <% how = invitation.termination_reason == "time_up" ? "Time up — auto-submitted" : (invitation.terminated? ? "Auto-terminated (warnings)" : "Submitted") %>
+      <% how = invitation.termination_reason == "time_up" ? "Time up — auto-submitted" : (invitation.terminated? ? (invitation.termination_reason.to_s.start_with?("Removed by HR") ? invitation.termination_reason : "Auto-terminated (warnings)") : "Submitted") %>
       <%= icon(invitation.terminated? ? "alert" : (invitation.termination_reason == "time_up" ? "clock" : "check-circle")) %>
       <span><%= how %></span>
       <em><%= invitation.submitted_at&.strftime("%d %b, %-I:%M %p") %></em>

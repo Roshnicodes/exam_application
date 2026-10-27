@@ -422,6 +422,14 @@ class Invitation < ApplicationRecord
     end
   end
 
+  # Latest camera snapshot of each invitation in one query (for grids of tiles) => { invitation_id => event }
+  def self.latest_snapshots(ids)
+    ProctorEvent.with_snapshots.where(invitation_id: ids)
+      .select("DISTINCT ON (proctor_events.invitation_id) proctor_events.*")
+      .order("proctor_events.invitation_id, proctor_events.created_at DESC")
+      .includes(snapshot_attachment: :blob).index_by(&:invitation_id)
+  end
+
   def latest_snapshot_event
     proctor_events.with_snapshots.order(created_at: :desc).first
   end

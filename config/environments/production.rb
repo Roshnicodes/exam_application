@@ -15,6 +15,14 @@ Rails.application.configure do
   # Turn on fragment caching in view templates.
   config.action_controller.perform_caching = true
 
+  # Calls, live video and monitor updates run on Action Cable's worker pool (default 4).
+  config.action_cable.worker_pool_size = ENV.fetch("CABLE_WORKERS", 6).to_i
+
+  # Gzip pages, JSON, CSS and JS (big lists shrink ~10x on slow networks). Videos, images and
+  # downloads are left alone so video seeking keeps working.
+  config.middleware.insert_before ActionDispatch::Static, Rack::Deflater,
+    if: ->(_env, _status, headers, _body) { headers["content-type"].to_s.match?(%r{\A(text/|application/(json|javascript|xml))}) }
+
   # Cache assets for far-future expiry since they are all digest stamped.
   config.public_file_server.headers = { "cache-control" => "public, max-age=#{1.year.to_i}" }
 

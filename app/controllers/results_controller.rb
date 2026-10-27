@@ -5,6 +5,7 @@ class ResultsController < ApplicationController
 
   def index
     load_results
+    @page_results = paginate(@results) # ranks and the summary still cover everyone
   end
 
   def export
