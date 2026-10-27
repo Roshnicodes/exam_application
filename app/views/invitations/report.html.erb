@@ -9,7 +9,7 @@
         { label: "Time taken", value: duration_between(@invitation.started_at, @invitation.submitted_at), icon: "clock", tone: "blue" }
       ] } do %>
   <%= link_to export_invitation_path(@invitation), class: "btn btn-primary", data: { turbo: false } do %><%= icon("download") %> Download Excel<% end %>
-  <button class="btn btn-light" onclick="window.print()"><%= icon("file") %> Print</button>
+  <%= link_to pdf_invitation_path(@invitation, print: 1), class: "btn btn-light", target: "_blank", rel: "noopener", data: { turbo: false } do %><%= icon("file") %> Download PDF / Print<% end %>
 <% end %>
 
 <%= render "invitations/answer_sheet", invitation: @invitation %>

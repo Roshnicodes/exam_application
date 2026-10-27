@@ -36,6 +36,10 @@
       title: @invitation.candidate_name, avatar: initials_for(@invitation.candidate_name),
       subtitle: [ @invitation.vacancy, @invitation.department.presence, @invitation.quiz.title ].compact.join(" · "),
       crumbs: [ [ "Candidates", invitations_path ] ], chips: chips, extra: share } do %>
+  <% if @invitation.started_at %>
+    <%= link_to pdf_invitation_path(@invitation, print: 1), class: "btn btn-primary btn-sm", target: "_blank", rel: "noopener", data: { turbo: false },
+          title: "Candidate details, result and the question paper with their answers — save as PDF or print" do %><%= icon("file") %> Download PDF<% end %>
+  <% end %>
   <%= link_to export_invitation_path(@invitation), class: "btn btn-light btn-sm", data: { turbo: false } do %><%= icon("download") %> Download Excel<% end %>
   <% if @invitation.in_progress? %>
     <%= button_to remove_invitation_path(@invitation), method: :patch, class: "btn btn-danger btn-sm",

@@ -1,5 +1,5 @@
 class InvitationsController < ApplicationController
-  before_action :set_invitation, only: %i[show report edit update destroy decide language send_email remove]
+  before_action :set_invitation, only: %i[show report edit update destroy decide language send_email remove pdf]
 
   def index
     @invitations = filtered_invitations
@@ -99,6 +99,14 @@ class InvitationsController < ApplicationController
   def report
     @questions = @invitation.quiz.questions
     @events = @invitation.proctor_events.timeline
+  end
+
+  # Printable report: candidate details, result and the full question paper with their answers.
+  # The browser saves it as a PDF ("Download PDF" opens the print dialog), so no PDF gem is needed.
+  def pdf
+    @questions = @invitation.quiz.questions.to_a
+    @violations = @invitation.proctor_events.violations.order(:created_at).to_a
+    render layout: false
   end
 
   # Final hiring decision: selected / on hold / rejected (blank clears it).
