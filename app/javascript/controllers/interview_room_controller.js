@@ -4,6 +4,15 @@ import { ICE_SERVERS, newViewerId } from "lib/live_video"
 import { getStream, cameraHelp, screenShareSupported, screenShareImpossible, getScreenStream, requestScreen } from "lib/media"
 import { alarm, chime } from "lib/sound"
 
+// A silent stand-in mic for HR / panelists whose microphone wasn't available when they joined.
+// It is sent like a real mic, so pressing Unmute later can swap in the real one without reconnecting.
+function silentAudioTrack() {
+  const ctx = new AudioContext()
+  const track = ctx.createMediaStreamDestination().stream.getAudioTracks()[0]
+  track.enabled = false
+  return track
+}
+
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
 
 // Meet-style interview room: everyone sees and hears everyone (WebRTC mesh, best for up to ~6 people).
@@ -139,7 +148,11 @@ export default class extends Controller {
     // or coming back from another menu (kept on the instance, not in a data attribute Turbo could cache).
     const unmute = this.unmuteOnJoin === true
     this.unmuteOnJoin = false
-    if (!this.candidate) this.stream.getAudioTracks().forEach((t) => (t.enabled = unmute))
+    if (!this.candidate && !this.stream.getAudioTracks().length) {
+      this.micPlaceholder = silentAudioTrack()
+      this.stream.addTrack(this.micPlaceholder)
+    }
+    if (!this.candidate) this.stream.getAudioTracks().forEach((t) => (t.enabled = unmute && !this.micPlaceholder))
     if (this.quietJoin) { // joined automatically from the candidate's page: camera off too
       this.stream.getVideoTracks().forEach((t) => (t.enabled = false))
       this.hearOthers = unmute
@@ -551,8 +564,10 @@ export default class extends Controller {
   }
 
   playAll() {
-    this.gridTarget.querySelectorAll("video").forEach((v) => v.play().catch(() => {}))
     if (this.hasTapTarget) this.tapTarget.classList.add("hidden")
+    this.gridTarget.querySelectorAll("video").forEach((v) => {
+      if (v.srcObject) v.play().catch(() => this.needTap()) // still blocked: keep the "Tap to hear" button
+    })
   }
 
   minimize() {
@@ -560,8 +575,34 @@ export default class extends Controller {
   }
 
   toggleMic() {
+    if (this.micPlaceholder) return this.enableRealMic() // joined without a mic: ask for it now
     this.stream?.getAudioTracks().forEach((t) => (t.enabled = !t.enabled))
     if (this.stream?.getAudioTracks().some((t) => t.enabled)) this.hearOthers = true
+    this.applySpeaker()
+    this.updateButtons()
+    this.announceMedia()
+  }
+
+  // HR's mic wasn't available at join (blocked, busy, unplugged): get it now and swap it in for
+  // the silent stand-in on every connection, so the candidate hears them right away.
+  async enableRealMic() {
+    let track
+    try {
+      track = (await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })).getAudioTracks()[0]
+    } catch (e) {
+      const help = cameraHelp(e)
+      window.alert(`Your microphone isn't available, so the candidate can't hear you.\n\n${help.title}. ${help.help}`)
+      return
+    }
+    const old = this.micPlaceholder
+    this.micPlaceholder = null
+    this.stream.removeTrack(old)
+    this.stream.addTrack(track)
+    await Promise.all([ ...this.peers.values() ].map((peer) =>
+      peer.pc.getSenders().find((s) => s.track === old)?.replaceTrack(track).catch(() => {})))
+    old.stop()
+    track.enabled = true
+    this.hearOthers = true
     this.applySpeaker()
     this.updateButtons()
     this.announceMedia()
@@ -586,6 +627,7 @@ export default class extends Controller {
     this.unmuteOnJoin = true
     this.tileMicTarget.classList.add("connecting")
     await this.join()
+    if (this.micPlaceholder) await this.enableRealMic() // this click is the "unmute"
     this.joining = false
     this.tileMicTarget.classList.remove("connecting")
   }
@@ -639,6 +681,8 @@ export default class extends Controller {
       // once the panel has spoken it stays open (muting between questions doesn't close it)
       if (panel.some((p) => p.mic || p.cam || p.presenting)) this.panelSpoke = true
       const inCall = this.chatActive || this.panelSpoke
+      // the call window opens: start the sound now (a browser may have blocked it while hidden)
+      if (inCall && this.roomTarget.classList.contains("hidden")) this.playAll()
       this.roomTarget.classList.toggle("hidden", !inCall)
       if (!inCall) this.element.classList.remove("minimized")
       window.dispatchEvent(new CustomEvent("proctor:call", { detail: { active: inCall } }))

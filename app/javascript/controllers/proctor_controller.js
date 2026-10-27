@@ -423,23 +423,33 @@ export default class extends Controller {
     return null
   }
 
-  // Phones, books or another screen in view (checked every ~1.5s, needs 2 hits in a row).
+  // Phones, books or another screen in view, and a second person (the face model misses people
+  // sitting further back or turned away). Checked every ~1.5s; 2 hits in the last 3 checks warn.
   async startObjectDetection() {
     const detector = await loadObjectDetector()
     if (!detector || !this.active) return
 
-    let streak = 0
+    const MIN = { person: 0.45, "cell phone": 0.3, remote: 0.35, book: 0.4, laptop: 0.45 }
+    const things = []
+    const crowds = []
+    const recent = (list, hit) => { list.push(hit); if (list.length > 3) list.shift(); return list.filter(Boolean).length }
     let busy = false
     this.objectTimer = setInterval(async () => {
       if (busy || !this.active || this.videoTarget.readyState < 2) return
       busy = true
       try {
-        const found = await detector.detect(this.videoTarget)
-        streak = found.length ? streak + 1 : 0
-        if (found.length) this.setFace("bad", `${found[0].label} detected!`)
-        if (streak >= 2) {
-          const labels = [ ...new Set(found.map((f) => f.label)) ].join(", ")
-          this.violation("phone_detected", `${labels} (${Math.round(found[0].score * 100)}% sure)`)
+        const found = (await detector.detect(this.videoTarget)).filter((f) => f.score >= (MIN[f.kind] ?? 0.4))
+        const people = found.filter((f) => f.kind === "person")
+        const objects = found.filter((f) => f.kind !== "person")
+
+        if (recent(crowds, people.length >= 2) >= 2) {
+          this.setFace("bad", `${people.length} people in view!`)
+          this.violation("multiple_faces", `${people.length} people in camera view`)
+        }
+        if (objects.length) this.setFace("bad", `${objects[0].label} detected!`)
+        if (recent(things, objects.length > 0) >= 2 && objects.length) {
+          const labels = [ ...new Set(objects.map((f) => f.label)) ].join(", ")
+          this.violation("phone_detected", `${labels} (${Math.round(objects[0].score * 100)}% sure)`)
         }
       } catch (e) {
         console.warn("Object detection failed", e)

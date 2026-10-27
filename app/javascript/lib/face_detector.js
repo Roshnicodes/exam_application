@@ -1,13 +1,15 @@
 // Loads the proctoring vision models once (MediaPipe Tasks, CPU).
 // - Face: FaceLandmarker (478 points + eye-gaze blendshapes), falling back to the
 //   lighter BlazeFace detector, then the browser's native FaceDetector.
-// - Objects: EfficientDet-Lite0 limited to phone / book / laptop classes.
+// - Objects: EfficientDet-Lite2 (Lite0 if it can't load) limited to person / phone / book /
+//   laptop: "person" also catches a second person the face model misses (far away, turned).
 const VERSION = "0.10.14"
 const BASE = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${VERSION}`
 const MODELS = "https://storage.googleapis.com/mediapipe-models"
 const LANDMARKER_MODEL = `${MODELS}/face_landmarker/face_landmarker/float16/1/face_landmarker.task`
 const BLAZEFACE_MODEL = `${MODELS}/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite`
-const OBJECT_MODEL = `${MODELS}/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite`
+const OBJECT_MODEL = `${MODELS}/object_detector/efficientdet_lite2/int8/1/efficientdet_lite2.tflite`
+const OBJECT_MODEL_LIGHT = `${MODELS}/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite`
 
 let visionLoader, faceLoader, objectLoader
 
@@ -117,23 +119,31 @@ export function loadFaceDetector() {
   return faceLoader
 }
 
-const OBJECT_LABELS = { "cell phone": "Mobile phone", remote: "Mobile phone", book: "Book / notes", laptop: "Another laptop / screen" }
+const OBJECT_LABELS = { person: "Person", "cell phone": "Mobile phone", remote: "Mobile phone", book: "Book / notes", laptop: "Another laptop / screen" }
+
+async function objectModel(path) {
+  const { tasks, fileset } = await vision()
+  return tasks.ObjectDetector.createFromOptions(fileset, {
+    baseOptions: { modelAssetPath: path, delegate: "CPU" },
+    runningMode: "VIDEO",
+    scoreThreshold: 0.3,
+    maxResults: 8,
+    categoryAllowlist: Object.keys(OBJECT_LABELS)
+  })
+}
 
 export function loadObjectDetector() {
   objectLoader ||= (async () => {
-    const { tasks, fileset } = await vision()
-    const model = await tasks.ObjectDetector.createFromOptions(fileset, {
-      baseOptions: { modelAssetPath: OBJECT_MODEL, delegate: "CPU" },
-      runningMode: "VIDEO",
-      scoreThreshold: 0.35,
-      maxResults: 5,
-      categoryAllowlist: Object.keys(OBJECT_LABELS)
+    const model = await objectModel(OBJECT_MODEL).catch((error) => {
+      console.warn("EfficientDet-Lite2 unavailable, using Lite0", error)
+      return objectModel(OBJECT_MODEL_LIGHT)
     })
     const now = clock()
     return {
-      // [{ label: "Mobile phone", score: 0.71 }, ...]
+      // [{ kind: "cell phone", label: "Mobile phone", score: 0.71 }, ...]
       async detect(video) {
         return model.detectForVideo(video, now()).detections.map((d) => ({
+          kind: d.categories[0].categoryName,
           label: OBJECT_LABELS[d.categories[0].categoryName] || d.categories[0].categoryName,
           score: d.categories[0].score
         }))
