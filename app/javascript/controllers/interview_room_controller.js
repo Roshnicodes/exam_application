@@ -153,6 +153,7 @@ export default class extends Controller {
       this.stream.addTrack(this.micPlaceholder)
     }
     if (!this.candidate) this.stream.getAudioTracks().forEach((t) => (t.enabled = unmute && !this.micPlaceholder))
+    else this.stream.getAudioTracks().forEach((t) => (t.enabled = true)) // candidates can't mute
     if (this.quietJoin) { // joined automatically from the candidate's page: camera off too
       this.stream.getVideoTracks().forEach((t) => (t.enabled = false))
       this.hearOthers = unmute
@@ -575,6 +576,7 @@ export default class extends Controller {
   }
 
   toggleMic() {
+    if (this.candidate) return // the candidate's mic always stays on
     if (this.micPlaceholder) return this.enableRealMic() // joined without a mic: ask for it now
     this.stream?.getAudioTracks().forEach((t) => (t.enabled = !t.enabled))
     if (this.stream?.getAudioTracks().some((t) => t.enabled)) this.hearOthers = true
@@ -651,7 +653,7 @@ export default class extends Controller {
   }
 
   updateButtons() {
-    if (!this.hasMicBtnTarget) return
+    if (!this.hasMicBtnTarget && !this.hasCamBtnTarget) return
     const mic = this.stream?.getAudioTracks().some((t) => t.enabled)
     if (this.hasTileMicTarget) {
       this.tileMicTarget.classList.toggle("off", !mic)
@@ -659,12 +661,12 @@ export default class extends Controller {
       this.tileMicTarget.title = mic ? "You're talking — click to mute" : "Muted — click to talk"
       setMicIcon(this.tileMicTarget, mic)
     }
-    setMicIcon(this.micBtnTarget, mic)
+    if (this.hasMicBtnTarget) setMicIcon(this.micBtnTarget, mic)
     const cam = this.stream?.getVideoTracks().some((t) => t.enabled)
-    this.micBtnTarget.classList.toggle("off", !mic)
-    this.micBtnTarget.querySelector("span").textContent = mic ? "Mute" : (this.testValue && !this.candidate ? "Muted · Unmute" : "Unmute")
-    this.camBtnTarget.classList.toggle("off", !cam)
-    this.camBtnTarget.querySelector("span").textContent = cam ? "Stop video" : "Start video"
+    if (this.hasMicBtnTarget) this.micBtnTarget.classList.toggle("off", !mic)
+    if (this.hasMicBtnTarget) this.micBtnTarget.querySelector("span").textContent = mic ? "Mute" : (this.testValue && !this.candidate ? "Muted · Unmute" : "Unmute")
+    if (this.hasCamBtnTarget) this.camBtnTarget.classList.toggle("off", !cam)
+    if (this.hasCamBtnTarget) this.camBtnTarget.querySelector("span").textContent = cam ? "Stop video" : "Start video"
     this.element.querySelector(".it-self")?.classList.toggle("cam-off", !cam)
   }
 

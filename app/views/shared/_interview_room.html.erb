@@ -66,7 +66,9 @@
       <button type="button" class="it-tap hidden" data-interview-room-target="tap" data-action="interview-room#playAll">🔊 Tap to hear the call</button>
       <div class="it-controls">
         <% unless test_call && local_assigns[:token] %><%# the candidate's camera & mic stay on for proctoring %>
-          <button type="button" class="it-btn" data-interview-room-target="micBtn" data-action="interview-room#toggleMic"><%= icon("mic") %><span>Mute</span></button>
+          <% unless local_assigns[:token] %><%# candidates can't mute (interview rounds too): the panel must always hear them %>
+            <button type="button" class="it-btn" data-interview-room-target="micBtn" data-action="interview-room#toggleMic"><%= icon("mic") %><span>Mute</span></button>
+          <% end %>
           <button type="button" class="it-btn" data-interview-room-target="camBtn" data-action="interview-room#toggleCam"><%= icon("video") %><span>Stop video</span></button>
         <% end %>
         <% unless local_assigns[:token] %>
