@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ASA HireHub design system
+   ASA CHAYAN design system
    ========================================================================== */
 
 :root {
@@ -1996,3 +1996,7 @@ a:hover { color: var(--brand); }
 .position-more:hover { background: rgba(16, 185, 129, .06); }
 .position-filter { margin-bottom: 1rem; }
 .kb-more { font-weight: 700; color: var(--brand); }
+/* ASA CHAYAN: the name's letters highlighted in its full form */
+.auth-copy h1.chayan { font-size: 1.45rem; line-height: 1.35; }
+.auth-copy h1.chayan b { color: #86efac; font-weight: 800; }
+.brand .name small.brand-tag { white-space: normal; line-height: 1.25; max-width: 15ch; }

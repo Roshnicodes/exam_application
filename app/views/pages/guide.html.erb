@@ -1,6 +1,6 @@
 <% content_for :title, @lang == "hi" ? "गाइड" : "Guide" %>
 <%= render layout: "shared/page_header", locals: {
-      title: @lang == "hi" ? "ASA HireHub कैसे काम करता है" : "How ASA HireHub works", icon: "sparkles",
+      title: @lang == "hi" ? "ASA CHAYAN कैसे काम करता है" : "How ASA CHAYAN works", icon: "sparkles",
       crumbs: [ [ "Dashboard", root_path ] ] } do %>
   <nav class="guide-lang" aria-label="Language">
     <%= link_to "English", guide_path, class: ("active" if @lang == "en") %>

@@ -19,7 +19,7 @@
 <% wa_digits = (@invitation.candidate_phone.presence || @invitation.entered_phone).to_s.gsub(/\D/, "") %><% wa_digits = "91#{wa_digits}" if wa_digits.length == 10 %>
       <button type="button" class="btn btn-light btn-sm" data-controller="share-guide" data-action="share-guide#share"
               data-share-guide-text-value="<%= share_text %>" data-share-guide-pdf-value="<%= candidate_guide_pdf_url(@invitation.language) %>"
-              data-share-guide-filename-value="ASA HireHub - Candidate Guide<%= ' (Hindi)' if @invitation.hindi? %>.pdf"
+              data-share-guide-filename-value="ASA CHAYAN - Candidate Guide<%= ' (Hindi)' if @invitation.hindi? %>.pdf"
               data-share-guide-whatsapp-value="<%= "https://web.whatsapp.com/send?#{{ phone: wa_digits, text: share_text }.to_query}" if wa_digits.length >= 11 %>"
               title="Share the message with the candidate guide PDF attached (WhatsApp, Gmail…)"><%= icon("send") %> Share + PDF</button>
       <% if @invitation.candidate_email.present? %>
