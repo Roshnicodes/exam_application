@@ -65,7 +65,7 @@ group :test do
   gem "selenium-webdriver"
 end
 
-gem "roo", "~> 3.0"
+gem "roo", "~> 4.0"
 gem "caxlsx", "~> 4.5"
 gem "pdf-reader", "~> 2.12" # question papers uploaded as PDF
 gem "anthropic" # optional: auto-translate question papers to Hindi (needs ANTHROPIC_API_KEY)
