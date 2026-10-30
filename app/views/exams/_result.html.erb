@@ -1,0 +1,14 @@
+<%# The candidate's score on the finished page — only once HR has shared it. Replaced live. locals: invitation: %>
+<div id="candidate_result">
+  <% if invitation.result_shown_to_candidate? %>
+    <div class="cand-result">
+      <div class="score-ring" style="--p: <%= invitation.percentage %>"><div><div><b><%= invitation.percentage %>%</b><span><%= invitation.score %>/<%= invitation.total_marks %> marks</span></div></div></div>
+      <div>
+        <span class="result-badge <%= invitation.passed? ? 'pass' : 'fail' %>" style="font-size:.95rem"><%= icon(invitation.passed? ? "check-circle" : "x-circle") %> <%= invitation.passed? ? "Passed" : "Not cleared" %></span>
+        <p class="small muted" style="margin-top:.6rem">Pass mark for this test is <b><%= invitation.quiz.pass_percentage %>%</b>. HR will contact you about the next round.</p>
+      </div>
+    </div>
+  <% else %>
+    <p class="small muted result-pending"><%= icon("lock") %> Your result will be shared by HR. · आपका रिज़ल्ट HR साझा करेंगे।</p>
+  <% end %>
+</div>

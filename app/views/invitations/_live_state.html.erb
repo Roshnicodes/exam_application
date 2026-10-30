@@ -43,6 +43,18 @@
       <% end %>
       <div class="row between small"><span class="muted">Time taken</span><b><%= duration_between(invitation.started_at, invitation.submitted_at) %></b></div>
       <%= link_to report_invitation_path(invitation), class: "btn btn-dark btn-block", data: { turbo_frame: "_top" } do %><%= icon("award") %> View result &amp; answer sheet<% end %>
+      <div class="share-result <%= 'on' if invitation.result_shown_to_candidate? %>">
+        <span class="small"><%= icon(invitation.result_shown_to_candidate? ? "eye" : "lock") %>
+          <%= invitation.result_shown_to_candidate? ? "Candidate can see this result" : "Result hidden from the candidate" %></span>
+        <% if invitation.quiz.show_result_to_candidate? %>
+          <span class="tiny muted">Shared for everyone on this paper (paper setting)</span>
+        <% else %>
+          <%= button_to share_result_invitation_path(invitation, visible: invitation.result_visible? ? "0" : "1"), method: :patch,
+                class: "btn btn-sm #{invitation.result_visible? ? 'btn-light' : 'btn-primary'}", form: { data: { turbo_frame: "_top" } } do %>
+            <%= icon(invitation.result_visible? ? "lock" : "eye") %> <%= invitation.result_visible? ? "Hide result" : "Share result with candidate" %>
+          <% end %>
+        <% end %>
+      </div>
     <% end %>
 
     <div>

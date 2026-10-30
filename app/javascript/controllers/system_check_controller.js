@@ -2,6 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 import { getStream, cameraHelp, isPhoneOrTablet, screenShareSupported, screenShareImpossible, getScreenStream, requestScreen } from "lib/media"
 import { loadFaceDetector } from "lib/face_detector"
 import { unlockAudio } from "lib/sound"
+import { permissionState, watchPermission, guideHtml, PROMPT_HINT } from "lib/camera_permission"
 
 // Pre-exam check: camera + mic permission, exactly one face, single display, full screen support.
 export default class extends Controller {
@@ -12,15 +13,27 @@ export default class extends Controller {
     this.checkScreen()
     this.checkShare()
     loadFaceDetector() // warm up the model while the candidate reads the rules
+    // allowed before (e.g. page reopened): start the camera without another click
+    permissionState().then((state) => { if (state === "granted" && !this.state.cam) this.allow() })
   }
 
   disconnect() {
     clearInterval(this.faceTimer)
+    this.stopWatching?.()
   }
 
   async allow() {
+    if (this.starting) return
+    this.starting = true
+    // the browser is about to show its own popup: point the candidate at it ("Allow", not "Block")
+    if (this.hasCamHelpTarget && (await permissionState()) === "prompt") {
+      this.camHelpTarget.innerHTML = PROMPT_HINT
+      this.camHelpTarget.classList.add("is-hint")
+      this.camHelpTarget.classList.remove("hidden")
+    }
     try {
       const stream = await getStream()
+      this.stopWatching?.()
       this.videoTarget.srcObject = stream
       this.placeholderTarget.classList.add("hidden")
       this.tagTarget.classList.remove("hidden")
@@ -34,10 +47,15 @@ export default class extends Controller {
       const help = cameraHelp(e)
       this.set("camCheck", false, help.short)
       if (this.hasCamHelpTarget) {
-        this.camHelpTarget.innerHTML = `<b>${help.title}</b><span>${help.help}</span>`
-        this.camHelpTarget.classList.remove("hidden")
+        this.camHelpTarget.innerHTML = guideHtml(e)
+        this.camHelpTarget.classList.remove("hidden", "is-hint")
       }
-      this.allowBtnTarget.innerHTML = "Try again"
+      this.allowBtnTarget.innerHTML = "Try again · फिर से कोशिश करें"
+      // as soon as the candidate allows it in the browser settings, carry on by itself
+      this.stopWatching?.()
+      this.stopWatching = await watchPermission(() => this.allow())
+    } finally {
+      this.starting = false
     }
     this.refresh()
   }

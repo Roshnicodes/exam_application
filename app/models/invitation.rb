@@ -207,6 +207,16 @@ class Invitation < ApplicationRecord
       html: %(<div id="exam_language" data-controller="exam-language" data-exam-language-lang-value="#{language}" hidden></div>)
   end
 
+  # The candidate sees their score only after HR shares it (or the paper shares results to everyone).
+  def result_shown_to_candidate?
+    finished? && (result_visible? || quiz.show_result_to_candidate?)
+  end
+
+  def broadcast_result_to_candidate
+    Turbo::StreamsChannel.broadcast_replace_to [ self, :candidate ], target: "candidate_result",
+      partial: "exams/result", locals: { invitation: self }
+  end
+
   def test_only?
     interview_plan == "none"
   end

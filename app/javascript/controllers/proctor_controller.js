@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { watchPermission, guideHtml } from "lib/camera_permission"
 import { getStream, snapshot, csrfToken, screenShareSupported, screenShareImpossible, getScreenStream, requestScreen, cameraHelp } from "lib/media"
 import { loadFaceDetector, loadObjectDetector } from "lib/face_detector"
 import { warningBeep, unlockAudio } from "lib/sound"
@@ -138,15 +139,24 @@ export default class extends Controller {
       const help = cameraHelp(e)
       this.setFace("bad", help.title)
       if (this.hasCameraTitleTarget) this.cameraTitleTarget.textContent = help.title
-      if (this.hasCameraHelpTarget) this.cameraHelpTarget.textContent = `${help.help} HR has been notified.`
+      if (this.hasCameraHelpTarget) this.cameraHelpTarget.innerHTML = `${guideHtml(e)}<p class="tiny">HR has been notified.</p>`
       this.cameraGateTarget.classList.remove("hidden")
+      // allowed in the browser settings: carry on without a reload
+      this.stopWatchingCamera?.()
+      watchPermission(() => this.retryCamera()).then((stop) => { this.stopWatchingCamera = stop })
       this.violation("camera_off", `${help.title} (${e?.name || "error"})`, { overlay: false })
       return false
     }
   }
 
   async retryCamera() {
-    if (await this.attachCamera()) this.startMonitoring()
+    if (this.retryingCamera) return
+    this.retryingCamera = true
+    try {
+      if (await this.attachCamera()) { this.stopWatchingCamera?.(); this.startMonitoring() }
+    } finally {
+      this.retryingCamera = false
+    }
   }
 
   startMonitoring() {

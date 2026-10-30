@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_27_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_30_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -228,6 +228,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_090000) do
     t.datetime "decided_at"
     t.text "rough_notes"
     t.string "language", default: "en", null: false
+    t.boolean "result_visible", default: false, null: false
     t.index ["exam_batch_id"], name: "index_invitations_on_exam_batch_id"
     t.index ["quiz_id"], name: "index_invitations_on_quiz_id"
     t.index ["status", "started_at"], name: "index_invitations_on_status_and_started_at"

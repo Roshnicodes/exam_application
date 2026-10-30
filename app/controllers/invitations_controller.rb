@@ -1,5 +1,5 @@
 class InvitationsController < ApplicationController
-  before_action :set_invitation, only: %i[show report edit update destroy decide language send_email remove pdf]
+  before_action :set_invitation, only: %i[show report edit update destroy decide language send_email remove pdf share_result]
 
   PER_POSITION = 6
 
@@ -44,6 +44,15 @@ class InvitationsController < ApplicationController
     Turbo::StreamsChannel.broadcast_replace_to [ @invitation, :candidate ], target: "exam_control",
       html: %(<div id="exam_control" data-controller="exam-ended" data-exam-ended-url-value="#{exam_finished_path(@invitation.token)}" hidden></div>)
     redirect_to @invitation, notice: "#{@invitation.candidate_name} was removed from the test."
+  end
+
+  # HR shows / hides the result on the candidate's screen (it updates there right away).
+  def share_result
+    return redirect_to(@invitation, alert: "The test isn't finished yet.") unless @invitation.finished?
+
+    @invitation.update!(result_visible: params[:visible] == "1")
+    @invitation.broadcast_result_to_candidate
+    redirect_to @invitation, notice: @invitation.result_visible? ? "Result shared — #{@invitation.candidate_name} can see it now." : "Result hidden from #{@invitation.candidate_name}."
   end
 
   # Emails the test link with the candidate guide PDF attached (needs SMTP on the server).

@@ -39,6 +39,7 @@ Rails.application.routes.draw do
       get :export, action: :export_one
       patch :language
       patch :remove
+      patch :share_result
       get :pdf
       post :send_email
       post :decide

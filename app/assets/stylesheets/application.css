@@ -2000,3 +2000,14 @@ a:hover { color: var(--brand); }
 .auth-copy h1.chayan { font-size: 1.45rem; line-height: 1.35; }
 .auth-copy h1.chayan b { color: #86efac; font-weight: 800; }
 .brand .name small.brand-tag { white-space: normal; line-height: 1.25; max-width: 15ch; }
+/* HR: share / hide the result on the candidate's screen */
+.share-result { display: flex; flex-direction: column; gap: .45rem; padding: .7rem .8rem; border-radius: 12px; border: 1px dashed #cbd5e1; background: rgba(248, 250, 252, .7); }
+.share-result.on { border-color: #86efac; background: #f0fdf4; }
+.share-result form { margin: 0; } .share-result .btn { width: 100%; justify-content: center; }
+.result-pending { display: flex; align-items: center; justify-content: center; gap: .4rem; margin-top: 1.4rem; }
+/* Camera permission: step-by-step fixes (English + Hindi) */
+.cam-help ol { margin: .45rem 0 0; padding-left: 1.2rem; display: grid; gap: .4rem; }
+.cam-help li small { display: block; opacity: .85; font-family: "Noto Sans Devanagari", var(--font); }
+.cam-help.is-hint { background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; }
+.gate-guide { text-align: left; margin: .8rem 0 1rem; }
+.cam-help li b { display: inline; margin: 0; }

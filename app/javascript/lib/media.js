@@ -32,6 +32,10 @@ export function cameraHelp(error) {
   switch (error?.name) {
     case "NotAllowedError":
     case "SecurityError":
+      if (/system/i.test(error?.message || "")) {
+        return { short: "Blocked by computer", title: "Your computer / phone is blocking the camera",
+                 help: "Windows: Start → Settings → Privacy & security → Camera (and Microphone) → turn on access for apps and desktop apps. Mac: System Settings → Privacy & Security → Camera → turn on your browser. Then try again." }
+      }
       return { short: "Permission blocked", title: "Camera permission is blocked",
                help: "Click the 🔒 / camera icon at the left of the address bar → set Camera and Microphone to “Allow” → reload the page. If it stays blocked, also allow the browser to use the camera in your computer's privacy settings (Windows: Settings → Privacy → Camera; Mac: System Settings → Privacy → Camera)." }
     case "NotReadableError":
