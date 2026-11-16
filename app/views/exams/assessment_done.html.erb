@@ -1,0 +1,41 @@
+<% content_for :title, "Assessment submitted" %>
+<% ended = @round.termination_reason.present? && @round.termination_reason != "time_up" %>
+<%= turbo_stream_from @invitation, :candidate %>
+<div class="exam-wrap" data-controller="media-cleanup">
+  <%= render "header" %>
+  <%= render "exams/interview_cta", invitation: @invitation %>
+  <div class="card finish-card">
+    <div class="big-ico <%= 'bad' if ended %>"><%= icon(ended ? "x-circle" : "check-circle") %></div>
+    <% if ended %>
+      <h1>Assessment ended</h1>
+      <p class="muted" style="margin-top:.6rem">Your assessment was closed automatically: <b><%= @round.termination_reason %></b>.
+        Everything you uploaded has been sent to HR for review.</p>
+    <% else %>
+      <h1>Submitted, <%= @invitation.candidate_name.split.first %>! 🎉</h1>
+      <p class="muted" style="margin-top:.6rem">Your work for <b><%= @round.name %></b> has reached HR.
+        They will check your file<%= "s" if @round.submissions.size != 1 %> and get back to you.</p>
+    <% end %>
+    <div class="kv" style="margin-top:2rem;text-align:left">
+      <div><span>Assessment</span><b><%= @round.name %></b></div>
+      <div><span>Files uploaded</span><b><%= @round.submissions.size %></b></div>
+      <div><span>Submitted at</span><b><%= nice_time(@round.submitted_at) %></b></div>
+      <div><span>Time taken</span><b><%= duration_between(@round.work_started_at, @round.submitted_at) %></b></div>
+      <% if @round.termination_reason == "time_up" %><div style="grid-column:1/-1"><span>Note</span><b style="font-weight:500">Time was over — your work was submitted automatically.</b></div><% end %>
+    </div>
+    <% if @round.submissions.attached? %>
+      <div class="file-list" style="margin-top:1.4rem;text-align:left">
+        <% @round.submissions.attachments.each do |file| %>
+          <div class="file-row"><span class="file-ico"><%= icon("file") %></span>
+            <div class="grow"><b><%= file.filename %></b><span class="tiny muted"><%= number_to_human_size(file.byte_size) %></span></div></div>
+        <% end %>
+      </div>
+    <% end %>
+    <p class="tiny muted" style="margin-top:2rem">
+      <% if @invitation.assessment_pending? || @invitation.interview_rounds.any? { |r| !r.done? } %>
+        Keep this page open — if HR starts another round or an interview, a <b>Join</b> button appears above.
+      <% else %>
+        You can close this window now. Thank you!
+      <% end %>
+    </p>
+  </div>
+</div>

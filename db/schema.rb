@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_30_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_07_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -40,6 +40,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_090000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "assessments", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "title", null: false
+    t.string "kind", default: "excel", null: false
+    t.text "description"
+    t.text "instructions"
+    t.integer "duration_minutes", default: 45, null: false
+    t.integer "max_marks", default: 100, null: false
+    t.integer "pass_percentage", default: 50, null: false
+    t.integer "max_warnings", default: 5, null: false
+    t.boolean "allow_download", default: true, null: false
+    t.boolean "require_upload", default: true, null: false
+    t.boolean "allow_notes", default: true, null: false
+    t.string "allowed_extensions"
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.boolean "allow_app_switch", default: false, null: false
+    t.boolean "online_sheet", default: true, null: false
+    t.index ["user_id", "title"], name: "index_assessments_on_user_id_and_title"
+    t.index ["user_id"], name: "index_assessments_on_user_id"
   end
 
   create_table "call_messages", force: :cascade do |t|
@@ -105,7 +128,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_090000) do
 
   create_table "exam_batches", force: :cascade do |t|
     t.bigint "user_id", null: false
-    t.bigint "quiz_id", null: false
+    t.bigint "quiz_id"
     t.bigint "vacancy_id"
     t.string "name", null: false
     t.datetime "interview_date"
@@ -122,6 +145,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_090000) do
     t.string "meeting_link"
     t.string "interview_plan", default: "separate", null: false
     t.string "language", default: "en", null: false
+    t.bigint "assessment_id"
+    t.index ["assessment_id"], name: "index_exam_batches_on_assessment_id"
     t.index ["quiz_id"], name: "index_exam_batches_on_quiz_id"
     t.index ["user_id"], name: "index_exam_batches_on_user_id"
     t.index ["vacancy_id"], name: "index_exam_batches_on_vacancy_id"
@@ -170,7 +195,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_090000) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "kind", default: "interview", null: false
+    t.bigint "assessment_id"
+    t.integer "duration_minutes"
+    t.integer "max_warnings"
+    t.integer "max_marks"
+    t.integer "marks"
+    t.text "instructions"
+    t.text "candidate_notes"
+    t.datetime "work_started_at"
+    t.datetime "submitted_at"
+    t.string "termination_reason"
+    t.datetime "graded_at"
+    t.text "grade_note"
+    t.boolean "allow_app_switch"
+    t.jsonb "sheet_data"
+    t.datetime "sheet_saved_at"
+    t.index ["assessment_id"], name: "index_interview_rounds_on_assessment_id"
     t.index ["invitation_id"], name: "index_interview_rounds_on_invitation_id"
+    t.index ["kind", "status"], name: "index_interview_rounds_on_kind_and_status"
     t.index ["scheduled_at"], name: "index_interview_rounds_on_scheduled_at"
     t.index ["status"], name: "index_interview_rounds_on_status"
   end
@@ -187,7 +230,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_090000) do
 
   create_table "invitations", force: :cascade do |t|
     t.bigint "user_id", null: false
-    t.bigint "quiz_id", null: false
+    t.bigint "quiz_id"
     t.string "candidate_name", null: false
     t.string "candidate_email"
     t.string "candidate_phone"
@@ -229,6 +272,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_090000) do
     t.text "rough_notes"
     t.string "language", default: "en", null: false
     t.boolean "result_visible", default: false, null: false
+    t.bigint "assessment_id"
+    t.index ["assessment_id"], name: "index_invitations_on_assessment_id"
     t.index ["exam_batch_id"], name: "index_invitations_on_exam_batch_id"
     t.index ["quiz_id"], name: "index_invitations_on_quiz_id"
     t.index ["status", "started_at"], name: "index_invitations_on_status_and_started_at"
@@ -332,6 +377,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_090000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "assessments", "users"
   add_foreign_key "call_messages", "interview_rounds"
   add_foreign_key "call_messages", "invitations"
   add_foreign_key "code_pads", "interview_rounds"
@@ -340,6 +386,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_090000) do
   add_foreign_key "employees", "users"
   add_foreign_key "exam_batch_panelists", "employees"
   add_foreign_key "exam_batch_panelists", "exam_batches"
+  add_foreign_key "exam_batches", "assessments"
   add_foreign_key "exam_batches", "quizzes"
   add_foreign_key "exam_batches", "users"
   add_foreign_key "exam_batches", "vacancies"
@@ -349,9 +396,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_090000) do
   add_foreign_key "interview_feedbacks", "users"
   add_foreign_key "interview_round_panelists", "employees"
   add_foreign_key "interview_round_panelists", "interview_rounds"
+  add_foreign_key "interview_rounds", "assessments"
   add_foreign_key "interview_rounds", "invitations"
   add_foreign_key "invitation_panelists", "employees"
   add_foreign_key "invitation_panelists", "invitations"
+  add_foreign_key "invitations", "assessments"
   add_foreign_key "invitations", "exam_batches"
   add_foreign_key "invitations", "quizzes"
   add_foreign_key "invitations", "users"

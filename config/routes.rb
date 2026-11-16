@@ -11,6 +11,10 @@ Rails.application.routes.draw do
       post :translate
     end
   end
+  # Practical / live assessments (Excel, Tally, Word, data entry, coding…) HR can give in a round
+  resources :assessments do
+    member { post :duplicate }
+  end
   resources :departments, except: :show
   resources :vacancies
   resources :employees, except: :show do
@@ -50,6 +54,9 @@ Rails.application.routes.draw do
         post :open
         post :complete
         post :feedback
+        post :grade
+        post :reopen
+        delete :task_file
       end
     end
   end
@@ -83,6 +90,16 @@ Rails.application.routes.draw do
     post :submit
     get :finished
     get :interview
+    # live practical assessment (Excel / Tally / Word …)
+    get :assessment
+    post "assessment/start" => "exams#assessment_start", as: :assessment_start
+    patch "assessment/notes" => "exams#assessment_notes", as: :assessment_notes
+    post "assessment/files" => "exams#assessment_files", as: :assessment_files
+    delete "assessment/files/:file_id" => "exams#assessment_remove_file", as: :assessment_remove_file
+    get "assessment/task/:file_id" => "exams#assessment_task_preview", as: :assessment_task_preview
+    post "assessment/submit" => "exams#assessment_submit", as: :assessment_submit
+    get "assessment/sheet" => "exams#assessment_sheet", as: :assessment_sheet
+    patch "assessment/sheet" => "exams#assessment_sheet_save", as: :assessment_sheet_save
   end
 
   get "up" => "rails/health#show", as: :rails_health_check

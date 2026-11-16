@@ -128,7 +128,7 @@
       </div>
       <div class="doc-title">
         <h1>Assessment Report</h1>
-        <p><%= inv.quiz.title %></p>
+        <p><%= inv.quiz&.title || inv.invited_for %></p>
         <p>Generated <%= Time.current.strftime("%d %b %Y, %-I:%M %p") %> by <%= Current.user.name %></p>
       </div>
     </header>
@@ -155,7 +155,7 @@
       <div class="verdict <%= result[1] %>">
         <div class="big"><%= inv.finished? ? "#{inv.percentage}%" : "—" %></div>
         <div class="lbl"><%= result[0] %></div>
-        <small><%= inv.score.to_i %>/<%= inv.total_marks.to_i %> marks · cut-off <%= inv.quiz.pass_percentage %>%</small>
+        <small><%= inv.score.to_i %>/<%= inv.total_marks.to_i %> marks · cut-off <%= inv.quiz&.pass_percentage %>%</small>
         <% if inv.finished? && inv.rank %><small>Rank #<%= inv.rank %> on this paper</small><% end %>
       </div>
     </section>

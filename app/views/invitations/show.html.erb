@@ -5,7 +5,8 @@
 
 <% chips = []
    chips << [ "calendar", @invitation.interview_date.strftime("%d %b %Y, %-I:%M %p") ] if @invitation.interview_date
-   chips += [ [ "clock", "#{@invitation.quiz.duration_minutes} min" ], [ "list", "#{@invitation.quiz.questions.size} questions" ] ]
+   chips += [ [ "clock", "#{@invitation.quiz.duration_minutes} min" ], [ "list", "#{@invitation.quiz.questions.size} questions" ] ] if @invitation.quiz
+   chips << [ "sheet", "#{@invitation.assessment.title} · #{@invitation.assessment.duration_minutes} min" ] if @invitation.assessment
    chips << [ "lock", "Link valid till #{@invitation.link_expires_at.strftime('%d %b, %-I:%M %p')}" ] if @invitation.link_expires_at %>
 <% share = capture do %>
   <div data-controller="clipboard">
@@ -34,7 +35,7 @@
 <% end %>
 <%= render layout: "shared/page_header", locals: {
       title: @invitation.candidate_name, avatar: initials_for(@invitation.candidate_name),
-      subtitle: [ @invitation.vacancy, @invitation.department.presence, @invitation.quiz.title ].compact.join(" · "),
+      subtitle: [ @invitation.vacancy, @invitation.department.presence, (@invitation.quiz&.title || @invitation.invited_for) ].compact.join(" · "),
       crumbs: [ [ "Candidates", invitations_path ] ], chips: chips, extra: share } do %>
   <% if @invitation.started_at %>
     <%= link_to pdf_invitation_path(@invitation, print: 1), class: "btn btn-primary btn-sm", target: "_blank", rel: "noopener", data: { turbo: false },
@@ -51,14 +52,15 @@
 
 <div class="split">
   <div class="stack">
-    <% unless @invitation.finished? %>
+    <% if !@invitation.finished? || @invitation.assessment_pending? %>
       <div class="card">
         <div class="card-head"><h2><%= icon("video") %> Live camera</h2></div>
         <div class="card-body"><%= render "shared/live_video", invitation: @invitation %></div>
       </div>
       <div class="card" id="test-call">
         <div class="card-head"><h2><%= icon("users") %> Video call during the test</h2></div>
-        <div class="card-body"><%= render "shared/interview_room", invitation: @invitation, test_call: true, name: Current.user.name, auto_join: @invitation.in_progress? %></div>
+        <div class="card-body"><%= render "shared/interview_room", invitation: @invitation, test_call: true, name: Current.user.name,
+              allow_switch: @invitation.assessment_rounds.any?, auto_join: @invitation.in_progress? || @invitation.assessment_rounds.any?(&:working?) %></div>
       </div>
     <% end %>
     <%= render "interview_rounds/list", invitation: @invitation %>
@@ -116,7 +118,7 @@
   </div>
 
   <div class="stack">
-    <% unless @invitation.finished? %>
+    <% if @invitation.quiz && !@invitation.finished? %>
       <div class="card card-pad lang-card">
         <div class="row between"><b><%= icon("file") %> Test language</b>
           <span class="tiny muted">Hindi ready: <%= @invitation.quiz.hindi_count %>/<%= @invitation.quiz.questions.size %></span></div>

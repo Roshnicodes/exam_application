@@ -15,7 +15,7 @@
     <% end %>
     <%= render "exams/result", invitation: @invitation %>
     <div class="kv" style="margin-top:2rem;text-align:left">
-      <div><span>Answered</span><b><%= @invitation.answered_count %> / <%= @invitation.quiz.questions.size %></b></div>
+      <div><span>Answered</span><b><%= @invitation.answered_count %> / <%= @invitation.quiz ? @invitation.quiz.questions.size : 0 %></b></div>
       <div><span>Submitted at</span><b><%= nice_time(@invitation.submitted_at) %></b></div>
       <% if @invitation.interview_date %><div><span>Interview</span><b><%= @invitation.interview_date.strftime("%d %b %Y, %-I:%M %p") %></b></div><% end %>
       <div><span>Time taken</span><b><%= duration_between(@invitation.started_at, @invitation.submitted_at) %></b></div>

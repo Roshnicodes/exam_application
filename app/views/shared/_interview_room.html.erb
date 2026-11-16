@@ -77,7 +77,7 @@
         <% unless test_call %>
           <button type="button" class="it-btn" data-interview-room-target="codeBtn" data-action="interview-room#toggleCode" title="Shared code editor"><%= icon("code") %><span>Code</span></button>
         <% end %>
-        <% unless test_call || local_assigns[:token] %>
+        <% if local_assigns[:token].blank? && (!test_call || local_assigns[:allow_switch]) %>
           <button type="button" class="it-btn" data-interview-room-target="switchBtn" data-action="interview-room#toggleSwitch" title="Let the candidate open another app or website (e.g. an online editor) without warnings"><%= icon("unlock") %><span>Allow switching apps</span></button>
         <% end %>
         <button type="button" class="it-btn it-chat-btn" data-interview-room-target="chatBtn" data-action="interview-room#toggleChat"><%= icon("message") %><span>Chat</span><b class="it-unread hidden" data-interview-room-target="unread">0</b></button>

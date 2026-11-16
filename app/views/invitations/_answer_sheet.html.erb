@@ -1,5 +1,5 @@
 <%# Question paper with the candidate's answers. locals: invitation:, collapsible: false %>
-<% questions = invitation.quiz.questions.to_a %>
+<% questions = invitation.quiz ? invitation.quiz.questions.to_a : [] %>
 <% picked = questions.map { |q| invitation.answers[q.id.to_s] } %>
 <% correct = questions.each_with_index.count { |q, i| !picked[i].nil? && q.correct?(picked[i]) } %>
 <% skipped = picked.count(&:nil?) %>

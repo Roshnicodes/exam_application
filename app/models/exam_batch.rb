@@ -11,7 +11,8 @@ class ExamBatch < ApplicationRecord
   attr_accessor :candidates_file # upload is read in the controller, this only feeds the form
 
   belongs_to :user
-  belongs_to :quiz
+  belongs_to :quiz, optional: true # a practical-assessment-only batch has no MCQ paper
+  belongs_to :assessment, optional: true
   belongs_to :opening, class_name: "Vacancy", foreign_key: :vacancy_id, optional: true
   has_many :invitations, -> { order(:candidate_name) }, dependent: :destroy
   has_many :exam_batch_panelists, dependent: :destroy
@@ -20,6 +21,8 @@ class ExamBatch < ApplicationRecord
   has_secure_token :watch_token, length: 24 # read-only live monitor link for panelists
 
   validates :name, presence: true
+  validates :quiz, presence: true, unless: :practical_only?
+  validates :assessment, presence: { message: "— pick the practical assessment for this batch" }, if: :practical_only?
   validates :max_warnings, numericality: { only_integer: true, in: 0..50 }
   validates :interview_plan, inclusion: { in: Invitation::INTERVIEW_PLANS.keys }
   validates :language, inclusion: { in: %w[en hi] }
@@ -28,6 +31,10 @@ class ExamBatch < ApplicationRecord
 
   def panelist_ids=(ids)
     self.panelists = user.employees.where(id: Array(ids).compact_blank)
+  end
+
+  def practical_only?
+    interview_plan == "practical"
   end
 
   def post_name
@@ -60,7 +67,7 @@ class ExamBatch < ApplicationRecord
     errors = []
     built = rows.each_with_index.map do |row, i|
       invitation = invitations.build(
-        row.merge(user: user, quiz: quiz, opening: opening, vacancy: vacancy_title, department: department,
+        row.merge(user: user, quiz: quiz, assessment: assessment, opening: opening, vacancy: vacancy_title, department: department,
                   interview_date: interview_date, interview_mode: interview_mode, location: location, notes: notes,
                   max_warnings: max_warnings, link_expires_at: link_expires_at, meeting_link: meeting_link,
                   interview_plan: interview_plan, language: language)
@@ -94,6 +101,7 @@ class ExamBatch < ApplicationRecord
 
     def owned_by_user
       errors.add(:quiz, "is invalid") if quiz && quiz.user_id != user_id
+      errors.add(:assessment, "is invalid") if assessment && assessment.user_id != user_id
       errors.add(:opening, "is invalid") if opening && opening.user_id != user_id
     end
 end

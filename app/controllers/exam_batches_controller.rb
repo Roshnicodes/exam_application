@@ -7,18 +7,21 @@ class ExamBatchesController < ApplicationController
 
   def new
     @batch = Current.user.exam_batches.new(max_warnings: 5, interview_mode: "Online", quiz_id: params[:quiz_id], vacancy_id: params[:vacancy_id],
+                                           assessment_id: params[:assessment_id],
                                            interview_date: 1.day.from_now.change(hour: 11), link_expires_at: 3.days.from_now.end_of_day,
                                            name: "Batch #{Date.current.strftime('%d %b %Y')}")
     @batch.interview_plan = params[:plan] if Invitation::INTERVIEW_PLANS.key?(params[:plan])
     @rows = Array.new(3) { {} }
     load_form_options
-    redirect_to new_quiz_path, alert: "Create a question paper first." if @quizzes.empty?
+    redirect_to new_quiz_path, alert: "Create a question paper (or a practical assessment) first." if @quizzes.empty? && @assessments.empty?
   end
 
   def create
-    @batch = Current.user.exam_batches.new(batch_params.except(:quiz_id, :vacancy_id, :panelist_ids))
+    @batch = Current.user.exam_batches.new(batch_params.except(:quiz_id, :vacancy_id, :panelist_ids, :assessment_id))
     @batch.panelist_ids = batch_params[:panelist_ids]
     @batch.quiz = Current.user.quizzes.find_by(id: batch_params[:quiz_id])
+    @batch.assessment = Current.user.assessments.find_by(id: batch_params[:assessment_id])
+    @batch.quiz = nil if @batch.practical_only?
     @batch.opening = Current.user.vacancies.find_by(id: batch_params[:vacancy_id])
     @rows, @row_errors = ExamBatch.collect_candidates(params[:candidates]&.map { |r| r.permit(:candidate_name, :candidate_email, :candidate_phone, :experience) },
                                                      params.dig(:exam_batch, :candidates_file))
@@ -43,12 +46,14 @@ class ExamBatchesController < ApplicationController
   end
 
   def update
-    @batch.assign_attributes(batch_params.except(:quiz_id, :vacancy_id, :panelist_ids))
+    @batch.assign_attributes(batch_params.except(:quiz_id, :vacancy_id, :panelist_ids, :assessment_id))
     @batch.panelist_ids = batch_params[:panelist_ids] if batch_params.key?(:panelist_ids)
     @batch.opening = Current.user.vacancies.find_by(id: batch_params[:vacancy_id]) if batch_params.key?(:vacancy_id)
     if @batch.invitations.where.not(started_at: nil).none? && batch_params[:quiz_id].present?
       @batch.quiz = Current.user.quizzes.find_by(id: batch_params[:quiz_id]) || @batch.quiz
     end
+    @batch.assessment = Current.user.assessments.find_by(id: batch_params[:assessment_id]) if batch_params.key?(:assessment_id)
+    @batch.quiz = nil if @batch.practical_only?
     @rows, @row_errors = ExamBatch.collect_candidates(params[:candidates]&.map { |r| r.permit(:candidate_name, :candidate_email, :candidate_phone, :experience) },
                                                      params.dig(:exam_batch, :candidates_file))
 
@@ -57,7 +62,7 @@ class ExamBatchesController < ApplicationController
       if @row_errors.empty?
         ExamBatch.transaction do
           @batch.save!
-          @batch.invitations.where(started_at: nil).update_all(quiz_id: @batch.quiz_id)
+          @batch.invitations.where(started_at: nil).update_all(quiz_id: @batch.quiz_id, assessment_id: @batch.assessment_id)
           @batch.sync_pending_invitations!
         end
         note = added.any? ? " #{added.size} new candidate(s) added." : ""
@@ -76,9 +81,12 @@ class ExamBatchesController < ApplicationController
 
   def monitor
     Invitation.submit_overdue!
+    InterviewRound.submit_overdue_work!
     @invitations = @batch.invitations.live.includes(:quiz)
     @getting_ready = @batch.invitations.where(status: %w[otp_requested verified]).order(:updated_at)
     @completed_count = @batch.invitations.completed.count
+    @live_assessments = InterviewRound.assessments.where(status: "open", submitted_at: nil).where.not(work_started_at: nil)
+                                      .where(invitation_id: @batch.invitations.select(:id)).includes(:invitation, :assessment).order(:work_started_at).to_a
     render "monitor/index"
   end
 
@@ -105,6 +113,7 @@ class ExamBatchesController < ApplicationController
 
     def load_form_options
       @quizzes = Current.user.quizzes.order(:title)
+      @assessments = Current.user.assessments.active.ordered.to_a
       @vacancies = Current.user.vacancies.open.includes(:department).order(:title)
       @employees = Current.user.employees.ordered
       @panelist_ids = Array(params.dig(:exam_batch, :panelist_ids)).compact_blank.presence&.map(&:to_i) ||
@@ -114,6 +123,7 @@ class ExamBatchesController < ApplicationController
 
     def batch_params
       params.expect(exam_batch: [ :name, :quiz_id, :vacancy_id, :vacancy_title, :department, :interview_date, :interview_mode,
-                                 :location, :notes, :max_warnings, :link_expires_at, :meeting_link, :interview_plan, :language, panelist_ids: [] ])
+                                 :location, :notes, :max_warnings, :link_expires_at, :meeting_link, :interview_plan, :language,
+                                 :assessment_id, panelist_ids: [] ])
     end
 end

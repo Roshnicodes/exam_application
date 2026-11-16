@@ -22,7 +22,7 @@
     <% when "verified" %>
       <div class="row"><span class="avatar soft"><%= icon("shield") %></span><div><b>Verified · doing system check</b><p class="small muted">Candidate verified at <%= nice_time(invitation.verified_at) %>. Exam will begin once camera checks pass.</p></div></div>
     <% when "in_progress" %>
-      <% total = invitation.quiz.questions.size %>
+      <% total = invitation.quiz ? invitation.quiz.questions.size : 0 %>
       <div>
         <div class="row between small"><b>Progress</b><span class="muted"><%= invitation.answered_count %>/<%= total %> answered</span></div>
         <div class="progress" style="margin-top:.4rem"><div style="width:<%= total.zero? ? 0 : invitation.answered_count * 100 / total %>%"></div></div>
@@ -33,9 +33,9 @@
       <div class="score-ring" style="--p: <%= invitation.percentage %>"><div><div><b><%= invitation.percentage %>%</b><span><%= invitation.score %>/<%= invitation.total_marks %> marks</span></div></div></div>
       <div style="text-align:center">
         <% if invitation.passed? %>
-          <span class="badge sev-success"><%= icon("award") %> Passed (cut-off <%= invitation.quiz.pass_percentage %>%)</span>
+          <span class="badge sev-success"><%= icon("award") %> Passed (cut-off <%= invitation.quiz&.pass_percentage %>%)</span>
         <% else %>
-          <span class="badge sev-high"><%= icon("x-circle") %> Below cut-off (<%= invitation.quiz.pass_percentage %>%)</span>
+          <span class="badge sev-high"><%= icon("x-circle") %> Below cut-off (<%= invitation.quiz&.pass_percentage %>%)</span>
         <% end %>
       </div>
       <% if invitation.termination_reason.present? && invitation.termination_reason != "time_up" %>
@@ -46,7 +46,7 @@
       <div class="share-result <%= 'on' if invitation.result_shown_to_candidate? %>">
         <span class="small"><%= icon(invitation.result_shown_to_candidate? ? "eye" : "lock") %>
           <%= invitation.result_shown_to_candidate? ? "Candidate can see this result" : "Result hidden from the candidate" %></span>
-        <% if invitation.quiz.show_result_to_candidate? %>
+        <% if invitation.quiz&.show_result_to_candidate? %>
           <span class="tiny muted">Shared for everyone on this paper (paper setting)</span>
         <% else %>
           <%= button_to share_result_invitation_path(invitation, visible: invitation.result_visible? ? "0" : "1"), method: :patch,

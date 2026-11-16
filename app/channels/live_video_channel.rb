@@ -81,8 +81,11 @@ class LiveVideoChannel < ApplicationCable::Channel
       ActionCable.server.broadcast(stream(:viewers), message)
     end
 
+    # The camera streams while the test runs, and while a practical assessment is being worked on.
     def candidate_verified?
       phone = connection.exam_session["exam_#{@invitation.token}"]
-      phone.present? && phone == @invitation.entered_phone && @invitation.in_progress?
+      return false unless phone.present? && phone == @invitation.entered_phone
+
+      @invitation.in_progress? || @invitation.assessment_rounds.any?(&:working?)
     end
 end

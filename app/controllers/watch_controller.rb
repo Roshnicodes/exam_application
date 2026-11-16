@@ -8,11 +8,15 @@ class WatchController < ApplicationController
     @events = @invitation.proctor_events.timeline.limit(30)
   end
 
-  # Panelist's view of one round: video room + their scorecard.
+  # Panelist's view of one round: video room + their scorecard, or the practical assessment.
   def round
     @invitation = Invitation.includes(:quiz).find_by!(watch_token: params[:watch_token])
     @round = @invitation.interview_rounds.find(params[:round_id])
     @panelists = @round.panelists.to_a
+    return unless @round.assessment?
+
+    @events = @invitation.proctor_events.for_round(@round).timeline.limit(40)
+    render :assessment_round
   end
 
   # Panelists say who they are (they share one link), then save their scorecard for the round.

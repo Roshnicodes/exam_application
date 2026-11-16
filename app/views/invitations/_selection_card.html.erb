@@ -19,7 +19,7 @@
           </div>
           <div class="sel-bar"><span style="width:<%= st[:score] || 0 %>%;background:<%= param_color(i) %>"></span></div>
           <div class="row between tiny">
-            <span class="muted"><%= icon(st[:test] ? "file" : "users") %> <%= st[:source] %></span>
+            <span class="muted"><%= icon(st[:test] ? "file" : (st[:practical] ? "sheet" : "users")) %> <%= st[:source] %></span>
             <span><%= st[:score] ? "#{st[:score]}% → #{st[:points]} pts" : "Pending" %></span>
           </div>
         </div>

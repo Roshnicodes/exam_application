@@ -85,7 +85,9 @@ module ApplicationHelper
     "devtools" => "alert", "screenshot" => "camera", "window_resize" => "monitor", "noise" => "mic",
     "multiple_displays" => "monitor", "otp_requested" => "key", "otp_failed" => "x-circle", "verified" => "shield",
     "exam_started" => "play", "exam_submitted" => "check-circle", "exam_terminated" => "x-circle",
-    "time_up" => "clock", "snapshot" => "camera", "detector_unavailable" => "alert"
+    "time_up" => "clock", "snapshot" => "camera", "detector_unavailable" => "alert",
+    "assessment_started" => "sheet", "assessment_submitted" => "check-circle", "assessment_time_up" => "clock",
+    "assessment_ended" => "x-circle", "file_uploaded" => "upload", "file_removed" => "trash"
   }.freeze
 
   def event_icon(event)
@@ -213,6 +215,17 @@ module ApplicationHelper
 
   def initials_for(name)
     name.to_s.split.map(&:first).first(2).join.upcase.presence || "?"
+  end
+
+  # How a task file can be shown inside the candidate's assessment page.
+  def task_preview_kind(file)
+    case file.filename.extension.to_s.downcase
+    when "xlsx", "xlsm", "csv", "ods" then "sheet"
+    when "pdf" then "pdf"
+    when "png", "jpg", "jpeg", "gif", "webp" then "image"
+    when "txt", "md", "json", "xml" then "text"
+    else "none"
+    end
   end
 
   def nice_time(time)

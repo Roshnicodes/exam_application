@@ -1,0 +1,95 @@
+<% content_for :title, "#{@round.name} — system check" %>
+<div class="exam-wrap" data-controller="system-check">
+  <%= render "header" %>
+
+  <div class="candidate-hero">
+    <div class="top">
+      <p class="small" style="font-weight:700;letter-spacing:.08em">PRACTICAL ASSESSMENT</p>
+      <h1><%= @round.name %></h1>
+      <p style="margin-top:.35rem"><%= @invitation.vacancy %><%= " · #{@invitation.department}" if @invitation.department.present? %></p>
+      <div class="chip-row">
+        <span class="chip"><%= icon("clock") %> <%= @round.duration %> minutes</span>
+        <span class="chip"><%= icon("award") %> <%= @round.total_marks %> marks</span>
+        <span class="chip"><%= icon(@round.task_icon) %> <%= @round.task_label %></span>
+        <% if @round.task_attachments.any? %><span class="chip"><%= icon("file") %> <%= pluralize(@round.task_attachments.size, "task file") %></span><% end %>
+      </div>
+    </div>
+
+    <div class="candidate-grid">
+      <div>
+        <h2>Camera &amp; system check</h2>
+        <p class="muted small" style="margin:.35rem 0 1.2rem">Your camera, microphone and screen stay on for the whole assessment. Everything is recorded and shared with HR.</p>
+        <div class="cam-preview">
+          <video data-system-check-target="video" autoplay muted playsinline></video>
+          <span class="cam-tag hidden" data-system-check-target="tag"><span class="rec-dot"></span> Camera on</span>
+          <div class="cam-empty" data-system-check-target="placeholder"><div><%= icon("camera") %><br>Click "Allow camera" to preview</div></div>
+        </div>
+        <div class="check-list" style="margin-top:1rem">
+          <div class="check" data-system-check-target="camCheck"><%= icon("camera") %> Camera &amp; microphone <span class="st">Pending</span></div>
+          <div class="cam-help hidden" data-system-check-target="camHelp"></div>
+          <div class="check" data-system-check-target="faceCheck"><%= icon("user") %> Single face visible <span class="st">Pending</span></div>
+          <div class="check" data-system-check-target="screenCheck"><%= icon("monitor") %> Single display &amp; full screen support <span class="st">Pending</span></div>
+          <div class="check" data-system-check-target="shareCheck"><%= icon("monitor") %> Entire screen shared <span class="st">Pending</span></div>
+        </div>
+      </div>
+
+      <div>
+        <h2>What you have to do</h2>
+        <div class="task-brief">
+          <% if @round.task_instructions.present? %>
+            <div class="task-text"><%= simple_format(@round.task_instructions) %></div>
+          <% elsif !@round.online_sheet? %>
+            <p class="small muted">HR will share the task on the next screen. Open the file, do the work and upload it back before the time ends.</p>
+          <% end %>
+        </div>
+        <% if @round.online_sheet? %>
+          <div class="intro-sheet">
+            <span class="is-ico"><%= icon("sheet") %></span>
+            <div>
+              <b>You'll work in an Excel sheet right on the next screen</b>
+              <p class="small muted">Formulas, sheets and formatting work like Excel. It saves by itself and goes to HR when you submit — nothing to download or upload, no other app needed. · अगली स्क्रीन पर Excel जैसी शीट में काम करें — अपने-आप सेव होती है, कुछ अपलोड नहीं करना।</p>
+            </div>
+          </div>
+        <% elsif @round.task_attachments.any? && @round.allow_download? %>
+          <p class="small" style="margin-top:.8rem"><%= icon("download") %>
+            <b><%= pluralize(@round.task_attachments.size, "file") %></b> will be ready to download on the next screen
+            (<%= @round.task_attachments.map { |f| f.filename.to_s }.first(3).join(", ") %><%= "…" if @round.task_attachments.size > 3 %>).</p>
+        <% end %>
+
+        <h2 style="margin-top:1.4rem">Rules</h2>
+        <p class="muted small" style="margin:.35rem 0 1rem">Breaking a rule gives a warning, alerts HR instantly<%= " and #{@round.warning_limit} warnings submit your work automatically" if @round.warning_limit.positive? %>.</p>
+        <div class="rules">
+          <div class="rule"><%= icon("user") %> Stay in front of the camera, alone</div>
+          <div class="rule"><%= icon("users") %> No other person in the room</div>
+          <div class="rule"><%= icon("phone") %> No phones, books or other devices</div>
+          <% if @round.allow_app_switch? %>
+            <div class="rule ok"><%= icon("unlock") %> You may open <%= @round.task_label %> / other apps for this task</div>
+          <% else %>
+            <div class="rule"><%= icon("maximize") %> Stay in full screen on this page</div>
+            <div class="rule"><%= icon("monitor") %> Do not switch tabs or apps</div>
+          <% end %>
+          <div class="rule"><%= icon("monitor") %> Your screen is shared &amp; recorded</div>
+          <div class="rule"><%= icon("copy") %> Copy, paste &amp; right-click are blocked on this page</div>
+          <div class="rule"><%= icon("mic") %> Keep quiet — no talking</div>
+          <div class="rule"><%= icon("upload") %> Upload your finished file before time ends</div>
+          <div class="rule"><%= icon("clock") %> Auto-submits when the time is over</div>
+        </div>
+
+        <label class="row small" style="margin:1.4rem 0;cursor:pointer;align-items:flex-start">
+          <input type="checkbox" data-system-check-target="agree" data-action="system-check#refresh" style="width:18px;height:18px;accent-color:var(--brand);margin-top:.15rem">
+          <span>I agree to be recorded and to follow the rules. I understand that suspicious activity is reported to HR.</span>
+        </label>
+        <div class="stack">
+          <button type="button" class="btn btn-light btn-lg btn-block" data-action="system-check#allow" data-system-check-target="allowBtn"><%= icon("camera") %> Allow camera &amp; microphone</button>
+          <button type="button" class="btn btn-light btn-lg btn-block" data-action="system-check#share" data-system-check-target="shareBtn"><%= icon("monitor") %> Share entire screen</button>
+          <%= form_with url: exam_assessment_start_path(@invitation.token), data: { system_check_target: "form" } do |f| %>
+            <%= f.button class: "btn btn-primary btn-lg btn-block", disabled: true, data: { system_check_target: "startBtn", action: "system-check#start" } do %>
+              <%= icon("play") %> Start the <%= @round.duration %> minute assessment
+            <% end %>
+          <% end %>
+          <p class="tiny muted" style="text-align:center">The clock starts only when you press this button.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -112,15 +112,23 @@
       <div><h3>Online test &amp; proctoring</h3></div>
     </div>
     <div class="fields three">
-      <div class="field">
+      <div class="field" data-invite-form-target="testOnly">
         <%= f.label :quiz_id do %>Question paper <span class="req">*</span><% end %>
         <%= f.select :quiz_id, @quizzes.map { |q| [ "#{q.title} (#{q.questions.size} Qs · #{q.duration_minutes} min)", q.id ] }, { prompt: "Select a question paper" }, class: "input", required: true, disabled: invitation.started_at.present? %>
         <% if invitation.started_at.present? %><span class="hint">Locked — the candidate has already started this paper.</span><% end %>
       </div>
-      <div class="field">
+      <div class="field" data-invite-form-target="testOnly">
         <%= f.label :language, "Test language" %>
         <%= f.select :language, Invitation::LANGUAGES.invert, {}, class: "input" %>
         <span class="hint">Hindi shows the paper's Hindi version (add it on the question paper page).</span>
+      </div>
+      <div class="field full" data-invite-form-target="assessmentPart">
+        <%= f.label :assessment_id do %><%= icon("sheet") %> Practical assessment (Excel / Tally / Word / data entry…)<% end %>
+        <%= f.select :assessment_id, @assessments.map { |a| [ "#{a.title} — #{a.kind_label} · #{a.duration_minutes} min · #{a.max_marks} marks", a.id ] },
+              { include_blank: @assessments.any? ? "— none —" : "— no practical assessment created yet —" },
+              class: "input", data: { invite_form_target: "assessmentSelect" } %>
+        <span class="hint" data-invite-form-target="assessmentHint">Optional — adds a practical assessment round after the online test.</span>
+        <span class="hint"><%= link_to "Create / manage practical assessments", assessments_path, target: "_blank", rel: "noopener" %> — a live task the candidate solves on screen, fully proctored.</span>
       </div>
       <div class="field">
         <%= f.label :max_warnings, "Auto-terminate after" %>

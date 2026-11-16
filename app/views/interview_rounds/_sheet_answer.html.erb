@@ -1,0 +1,46 @@
+<%# The candidate's built-in spreadsheet, as HR sees it: the values they got, formulas on hover,
+    cells they filled / changed in green. locals: round: %>
+<% sheets = round.sheet_data.is_a?(Hash) ? Array(round.sheet_data["sheets"]) : [] %>
+<% if sheets.any? %>
+  <% original = (round.original_sheets rescue []).index_by { |s| s["name"] } %>
+  <% tidy = ->(cells) { Array(cells).map { |r| a = Array(r).map(&:to_s); a.pop while a.last == ""; a }.tap { |c| c.pop while c.last == [] } } %>
+  <% worked = sheets.select { |s| tidy.(s["cells"]) != tidy.(original[s["name"]]&.dig("cells")) }.map { |s| s["name"] } %>
+  <div class="sheet-answer task-sheet">
+    <div class="row between" style="flex-wrap:wrap;gap:.4rem">
+      <b class="small"><%= icon("sheet") %> Answer sheet<%= " (live — saved #{round.sheet_saved_at.strftime('%-I:%M:%S %p')})" if round.working? && round.sheet_saved_at %></b>
+      <span class="tiny muted"><span class="sa-key"></span> filled / changed by the candidate · hover a cell to see its formula</span>
+    </div>
+    <% sheets.each do |sheet| %>
+      <% cells = Array(sheet["cells"]) %>
+      <% values = Array(sheet["values"]) %>
+      <% styles = sheet["styles"].is_a?(Hash) ? sheet["styles"] : {} %>
+      <% base = Array(original[sheet["name"]]&.dig("cells")) %>
+      <% cols = cells.map { |r| Array(r).size }.max.to_i %>
+      <details class="sa-sheet" <%= "open" if worked.include?(sheet["name"]) || (worked.empty? && sheet == sheets.first) %>>
+        <summary><%= sheet["name"] %> <span class="tiny muted">· <%= cells.size %> rows<%= " · filled by the candidate" if worked.include?(sheet["name"]) %></span></summary>
+        <% if cells.empty? %>
+          <p class="tiny muted">Empty.</p>
+        <% else %>
+          <div class="ts-scroll">
+            <table>
+              <thead><tr><th></th><% cols.times do |c| %><th><%= Spreadsheet.column_name(c) %></th><% end %></tr></thead>
+              <tbody>
+                <% cells.each_with_index do |row, r| %>
+                  <tr><th><%= r + 1 %></th>
+                    <% cols.times do |c| %>
+                      <% raw = Array(row)[c].to_s %>
+                      <% formula = raw.start_with?("=") %>
+                      <% changed = raw != Array(base[r])[c].to_s %>
+                      <% st = styles["#{r}:#{c}"] %>
+                      <td class="<%= 'sa-changed' if changed %> <%= 'sa-fx' if formula %>" style="<%= Spreadsheet.css(st) %>" <%= "title=\"#{h raw}\"".html_safe if formula %>><%= Spreadsheet.display(formula ? Array(values[r])[c] : raw, st) %></td>
+                    <% end %>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% end %>
+      </details>
+    <% end %>
+  </div>
+<% end %>

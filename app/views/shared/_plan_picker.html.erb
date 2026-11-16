@@ -1,8 +1,10 @@
+<% icons = { "separate" => "list", "combined" => "users", "none" => "file", "practical" => "sheet" } %>
 <div class="plan-options">
-  <% Invitation::INTERVIEW_PLANS.sort_by { |key, _| key == "none" ? 0 : 1 }.each do |key, (label, desc)| %>
+  <% Invitation::PLAN_ORDER.each do |key| %>
+    <% label, desc = Invitation::INTERVIEW_PLANS[key] %>
     <label class="plan plan-<%= key %>">
       <%= f.radio_button :interview_plan, key, checked: value.to_s == key, data: { action: "invite-form#planChanged" } %>
-      <span class="plan-ico"><%= icon({ "separate" => "list", "combined" => "users", "none" => "file" }[key]) %></span>
+      <span class="plan-ico"><%= icon(icons[key]) %></span>
       <span><b><%= label %></b><small><%= desc %></small></span>
     </label>
   <% end %>

@@ -5,6 +5,7 @@ class User < ApplicationRecord
   has_many :invitations, dependent: :destroy
   has_many :exam_batches, dependent: :destroy
   has_many :quizzes, dependent: :destroy
+  has_many :assessments, dependent: :destroy
   has_many :vacancies, dependent: :destroy
   has_many :departments, dependent: :destroy
   has_many :employees, dependent: :destroy

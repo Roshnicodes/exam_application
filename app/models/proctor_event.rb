@@ -27,6 +27,12 @@ class ProctorEvent < ApplicationRecord
     "exam_submitted"    => [ "Exam submitted", "success", false ],
     "exam_terminated"   => [ "Exam ended early (terminated / removed)", "critical", false ],
     "time_up"           => [ "Time is up - auto submitted", "info", false ],
+    "assessment_started"   => [ "Practical assessment started", "info", false ],
+    "assessment_submitted" => [ "Practical assessment submitted", "success", false ],
+    "assessment_time_up"   => [ "Practical assessment time over - auto submitted", "info", false ],
+    "assessment_ended"     => [ "Practical assessment ended early (warnings / HR)", "critical", false ],
+    "file_uploaded"        => [ "Candidate uploaded a file", "info", false ],
+    "file_removed"         => [ "Candidate removed an uploaded file", "low", false ],
     "snapshot"          => [ "Periodic camera snapshot", "info", false ],
     "detector_unavailable" => [ "Face detection unavailable on candidate device", "medium", false ],
     "screen_share_unavailable" => [ "Screen sharing not possible on this device (phone / tablet)", "info", false ],
@@ -35,7 +41,8 @@ class ProctorEvent < ApplicationRecord
     "call_ended"        => [ "Video call ended for everyone", "info", false ]
   }.freeze
 
-  ALERT_KINDS = (KINDS.select { |_, v| v[2] }.keys + %w[otp_requested otp_failed exam_started exam_submitted exam_terminated time_up detector_unavailable]).freeze
+  ALERT_KINDS = (KINDS.select { |_, v| v[2] }.keys + %w[otp_requested otp_failed exam_started exam_submitted exam_terminated time_up detector_unavailable
+                                                            assessment_started assessment_submitted assessment_time_up assessment_ended]).freeze
 
   belongs_to :invitation
   has_one_attached :snapshot

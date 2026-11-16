@@ -8,7 +8,7 @@
       stats: [
         { label: "Writing the test now", value: list.size, icon: "video", tone: "red" },
         { label: "Getting ready (OTP / check)", value: @getting_ready.size, icon: "key", tone: "amber" },
-        { label: "With warnings", value: list.count { |i| i.warnings_count.positive? }, icon: "alert", tone: "violet" },
+        { label: "Practical assessments live", value: Array(@live_assessments).size, icon: "sheet", tone: "violet" },
         { label: @batch ? "Completed" : "Completed today", value: @completed_count, icon: "check-circle", tone: "green",
           path: completed_monitor_path(batch_id: @batch&.id) }
       ] } do %>
@@ -31,6 +31,23 @@
         <span><b><%= inv.candidate_name %></b><small><%= inv.otp_active? ? "OTP #{inv.otp_code}" : (inv.verified? ? "System check" : "Awaiting OTP") %></small></span>
       <% end %>
     <% end %>
+  </div>
+<% end %>
+
+<% tasks = Array(@live_assessments) %>
+<% if tasks.any? %>
+  <div class="task-strip">
+    <span class="ready-label"><%= icon("sheet") %> Practical assessments live now</span>
+    <div class="task-strip-list">
+      <% tasks.each do |round| %>
+        <%= link_to room_invitation_interview_round_path(round.invitation, round), class: "task-chip #{'risky' if round.warnings_count >= 3}" do %>
+          <span class="avatar xs" style="background: <%= gradient_for(round.invitation.candidate_name) %>"><%= initials_for(round.invitation.candidate_name) %></span>
+          <span class="grow"><b><%= round.invitation.candidate_name %></b><small><%= round.name %> · <%= round.seconds_left / 60 %> min left<%= " · #{pluralize(round.submissions.size, 'file')}" if round.submissions.attached? %></small></span>
+          <% if round.warnings_count.positive? %><span class="mon-warn"><%= icon("alert") %> <%= round.warnings_count %></span><% end %>
+          <%= icon("chevron-right") %>
+        <% end %>
+      <% end %>
+    </div>
   </div>
 <% end %>
 

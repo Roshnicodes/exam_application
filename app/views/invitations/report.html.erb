@@ -1,10 +1,10 @@
 <% content_for :title, "Result · #{@invitation.candidate_name}" %>
 <%= render layout: "shared/page_header", locals: {
-      title: "Result & answer sheet", subtitle: "#{@invitation.candidate_name} · #{@invitation.vacancy} · #{@invitation.quiz.title}", icon: "file",
+      title: "Result & answer sheet", subtitle: "#{@invitation.candidate_name} · #{@invitation.vacancy} · #{@invitation.quiz&.title}", icon: "file",
       crumbs: [ [ "Results", results_path ], [ @invitation.candidate_name, invitation_path(@invitation) ] ],
       stats: [
         { label: @invitation.rank ? "Score · rank ##{@invitation.rank} in this paper" : "Score", value: "#{@invitation.score.to_i}/#{@invitation.total_marks.to_i}", icon: "award", tone: "violet", path: results_path(quiz_id: @invitation.quiz_id) },
-        { label: "#{@invitation.passed? ? 'Passed' : 'Below cut-off'} (#{@invitation.quiz.pass_percentage}%)", value: "#{@invitation.percentage}%", icon: "check-circle", tone: @invitation.passed? ? "green" : "red" },
+        { label: "#{@invitation.passed? ? 'Passed' : 'Below cut-off'} (#{@invitation.quiz&.pass_percentage}%)", value: "#{@invitation.percentage}%", icon: "check-circle", tone: @invitation.passed? ? "green" : "red" },
         { label: "Warnings", value: @invitation.warnings_count, icon: "alert", tone: "amber" },
         { label: "Time taken", value: duration_between(@invitation.started_at, @invitation.submitted_at), icon: "clock", tone: "blue" }
       ] } do %>

@@ -29,8 +29,8 @@ class CandidateExport
                   "Interview mode", "Meeting link", "Location", "Notes", "Test link" ]
       rows = @invitations.map do |i|
         [ i.candidate_name, i.candidate_email, i.candidate_phone, i.entered_phone, i.experience, i.vacancy, i.department, i.invited_for,
-          i.quiz.title, fmt(i.created_at), fmt(i.link_expires_at), i.status_label, fmt(i.started_at), fmt(i.submitted_at),
-          i.time_taken && (i.time_taken / 60.0).round(1), (i.score if i.finished?), (i.total_marks if i.finished?), i.quiz.pass_percentage,
+          i.quiz&.title, fmt(i.created_at), fmt(i.link_expires_at), i.status_label, fmt(i.started_at), fmt(i.submitted_at),
+          i.time_taken && (i.time_taken / 60.0).round(1), (i.score if i.finished?), (i.total_marks if i.finished?), i.quiz&.pass_percentage,
           i.finished? ? (i.passed? ? "Qualified" : "Disqualified") : "Not taken", i.warnings_count, i.termination_reason,
           i.interview_rounds.map { |r| "#{r.name}: #{r.status_label}" }.join("; "), i.interview_average, i.final_score[:percent],
           i.decision_label, i.decision_note, i.panelists.map(&:name).join(", "),
@@ -72,7 +72,7 @@ class CandidateExport
 
     # The full question paper (every option) with what each candidate chose.
     def answers
-      done = @invitations.select(&:finished?)
+      done = @invitations.select { |i| i.finished? && i.quiz } # a practical-only invite has no paper
       letters = Question::LETTERS.first(done.flat_map { |i| i.quiz.questions.map { |q| q.options.size } }.max || 4)
       rows = done.flat_map do |i|
         i.quiz.questions.each_with_index.map do |q, n|
@@ -92,20 +92,22 @@ class CandidateExport
     # One candidate as "Field | Value" rows, easy to read and print.
     def summary(i)
       done = i.finished?
-      picked = i.quiz.questions.map { |q| i.answers[q.id.to_s] }
-      correct = i.quiz.questions.each_with_index.count { |q, n| !picked[n].nil? && q.correct?(picked[n]) }
+      questions = i.quiz ? i.quiz.questions.to_a : []
+      picked = questions.map { |q| i.answers[q.id.to_s] }
+      correct = questions.each_with_index.count { |q, n| !picked[n].nil? && q.correct?(picked[n]) }
       rows = [
         [ "Candidate", i.candidate_name ], [ "Email", i.candidate_email ], [ "Mobile", i.entered_phone.presence || i.candidate_phone ],
         [ "Experience", i.experience ], [ "Position", i.vacancy ], [ "Department", i.department ], [ "Invited for", i.invited_for ],
         [ "Invited on", fmt(i.created_at) ], [ "Status", i.status_label ], [ "", "" ],
-        [ "Question paper", i.quiz.title ], [ "Questions", i.quiz.questions.size ], [ "Duration (min)", i.quiz.duration_minutes ],
+        [ "Question paper", i.quiz&.title ], [ "Questions", questions.size ], [ "Duration (min)", i.quiz&.duration_minutes ],
         [ "Test started", fmt(i.started_at) ], [ "Test submitted", fmt(i.submitted_at) ],
         [ "Time taken (min)", i.time_taken && (i.time_taken / 60.0).round(1) ],
         [ "Correct / Wrong / Skipped", done ? "#{correct} / #{picked.compact.size - correct} / #{picked.count(&:nil?)}" : "" ],
-        [ "Marks", done ? "#{i.score} / #{i.total_marks}" : "" ], [ "Pass mark", "#{i.quiz.pass_percentage}%" ],
+        [ "Marks", done ? "#{i.score} / #{i.total_marks}" : "" ], [ "Pass mark", "#{i.quiz&.pass_percentage}%" ],
         [ "Result", done ? (i.passed? ? "Qualified" : "Disqualified") : "Not taken" ],
         [ "Warnings", i.warnings_count ], [ "Terminated because", i.termination_reason ], [ "", "" ],
-        [ "Interview rounds", i.interview_rounds.map { |r| "#{r.name}: #{r.status_label}#{" (#{r.average}/10)" if r.average}" }.join("; ") ],
+        [ "Practical assessments", i.assessment_rounds.map { |r| "#{r.name}: #{r.status_label}#{" (#{r.marks}/#{r.total_marks})" if r.graded?}" }.join("; ") ],
+        [ "Interview rounds", i.interview_rounds.reject(&:assessment?).map { |r| "#{r.name}: #{r.status_label}#{" (#{r.average}/10)" if r.average}" }.join("; ") ],
         [ "Interview average (/10)", i.interview_average ], [ "Final selection score %", i.final_score[:percent] ],
         [ "Decision", i.decision_label ], [ "Decision note", i.decision_note ], [ "Test link", @link.(i) ]
       ]

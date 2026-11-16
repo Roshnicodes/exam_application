@@ -5,7 +5,7 @@
       <div class="score-ring" style="--p: <%= invitation.percentage %>"><div><div><b><%= invitation.percentage %>%</b><span><%= invitation.score %>/<%= invitation.total_marks %> marks</span></div></div></div>
       <div>
         <span class="result-badge <%= invitation.passed? ? 'pass' : 'fail' %>" style="font-size:.95rem"><%= icon(invitation.passed? ? "check-circle" : "x-circle") %> <%= invitation.passed? ? "Passed" : "Not cleared" %></span>
-        <p class="small muted" style="margin-top:.6rem">Pass mark for this test is <b><%= invitation.quiz.pass_percentage %>%</b>. HR will contact you about the next round.</p>
+        <p class="small muted" style="margin-top:.6rem">Pass mark for this test is <b><%= invitation.quiz&.pass_percentage %>%</b>. HR will contact you about the next round.</p>
       </div>
     </div>
   <% else %>

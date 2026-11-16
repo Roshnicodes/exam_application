@@ -1,0 +1,90 @@
+<%# What the candidate did in a practical assessment. locals: round:, invitation:, readonly: false %>
+<div class="card">
+  <div class="card-head">
+    <h2><%= icon("upload") %> Candidate's work</h2>
+    <span class="tiny muted">
+      <% if round.submitted? %>
+        Submitted <%= nice_time(round.submitted_at) %> · took <%= duration_between(round.work_started_at, round.submitted_at) %>
+      <% elsif round.working? %>
+        Working now · <%= round.seconds_left / 60 %> min left
+      <% else %>
+        Not started yet
+      <% end %>
+    </span>
+  </div>
+  <div class="card-body stack">
+    <%= render "interview_rounds/sheet_answer", round: round %>
+
+    <% if round.submissions.attached? %>
+      <div class="file-list">
+        <% round.submissions.attachments.sort_by(&:created_at).each do |file| %>
+          <div class="file-row">
+            <span class="file-ico"><%= icon("file") %></span>
+            <div class="grow"><b><%= file.filename %></b><span class="tiny muted"><%= number_to_human_size(file.byte_size) %> · uploaded <%= nice_time(file.created_at) %></span></div>
+            <%= link_to rails_blob_path(file, disposition: "inline"), class: "btn btn-light btn-sm", target: "_blank", rel: "noopener", data: { turbo: false } do %><%= icon("eye") %> View<% end %>
+            <%= link_to rails_blob_path(file, disposition: "attachment"), class: "btn btn-primary btn-sm", data: { turbo: false } do %><%= icon("download") %> Download<% end %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="muted small"><%= round.working? ? "Nothing uploaded yet — files appear here the moment the candidate uploads them." : "No file was uploaded." %></p>
+    <% end %>
+
+    <% if round.candidate_notes.present? %>
+      <div>
+        <b class="small"><%= icon("edit") %> What the candidate typed</b>
+        <div class="task-text" style="margin-top:.4rem"><%= simple_format(round.candidate_notes) %></div>
+      </div>
+    <% end %>
+
+    <% if round.termination_reason.present? %>
+      <div class="errors" style="margin:0">
+        <b><%= round.termination_reason == "time_up" ? "Time over:" : "Ended early:" %></b>
+        <%= round.termination_reason == "time_up" ? "submitted automatically when the time ended." : round.termination_reason %>
+      </div>
+    <% end %>
+
+    <div class="kv">
+      <div><span>Task</span><b><%= round.task_label %></b></div>
+      <div><span>Time allowed</span><b><%= round.duration %> min</b></div>
+      <div><span>Started</span><b><%= round.work_started_at ? nice_time(round.work_started_at) : "—" %></b></div>
+      <div><span>Warnings</span><b style="color:<%= round.warnings_count.positive? ? 'var(--red)' : 'var(--muted)' %>"><%= round.warnings_count %><%= " / #{round.warning_limit}" if round.warning_limit.positive? %></b></div>
+    </div>
+  </div>
+
+  <% if !local_assigns[:readonly] %>
+    <div class="card-body" style="padding-top:0">
+      <%= form_with url: grade_invitation_interview_round_path(invitation, round), class: "grade-form" do %>
+        <div class="fields">
+          <div class="field">
+            <label for="marks">Marks out of <%= round.total_marks %></label>
+            <div class="input-wrap"><%= icon("award") %>
+              <input type="number" name="marks" id="marks" class="input" min="0" max="<%= round.total_marks %>" value="<%= round.marks %>" placeholder="e.g. <%= (round.total_marks * 0.7).round %>">
+            </div>
+            <span class="hint">Leave empty to clear the marks. Pass mark: <%= round.pass_percentage %>%.</span>
+          </div>
+          <div class="field full">
+            <label for="grade_note">Your remarks (for the file / HR record)</label>
+            <textarea name="grade_note" id="grade_note" rows="3" class="input" placeholder="e.g. Pivot table correct, VLOOKUP partly wrong, formatting good."><%= round.grade_note %></textarea>
+          </div>
+        </div>
+        <div class="row between" style="margin-top:.8rem">
+          <span class="small">
+            <% if round.graded? %>
+              <b style="color:<%= round.passed? ? 'var(--green)' : 'var(--red)' %>"><%= round.marks %>/<%= round.total_marks %> · <%= round.percentage %>% · <%= round.result_label %></b>
+              <span class="tiny muted">marked <%= nice_time(round.graded_at) %></span>
+            <% else %>
+              <span class="muted">Not marked yet</span>
+            <% end %>
+          </span>
+          <button class="btn btn-primary btn-sm"><%= icon("check") %> Save marks</button>
+        </div>
+      <% end %>
+    </div>
+  <% elsif round.graded? %>
+    <div class="card-body" style="padding-top:0">
+      <span class="badge <%= round.passed? ? 'sev-success' : 'sev-high' %>"><%= icon("award") %> <%= round.marks %>/<%= round.total_marks %> · <%= round.percentage %>% · <%= round.result_label %></span>
+      <% if round.grade_note.present? %><p class="small muted" style="margin-top:.5rem"><%= round.grade_note %></p><% end %>
+    </div>
+  <% end %>
+</div>

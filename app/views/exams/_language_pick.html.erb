@@ -1,5 +1,5 @@
 <%# Candidate picks the paper language. Without HR's Hindi version the browser translates it (Chrome) %>
-<% hindi = @invitation.quiz.hindi_count.positive? %>
+<% hindi = @invitation.quiz && @invitation.quiz.hindi_count.positive? %>
 <% lang = @invitation.language %>
 <div class="lang-pick <%= local_assigns[:css] %>" role="group" aria-label="Test language / टेस्ट की भाषा"
      data-controller="lang-pick" data-lang-pick-url-value="<%= exam_language_path(@invitation.token) %>">

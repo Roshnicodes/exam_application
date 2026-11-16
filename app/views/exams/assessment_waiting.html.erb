@@ -1,0 +1,34 @@
+<% content_for :title, "Practical assessment" %>
+<%= turbo_stream_from @invitation, :candidate %>
+<div class="exam-wrap" data-controller="autorefresh media-cleanup" data-autorefresh-interval-value="20000">
+  <%= render "header" %>
+  <%= render "exams/interview_cta", invitation: @invitation %>
+  <div class="card finish-card">
+    <div class="big-ico" style="background:var(--brand-soft);color:var(--brand)"><%= icon(@round&.task_icon || "sheet") %></div>
+    <h1>Hi <%= @invitation.candidate_name.split.first %>, you're verified ✅</h1>
+    <% if @round %>
+      <p class="muted" style="margin-top:.6rem">
+        Your practical assessment <b><%= @round.name %></b> (<%= @round.duration %> minutes, <%= @round.total_marks %> marks)
+        will open as soon as HR starts it. <b>Keep this page open</b> — the Start button appears here by itself.
+      </p>
+      <div class="waiting" style="margin-top:1.4rem"><span class="spinner"></span><span>Waiting for HR to start your assessment…</span></div>
+      <% if @round.scheduled_at %>
+        <p class="small" style="margin-top:1rem"><%= icon("calendar") %> Scheduled for <b><%= @round.scheduled_at.strftime("%a %d %b %Y, %-I:%M %p") %></b></p>
+      <% end %>
+    <% else %>
+      <p class="muted" style="margin-top:.6rem">
+        Nothing is open for you right now. If HR told you about a practical test or an interview, keep this page open —
+        a <b>Start</b> / <b>Join</b> button appears here the moment they start it.
+      </p>
+      <div class="waiting" style="margin-top:1.4rem"><span class="spinner"></span><span>Waiting for HR…</span></div>
+    <% end %>
+    <%= link_to candidate_guide_path, class: "guide-link", style: "margin-top:1.4rem", target: "_blank", rel: "noopener" do %>
+      <%= icon("file") %> Read the guide — what gives a warning <span>गाइड पढ़ें</span>
+    <% end %>
+    <% if @invitation.notes.present? %>
+      <div class="kv" style="margin-top:1.6rem;text-align:left;grid-template-columns:1fr">
+        <div><span>Note from HR</span><b style="font-weight:500"><%= @invitation.notes %></b></div>
+      </div>
+    <% end %>
+  </div>
+</div>

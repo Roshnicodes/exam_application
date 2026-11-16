@@ -1,7 +1,9 @@
 <% content_for :title, @batch.name %>
 <%= turbo_stream_from Current.user, :invitations %>
 <% st = @batch.stats %>
-<% chips = [ [ "briefcase", @batch.post_name ], [ "file", @batch.quiz.title ], [ "clock", "#{@batch.quiz.duration_minutes} min" ] ]
+<% chips = [ [ "briefcase", @batch.post_name ] ]
+   chips += [ [ "file", @batch.quiz.title ], [ "clock", "#{@batch.quiz.duration_minutes} min" ] ] if @batch.quiz
+   chips << [ "sheet", "#{@batch.assessment.title} · #{@batch.assessment.duration_minutes} min" ] if @batch.assessment
    chips << [ "calendar", @batch.interview_date.strftime("%d %b %Y, %-I:%M %p") ] if @batch.interview_date
    chips << [ "lock", "Links valid till #{@batch.link_expires_at.strftime('%d %b, %-I:%M %p')}" ] if @batch.link_expires_at %>
 <%= render layout: "shared/page_header", locals: {

@@ -31,6 +31,7 @@
       <div><b><%= icon("list") %> Separate rounds</b><p>Test → Technical round → HR round. Each round has its own date, panel, video room, Meet link and scorecard. Ideal when rounds happen on different days or with different panels.</p></div>
       <div><b><%= icon("users") %> One combined interview</b><p>Test → one “Panel interview” where everyone joins together and each panelist scores Technical <i>and</i> HR (or skips what they didn't judge).</p></div>
       <div><b><%= icon("file") %> Test only</b><p>No rounds; you can still add a round later from the candidate page.</p></div>
+      <div><b><%= icon("sheet") %> Practical assessment only</b><p>No MCQ paper — the candidate works live on an uploaded task (Excel, Tally, Word, data entry…). See step 4.</p></div>
     </div>
     <ol>
       <li>Open the candidate → <b>Interview rounds</b> → set date/time and panel (✏️).</li>
@@ -44,6 +45,22 @@
 
   <section class="card guide-card">
     <div class="guide-num">4</div>
+    <h2>Practical assessment (live Excel / Tally / Word test)</h2>
+    <p>A task the candidate <b>does</b>, not a question they tick: an Excel sheet to finish, Tally entries to pass, a letter to draft, data to enter, code to write. Fully proctored, with its own clock and marks.</p>
+    <ol>
+      <li><b>Practical Tests</b> in the menu → <b>New assessment</b> → name it, pick the type, <b>upload the task file(s)</b> (xlsx, Tally backup, docx, pdf, zip…), write step-by-step instructions, set the time, total marks and the warning limit.</li>
+      <li>Tick <b>“Candidate may open another app”</b> when the task is done outside the browser (Excel, Tally). Tab / app-switch and full-screen warnings pause; camera, phone, second-person checks and screen recording keep running.</li>
+      <li>Give it to a candidate in two ways: on the invite form choose the plan <b>“Practical assessment only”</b> (no MCQ paper at all) or pick an assessment alongside the question paper — then it becomes a round after the test. Bulk invite works the same for a whole batch.</li>
+      <li>Already invited? Candidate page → <b>Selection rounds</b> → <b>Add a practical assessment</b>. You can pick a saved one or upload a file for that one candidate.</li>
+      <li>Press <b>Start now</b>. The candidate's link shows <b>Start</b> → camera + entire-screen check → the task opens with the timer, the download button, an upload box and a typing box.</li>
+      <li>Watch them live from the round page (camera + their screen), talk to them, and use <b>Allow switching apps</b> when they need Excel / Tally. Their files upload as they go, so nothing is lost.</li>
+      <li>When they submit (or the time / warning limit ends it), open the round, download the file and <b>give marks out of the total</b> with your remarks. Tick a stage on the round to make those marks count in the Selection score. Need a retry? <b>Give another attempt</b>.</li>
+    </ol>
+    <p class="guide-tip"><%= icon("alert") %> Warnings are the same as the test: tab / app switch, leaving full screen, no face, second person, phone or book, copy / paste, right click, screenshots, noise, second display, stopping screen sharing. Reaching the limit submits the work automatically and alerts you.</p>
+  </section>
+
+  <section class="card guide-card">
+    <div class="guide-num">5</div>
     <h2>Decide &amp; report</h2>
     <ol>
       <li>The <b>Selection score</b> card combines test + round scores by weightage into a final %.</li>

@@ -2,8 +2,8 @@
 <%= turbo_stream_from @invitation, :events %>
 <%= render layout: "shared/page_header", locals: {
       title: @invitation.candidate_name, avatar: initials_for(@invitation.candidate_name),
-      subtitle: [ @invitation.vacancy, @invitation.department.presence, @invitation.quiz.title ].compact.join(" · "),
-      chips: [ [ "clock", "#{@invitation.quiz.duration_minutes} min" ], [ "list", "#{@invitation.quiz.questions.size} questions" ] ] } do %>
+      subtitle: [ @invitation.vacancy, @invitation.department.presence, (@invitation.quiz&.title || @invitation.invited_for) ].compact.join(" · "),
+      chips: (@invitation.quiz ? [ [ "clock", "#{@invitation.quiz.duration_minutes} min" ], [ "list", "#{@invitation.quiz.questions.size} questions" ] ] : []) } do %>
   <% if @invitation.meeting_link.present? %><a class="btn btn-light" href="<%= @invitation.meeting_link %>" target="_blank" rel="noopener"><%= icon("link") %> Meet / Zoom</a><% end %>
   <% if (live = @invitation.current_round) %>
     <%= link_to watch_round_path(params[:watch_token], live), class: "btn btn-primary" do %><%= icon("video") %> Join <%= live.name %> (live)<% end %>

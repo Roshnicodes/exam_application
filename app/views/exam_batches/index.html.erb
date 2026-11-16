@@ -21,12 +21,12 @@
           <span class="dept-ico"><%= icon("users") %></span>
           <div class="grow" style="min-width:0">
             <h3><%= link_to b.name, exam_batch_path(b), style: "color:inherit" %></h3>
-            <p class="dept-head"><%= icon("briefcase") %> <%= b.post_name %> · <%= b.quiz.title %></p>
+            <p class="dept-head"><%= icon("briefcase") %> <%= b.post_name %> · <%= b.quiz&.title || b.assessment&.title %></p>
           </div>
         </div>
         <div class="meta-row">
           <% if b.interview_date %><span class="pill"><%= icon("calendar") %> <%= b.interview_date.strftime("%d %b, %-I:%M %p") %></span><% end %>
-          <span class="pill"><%= icon("clock") %> <%= b.quiz.duration_minutes %> min</span>
+          <span class="pill"><%= icon("clock") %> <%= b.quiz&.duration_minutes || b.assessment&.duration_minutes %> min</span>
         </div>
         <div class="dept-metrics" style="grid-template-columns:repeat(4,1fr)">
           <div><b><%= st[:invited] %></b><span>Invited</span></div>

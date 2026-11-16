@@ -98,7 +98,8 @@ class InterviewChannel < ApplicationCable::Channel
     def subscribe_test_call
       if params[:token].present?
         invitation = Invitation.find_by(token: params[:token].to_s)
-        return reject unless invitation&.in_progress? && candidate_verified?(invitation)
+        return reject unless invitation && candidate_verified?(invitation) &&
+                             (invitation.in_progress? || invitation.assessment_rounds.any?(&:working?))
 
         @role = "candidate"
         @name = invitation.candidate_name

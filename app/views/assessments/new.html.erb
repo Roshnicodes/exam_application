@@ -1,0 +1,7 @@
+<% content_for :title, "New practical assessment" %>
+<%= render layout: "shared/page_header", locals: {
+      title: "New practical assessment", icon: "sheet",
+      subtitle: "Upload the task once — then give it to any candidate, on its own or with the MCQ test",
+      crumbs: [ [ "Practical assessments", assessments_path ] ] } do %>
+<% end %>
+<%= render "form", assessment: @assessment %>

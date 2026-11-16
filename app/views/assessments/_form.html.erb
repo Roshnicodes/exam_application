@@ -1,0 +1,137 @@
+<%= form_with model: assessment, class: "card", multipart: true, data: { controller: "assessment-form" } do |f| %>
+  <div class="form-section">
+    <%= render "shared/errors", record: assessment %>
+    <div class="form-section-head">
+      <span class="ico"><%= icon("sheet") %></span>
+      <div><h3>What does the candidate have to do?</h3>
+        <p class="small muted">Give the task a name and pick its type. The type only sets the icon and the file types you normally get back — you can change those below.</p></div>
+    </div>
+    <div class="fields">
+      <div class="field full">
+        <%= f.label :title do %>Assessment name <span class="req">*</span><% end %>
+        <div class="input-wrap"><%= icon("sheet") %><%= f.text_field :title, required: true, class: "input",
+              placeholder: "e.g. Excel practical test – VLOOKUP & Pivot, or Tally entry test (Sales + GST)" %></div>
+      </div>
+      <div class="field full">
+        <label>Type of task</label>
+        <div class="chip-checks kind-picks">
+          <% Assessment::KINDS.each do |key, (label, ico, exts)| %>
+            <label>
+              <%= f.radio_button :kind, key, data: { action: "assessment-form#kindChanged", extensions: exts } %>
+              <span><%= icon(ico) %> <%= label %></span>
+            </label>
+          <% end %>
+        </div>
+      </div>
+      <div class="field full">
+        <%= f.label :description do %>Short description <span class="req">*</span><% end %>
+        <%= f.text_area :description, rows: 2, class: "input", required: true, maxlength: 200,
+              placeholder: "e.g. 3 sheets — sales data to summarise with a pivot table and VLOOKUP" %>
+        <span class="hint">Required · up to 200 characters · for your team (the candidate sees the instructions, not this)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-head">
+      <span class="ico"><%= icon("upload") %></span>
+      <div><h3>Upload the task file(s)</h3>
+        <p class="small muted">Excel, Tally backup, Word, PDF, images, ZIP — anything. The candidate can open / download these during the assessment.
+          Up to <%= Assessment::MAX_FILES %> files, <%= Assessment::MAX_FILE_SIZE / 1.megabyte %> MB each.</p></div>
+    </div>
+    <div class="fields">
+      <% if assessment.files.attached? %>
+        <div class="field full">
+          <label>Files already uploaded</label>
+          <div class="file-list">
+            <% assessment.files.attachments.each do |file| %>
+              <div class="file-row">
+                <span class="file-ico"><%= icon("file") %></span>
+                <div class="grow">
+                  <b><%= file.filename %></b>
+                  <span class="tiny muted"><%= number_to_human_size(file.byte_size) %> · uploaded <%= file.created_at.strftime("%d %b %Y") %></span>
+                </div>
+                <%= link_to rails_blob_path(file, disposition: "attachment"), class: "btn btn-light btn-sm", data: { turbo: false } do %><%= icon("download") %> Download<% end %>
+                <label class="chip-del" title="Remove this file when you save">
+                  <%= check_box_tag "remove_files[]", file.id, false %> <span><%= icon("trash") %> Remove</span>
+                </label>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+      <div class="field full">
+        <%= f.label :files, assessment.files.attached? ? "Add more files" : "Task files" %>
+        <div class="dropzone" data-controller="dropzone" data-action="click->dropzone#pick">
+          <span class="ico"><%= icon("upload") %></span>
+          <div class="grow small" data-dropzone-target="label">Click or drop the assessment file(s) here — .xlsx, .docx, .pdf, .zip, Tally backup…</div>
+          <%= f.file_field :files, multiple: true, data: { dropzone_target: "input", action: "change->dropzone#changed" } %>
+        </div>
+        <span class="hint">No file? You can still create the assessment and type the task in the instructions below (e.g. a typing test).</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-head">
+      <span class="ico"><%= icon("list") %></span>
+      <div><h3>Instructions for the candidate</h3></div>
+    </div>
+    <div class="fields">
+      <div class="field full">
+        <%= f.label :instructions, "Shown on the candidate's screen while they work" %>
+        <%= f.text_area :instructions, rows: 7, class: "input", placeholder: "1. Download “sales-data.xlsx” and open it in Excel.\n2. Sheet 1: make a pivot table of sales by region and month.\n3. Sheet 2: use VLOOKUP to fill the product names.\n4. Save the file as yourname.xlsx and upload it here before the time ends." %>
+        <span class="hint">Write it step by step. Each new line is shown as a separate line to the candidate.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-head">
+      <span class="ico"><%= icon("shield") %></span>
+      <div><h3>Time, marks &amp; proctoring</h3></div>
+    </div>
+    <div class="fields three">
+      <div class="field">
+        <%= f.label :duration_minutes, "Time allowed (minutes)" %>
+        <div class="input-wrap"><%= icon("clock") %><%= f.number_field :duration_minutes, min: 1, max: 600, class: "input" %></div>
+        <span class="hint">The clock starts when the candidate opens the task.</span>
+      </div>
+      <div class="field">
+        <%= f.label :max_marks, "Total marks" %>
+        <div class="input-wrap"><%= icon("award") %><%= f.number_field :max_marks, min: 1, max: 10_000, class: "input" %></div>
+        <span class="hint">You give the marks after checking the uploaded file.</span>
+      </div>
+      <div class="field">
+        <%= f.label :pass_percentage, "Pass %" %>
+        <%= f.number_field :pass_percentage, min: 0, max: 100, class: "input" %>
+      </div>
+      <div class="field">
+        <%= f.label :max_warnings, "Auto-submit after" %>
+        <%= f.select :max_warnings, [ [ "3 warnings", 3 ], [ "5 warnings", 5 ], [ "8 warnings", 8 ], [ "10 warnings", 10 ], [ "Never (only alert HR)", 0 ] ], {}, class: "input" %>
+        <span class="hint">Tab switch, second person, phone, copy / paste… every warning is sent to HR live.</span>
+      </div>
+      <div class="field full">
+        <%= f.label :allowed_extensions, "File types the candidate may upload back" %>
+        <div class="input-wrap"><%= icon("file") %><%= f.text_field :allowed_extensions, class: "input", data: { assessment_form_target: "extensions" },
+              placeholder: Assessment::DEFAULT_EXTENSIONS.split(",").first(8).join(",") %></div>
+        <span class="hint">Comma separated, e.g. <code>.xlsx,.xls,.pdf</code>. Leave empty to accept all the usual office / data files.</span>
+      </div>
+      <div class="field full">
+        <div class="switch-row">
+          <label class="switch"><%= f.check_box :online_sheet %><span><b>Solve Excel tasks in the built-in spreadsheet</b><small>The candidate fills the task sheet right on the assessment page — formulas (SUM, VLOOKUP, SUMIF, IF…), sheets, autosave. No Excel needed, no download / upload, no app switching; their workbook reaches you as an .xlsx. Applies when the task file is .xlsx / .csv / .ods.</small></span></label>
+          <label class="switch"><%= f.check_box :require_upload %><span><b>A file upload is required</b><small>The candidate cannot submit without uploading their solved file.</small></span></label>
+          <label class="switch"><%= f.check_box :allow_download %><span><b>Candidate can download the task file</b><small>Untick for a view-only task (e.g. the brief is on screen and they type the answer).</small></span></label>
+          <label class="switch"><%= f.check_box :allow_app_switch %><span><b>Candidate may open another app (Excel / Tally / Word)</b><small>Needed when the task is done in a desktop app: switching tabs / apps and leaving full screen give no warning. Camera and screen stay recorded.</small></span></label>
+          <label class="switch"><%= f.check_box :allow_notes %><span><b>Show the typing box</b><small>Candidate can type their answer / steps along with the file.</small></span></label>
+          <label class="switch"><%= f.check_box :active %><span><b>Active</b><small>Inactive assessments stay on record but are not offered in new invites.</small></span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <%= link_to "Cancel", assessment.persisted? ? assessment_path(assessment) : assessments_path, class: "btn btn-light" %>
+    <%= f.button class: "btn btn-primary" do %><%= icon(assessment.persisted? ? "check" : "plus") %> <%= assessment.persisted? ? "Save assessment" : "Create assessment" %><% end %>
+  </div>
+<% end %>

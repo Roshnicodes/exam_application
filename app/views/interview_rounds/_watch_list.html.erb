@@ -1,13 +1,21 @@
 <%# Panelist view of the rounds (no HR actions). locals: invitation:, watch_token: %>
 <div id="rounds_watch_<%= invitation.id %>" class="card">
-  <div class="card-head"><h2><%= icon("video") %> Interview rounds</h2></div>
+  <div class="card-head"><h2><%= icon("list") %> Selection rounds</h2></div>
   <% if invitation.interview_rounds.any? %>
     <% invitation.interview_rounds.each do |round| %>
       <div class="list-item">
-        <span class="rs-dot rs-<%= round.status %>"><%= icon(round.open? ? "video" : (round.completed? ? "check" : "calendar")) %></span>
-        <div class="grow person"><div><b><%= round.name %></b><span><%= round.scheduled_at ? round.scheduled_at.strftime("%a %d %b, %-I:%M %p") : "Not scheduled" %> · <%= round.panelists.map(&:name).join(", ").presence || "Panel not set" %></span></div></div>
+        <span class="rs-dot rs-<%= round.status %>"><%= icon(round.assessment? ? round.task_icon : (round.open? ? "video" : (round.completed? ? "check" : "calendar"))) %></span>
+        <div class="grow person"><div><b><%= round.name %></b><span>
+          <% if round.assessment? %>
+            <%= round.task_label %> · <%= round.duration %> min · <%= round.total_marks %> marks<%= " · #{round.marks}/#{round.total_marks}" if round.graded? %>
+          <% else %>
+            <%= round.scheduled_at ? round.scheduled_at.strftime("%a %d %b, %-I:%M %p") : "Not scheduled" %> · <%= round.panelists.map(&:name).join(", ").presence || "Panel not set" %>
+          <% end %>
+        </span></div></div>
         <% unless round.cancelled? %>
-          <%= link_to watch_round_path(watch_token, round), class: "btn btn-sm #{round.open? ? 'btn-primary' : 'btn-light'}" do %><%= icon(round.open? ? "video" : "award") %> <%= round.open? ? "Join now" : "Open" %><% end %>
+          <%= link_to watch_round_path(watch_token, round), class: "btn btn-sm #{round.open? ? 'btn-primary' : 'btn-light'}" do %>
+            <%= icon(round.assessment? ? "eye" : (round.open? ? "video" : "award")) %> <%= round.open? ? (round.assessment? ? "Watch live" : "Join now") : "Open" %>
+          <% end %>
         <% end %>
       </div>
     <% end %>

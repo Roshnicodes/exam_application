@@ -35,10 +35,10 @@
           <span class="avatar" style="background: <%= gradient_for(i.candidate_name) %>"><%= initials_for(i.candidate_name) %></span>
           <span class="cand-main"><b><%= i.candidate_name %></b><span><%= i.vacancy %><%= " · #{i.department}" if i.department.present? %></span></span>
         </span>
-        <span class="hide-md small"><%= i.quiz.title %></span>
+        <span class="hide-md small"><%= i.quiz&.title %></span>
         <span class="score-cell">
           <b><%= i.percentage %>%</b><small><%= i.score %>/<%= i.total_marks %> marks</small>
-          <span class="score-bar"><span style="width:<%= i.percentage %>%;background:<%= i.passed? ? 'linear-gradient(90deg,#10b981,#14b8a6)' : 'linear-gradient(90deg,#f59e0b,#ef4444)' %>"></span><i style="left:<%= i.quiz.pass_percentage %>%" title="Pass mark <%= i.quiz.pass_percentage %>%"></i></span>
+          <span class="score-bar"><span style="width:<%= i.percentage %>%;background:<%= i.passed? ? 'linear-gradient(90deg,#10b981,#14b8a6)' : 'linear-gradient(90deg,#f59e0b,#ef4444)' %>"></span><i style="left:<%= i.quiz&.pass_percentage %>%" title="Pass mark <%= i.quiz&.pass_percentage %>%"></i></span>
         </span>
         <span>
           <span class="result-badge <%= i.passed? ? 'pass' : 'fail' %>"><%= icon(i.passed? ? "check-circle" : "x-circle") %> <%= i.result_label %></span>

@@ -1,12 +1,14 @@
 # Live grid of the candidates writing a test right now, and a page of the tests already finished.
 class MonitorController < ApplicationController
-  before_action { Invitation.submit_overdue! } # time over but never submitted: finish them first
+  # time over but never submitted: finish those tests and practical assessments first
+  before_action { Invitation.submit_overdue!; InterviewRound.submit_overdue_work! }
 
   def index
     invitations = Current.user.invitations
     @invitations = invitations.live.includes(:quiz)
     @getting_ready = invitations.where(status: %w[otp_requested verified]).where(updated_at: 1.day.ago..).order(:updated_at)
     @completed_count = invitations.completed.where(submitted_at: Time.current.all_day).count
+    @live_assessments = live_assessment_rounds
   end
 
   PERIODS = { "today" => "Today", "yesterday" => "Yesterday", "week" => "Last 7 days", "month" => "Last 30 days", "all" => "All time" }.freeze
@@ -29,6 +31,15 @@ class MonitorController < ApplicationController
   end
 
   private
+    # Practical assessments (Excel / Tally / Word …) being worked on right now.
+    def live_assessment_rounds
+      scope = InterviewRound.assessments.where(status: "open", submitted_at: nil).where.not(work_started_at: nil)
+                            .joins(:invitation).where(invitations: { user_id: Current.user.id })
+                            .includes(:invitation, :assessment).order(:work_started_at)
+      scope = scope.where(invitations: { exam_batch_id: @batch.id }) if @batch
+      scope.to_a
+    end
+
     def period_range
       case @period
       when "yesterday" then Date.yesterday.all_day

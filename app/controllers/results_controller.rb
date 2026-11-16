@@ -12,7 +12,7 @@ class ResultsController < ApplicationController
     load_results
     rows = @results.map do |i|
       [ @ranks[i.id], i.candidate_name, i.candidate_email, i.entered_phone.presence || i.candidate_phone, i.vacancy, i.department,
-        i.quiz.title, i.score, i.total_marks, "#{i.percentage}%", "#{i.quiz.pass_percentage}%", i.result_label,
+        i.quiz&.title, i.score, i.total_marks, "#{i.percentage}%", "#{i.quiz&.pass_percentage}%", i.result_label,
         i.terminated? ? "Terminated (#{i.termination_reason})" : "Submitted", i.warnings_count,
         i.time_taken ? (i.time_taken / 60.0).round(1) : "", i.submitted_at&.strftime("%d-%m-%Y %I:%M %p"),
         i.interview_average, i.interview_feedbacks.map { |f| "#{f.reviewer_name}: #{f.recommendation_label}" }.join("; "),

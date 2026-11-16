@@ -36,7 +36,8 @@ export default class extends Controller {
   static targets = [ "video", "faceStatus", "warnLabel", "warning", "warningText", "warningDots", "warningLeft", "fullscreenGate", "cameraGate", "cameraTitle", "cameraHelp",
                      "screenGate", "screenError" ]
   static values = { eventsUrl: String, recordingsUrl: String, warnings: Number, maxWarnings: Number, token: String,
-                    mode: { type: String, default: "exam" } }
+                    mode: { type: String, default: "exam" }, round: { type: Number, default: 0 },
+                    allowSwitch: Boolean }
 
   // In an interview the checks start once the candidate is in the room (after screen sharing),
   // so the share picker or the join click can't be mistaken for leaving the window.
@@ -77,6 +78,8 @@ export default class extends Controller {
     this.uploads = new Set()
     this.segmentIndex = 0
     this.segments = {} // "camera" / "screen" -> current recording segment
+    // a practical task that is solved in another app (Excel / Tally) starts with app switching allowed
+    if (this.allowSwitchValue) this.switchAllowed = true
     this.bindListeners()
     this.checkFullscreen()
 
@@ -208,11 +211,21 @@ export default class extends Controller {
   bindListeners() {
     this.onVisibility = () => { if (document.hidden) this.violation("tab_switch") }
     this.onBlur = () => setTimeout(() => {
+      // focus inside an in-page iframe (the task file viewer) is still this page
+      if (document.activeElement?.tagName === "IFRAME") return
       if (!document.hidden && !document.hasFocus()) this.violation("window_blur")
     }, 400)
     this.onFullscreen = () => this.checkFullscreen(true)
-    this.onClipboard = (e) => { e.preventDefault(); this.violation("copy_paste", `${e.type} attempt`) }
-    this.onContext = (e) => { e.preventDefault(); this.violation("right_click") }
+    this.onClipboard = (e) => {
+      e.preventDefault() // the system clipboard stays blocked everywhere
+      if (e.target?.closest?.("[data-sheet-editor]")) return // the built-in spreadsheet copies cells by itself
+      this.violation("copy_paste", `${e.type} attempt`)
+    }
+    this.onContext = (e) => {
+      e.preventDefault()
+      if (e.target?.closest?.("[data-sheet-editor]")) return // the spreadsheet's own Insert / Delete menu
+      this.violation("right_click")
+    }
     this.onKey = (e) => this.handleKey(e)
     this.onKeyUp = (e) => { if (e.key === "PrintScreen") { navigator.clipboard?.writeText("").catch(() => {}); this.violation("screenshot") } }
     this.onBeforeUnload = (e) => { if (this.active) { e.preventDefault(); e.returnValue = "" } }
@@ -254,6 +267,8 @@ export default class extends Controller {
   handleKey(e) {
     const k = e.key.toLowerCase()
     const mod = e.ctrlKey || e.metaKey
+    // the built-in spreadsheet uses Ctrl+C / X / V (cells, inside the sheet only) and Ctrl+S (save) like Excel
+    if (mod && !e.shiftKey && [ "c", "x", "v", "s", "u" ].includes(k) && e.target?.closest?.("[data-sheet-editor]")) return
     if (k === "f12" || (mod && e.shiftKey && [ "i", "j", "c", "k" ].includes(k)) || (mod && [ "u", "s", "p" ].includes(k))) {
       e.preventDefault()
       return this.violation("devtools", `Pressed ${e.ctrlKey ? "Ctrl+" : ""}${e.metaKey ? "Cmd+" : ""}${e.shiftKey ? "Shift+" : ""}${e.key}`)
@@ -539,6 +554,7 @@ export default class extends Controller {
     body.append("segment", new Blob(seg.chunks, { type: seg.type }), `segment.${seg.type.includes("mp4") ? "mp4" : "webm"}`)
     body.append("index", this.segmentIndex++)
     body.append("kind", label)
+    if (this.roundValue) body.append("round_id", this.roundValue) // keeps the round's recordings together
     const upload = fetch(this.recordingsUrlValue, { method: "POST", headers: { "X-CSRF-Token": csrfToken() }, body })
       .catch((e) => console.warn("Recording upload failed", e))
     this.uploads.add(upload)
@@ -586,6 +602,7 @@ export default class extends Controller {
     const body = new FormData()
     body.append("kind", kind)
     if (message) body.append("message", message)
+    if (this.roundValue) body.append("round_id", this.roundValue) // warning belongs to this round
     const shot = await snapshot(this.videoTarget, kind === "snapshot" ? 0.6 : 0.75)
     if (shot) body.append("snapshot", shot, `${kind}.jpg`)
 
@@ -608,15 +625,20 @@ export default class extends Controller {
     this.warnLabelTarget.textContent = this.maxWarningsValue > 0 ? `${this.warningsValue}/${this.maxWarningsValue}` : this.warningsValue
   }
 
+  get assessment() {
+    return this.modeValue === "assessment"
+  }
+
   showWarning(text) {
     this.warningTextTarget.textContent = text
     const max = this.maxWarningsValue
     if (max > 0) {
       this.warningDotsTarget.innerHTML = Array.from({ length: max }, (_, i) => `<i class="${i < this.warningsValue ? "on" : ""}"></i>`).join("")
       const left = Math.max(0, max - this.warningsValue)
+      const what = this.assessment ? "assessment" : "exam"
       this.warningLeftTarget.textContent = left > 0
-        ? `${left} warning${left === 1 ? "" : "s"} left before your exam is ended automatically. HR has been notified.`
-        : "Warning limit reached. Your exam is being submitted."
+        ? `${left} warning${left === 1 ? "" : "s"} left before your ${what} is ended automatically. HR has been notified.`
+        : `Warning limit reached. Your ${what} is being submitted.`
     } else {
       this.warningLeftTarget.textContent = this.interview ? "The interview panel has been alerted." : "HR has been notified of this activity."
     }

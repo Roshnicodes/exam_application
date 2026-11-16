@@ -4,14 +4,17 @@ class Invitation < ApplicationRecord
   INTERVIEW_PLANS = {
     "separate" => [ "Separate rounds", "Test, then each interview stage (e.g. Technical, HR) as its own round — own date, panel and room" ],
     "combined" => [ "One combined interview", "Test, then a single panel interview that scores all stages together" ],
-    "none" => [ "Test only", "No interview rounds (you can still add one later)" ]
+    "none" => [ "Test only", "No interview rounds (you can still add one later)" ],
+    "practical" => [ "Practical assessment only", "No MCQ paper — the candidate works live on an uploaded task (Excel, Tally, Word…) with full proctoring" ]
   }.freeze
+  PLAN_ORDER = %w[none practical separate combined].freeze
   DECISIONS = { "selected" => "Selected", "on_hold" => "On hold", "rejected" => "Rejected" }.freeze
   OTP_TTL = 10.minutes
   MAX_OTP_ATTEMPTS = 5
 
   belongs_to :user
-  belongs_to :quiz
+  belongs_to :quiz, optional: true # a practical-assessment-only invite has no MCQ paper
+  belongs_to :assessment, optional: true # practical task given to this candidate
   belongs_to :exam_batch, optional: true
   belongs_to :opening, class_name: "Vacancy", foreign_key: :vacancy_id, optional: true, inverse_of: :invitations
   has_many :proctor_events, dependent: :destroy
@@ -35,6 +38,8 @@ class Invitation < ApplicationRecord
   before_validation :copy_opening_details
 
   validates :candidate_name, :vacancy, presence: true
+  validates :quiz, presence: true, unless: :practical_only?
+  validates :assessment, presence: { message: "— pick the practical assessment the candidate should work on" }, if: :practical_only?
   validates :candidate_email, format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
   validates :candidate_phone, length: { is: 10 }, allow_blank: true
   validates :status, inclusion: { in: STATUSES }
@@ -43,7 +48,9 @@ class Invitation < ApplicationRecord
   validates :language, inclusion: { in: %w[en hi] }
   validates :decision, inclusion: { in: DECISIONS.keys }, allow_nil: true
   validate :resume_is_a_document
-  validates :meeting_link, format: { with: %r{\Ahttps?://}i, message: "must start with http:// or https://" }, allow_blank: true
+  validate :assessment_owned_by_user
+  normalizes :meeting_link, with: ->(v) { v.to_s.strip.presence } # a pasted link may carry spaces
+  validates :meeting_link, format: { with: %r{\Ahttps?://\S+\z}i, message: "must start with http:// or https://" }, allow_blank: true
 
   scope :recent, -> { order(created_at: :desc) }
   scope :live, -> { where(status: "in_progress") }
@@ -122,7 +129,7 @@ class Invitation < ApplicationRecord
     return if in_progress?
 
     update!(status: "in_progress", started_at: Time.current, answers: {})
-    log!("exam_started", "#{quiz.questions.size} questions - #{quiz.duration_minutes} minutes")
+    log!("exam_started", "#{quiz.questions.size} questions - #{quiz.duration_minutes} minutes") if quiz
   end
 
   # Submits tests whose time is over but which were never submitted from the candidate's browser.
@@ -131,7 +138,9 @@ class Invitation < ApplicationRecord
   end
 
   def deadline
-    started_at && started_at + quiz.duration_minutes.minutes
+    return nil unless started_at && quiz
+
+    started_at + quiz.duration_minutes.minutes
   end
 
   def seconds_left
@@ -145,7 +154,7 @@ class Invitation < ApplicationRecord
   end
 
   def save_answer!(question_id, option_index)
-    return unless in_progress? && quiz.questions.exists?(question_id)
+    return unless in_progress? && quiz&.questions&.exists?(question_id)
 
     self.answers = answers.merge(question_id.to_s => option_index.presence&.to_i)
     save!
@@ -154,12 +163,12 @@ class Invitation < ApplicationRecord
   def submit!(final_answers = nil, reason: nil)
     return if finished?
 
-    if final_answers.present?
+    if final_answers.present? && quiz
       valid_ids = quiz.questions.pluck(:id).map(&:to_s)
       self.answers = answers.merge(final_answers.to_h.slice(*valid_ids).transform_values { |v| v.presence&.to_i })
     end
 
-    questions = quiz.questions.to_a
+    questions = quiz ? quiz.questions.to_a : []
     self.total_marks = questions.sum(&:marks)
     self.score = questions.sum { |q| q.correct?(answers[q.id.to_s]) ? q.marks : 0 }
     self.submitted_at = Time.current
@@ -192,7 +201,34 @@ class Invitation < ApplicationRecord
 
   # What the candidate was invited for: the online test only, or the test followed by interviews.
   def invited_for
+    return "Practical assessment" if practical_only?
+    return "Test + Practical assessment" if assessment_rounds.any? && !interview_rounds.any?(&:interview?)
+
     interview_plan == "none" && interview_rounds.none? ? "Online test" : "Test + Interview"
+  end
+
+  # ---- What this candidate has to do ---------------------------------------
+
+  # A practical-only invite: no MCQ paper, straight to the uploaded task.
+  def practical_only?
+    interview_plan == "practical"
+  end
+
+  def test_required?
+    quiz_id.present? && !practical_only?
+  end
+
+  def assessment_rounds
+    interview_rounds.select(&:assessment?)
+  end
+
+  # The practical assessment the candidate can work on right now (HR made it live).
+  def live_assessment
+    assessment_rounds.find { |r| r.working? } || assessment_rounds.find { |r| r.open? && !r.submitted? }
+  end
+
+  def assessment_pending?
+    assessment_rounds.any? { |r| !r.submitted? && !r.cancelled? }
   end
 
   LANGUAGES = { "en" => "English", "hi" => "हिंदी (Hindi)" }.freeze
@@ -209,7 +245,7 @@ class Invitation < ApplicationRecord
 
   # The candidate sees their score only after HR shares it (or the paper shares results to everyone).
   def result_shown_to_candidate?
-    finished? && (result_visible? || quiz.show_result_to_candidate?)
+    finished? && (result_visible? || quiz&.show_result_to_candidate?)
   end
 
   def broadcast_result_to_candidate
@@ -228,7 +264,7 @@ class Invitation < ApplicationRecord
   end
 
   def passed?
-    finished? && percentage >= quiz.pass_percentage
+    finished? && quiz && percentage >= quiz.pass_percentage
   end
 
   def time_taken
@@ -237,7 +273,7 @@ class Invitation < ApplicationRecord
 
   # Position among everyone who finished the same paper: higher % first, then faster.
   def rank
-    return unless finished?
+    return unless finished? && quiz
 
     peers = quiz.invitations.completed.to_a
     peers.sort_by { |i| [ -i.percentage, i.time_taken || Float::INFINITY ] }.index(self).to_i + 1
@@ -282,25 +318,41 @@ class Invitation < ApplicationRecord
   DEFAULT_SELECTION = [ { name: "Online test", weight: 40 }, { name: "Technical interview", weight: 40 }, { name: "HR interview", weight: 20 } ].freeze
 
   def current_round
-    interview_rounds.find(&:open?)
+    interview_rounds.find { |r| r.open? && r.interview? }
   end
 
   def interview_open?
     current_round.present?
   end
 
-  # Creates rounds from the interview plan: one per interview stage, one combined round, or none.
+  # Creates the rounds this invite needs: the practical assessment (when one is chosen),
+  # then one round per interview stage, a single combined round, or none.
   def build_interview_rounds
-    return if interview_plan == "none" || interview_rounds.exists?
+    return if interview_rounds.exists?
+
+    position = 0
+    position += 1 if build_assessment_round
+    return if interview_plan.in?(%w[none practical])
 
     params = interview_parameters
     if interview_plan == "combined"
-      interview_rounds.create!(name: "Panel interview", position: 1, parameters: params, meeting_link: meeting_link)
+      interview_rounds.create!(name: "Panel interview", position: position + 1, parameters: params, meeting_link: meeting_link)
     else
       params.each_with_index do |name, i|
-        interview_rounds.create!(name: name, position: i + 1, parameters: [ name ], meeting_link: meeting_link)
+        interview_rounds.create!(name: name, position: position + i + 1, parameters: [ name ], meeting_link: meeting_link)
       end
     end
+  end
+
+  # The practical task round (Excel / Tally / Word …), given on its own or alongside the test.
+  def build_assessment_round
+    return false unless assessment
+
+    interview_rounds.create!(kind: "assessment", assessment: assessment, name: assessment.title, position: 1,
+                             parameters: [], duration_minutes: assessment.duration_minutes,
+                             max_marks: assessment.max_marks, max_warnings: assessment.max_warnings,
+                             scheduled_at: interview_date)
+    true
   end
 
   # Re-plan only while nothing has happened in the rounds yet.
@@ -354,8 +406,9 @@ class Invitation < ApplicationRecord
 
   def pipeline_stage
     return decision if decision.present?
-    return "testing" if in_progress?
-    return "invited" unless finished?
+    return "testing" if in_progress? || assessment_rounds.any?(&:working?)
+    return "invited" if test_required? && !finished?
+    return "invited" if !test_required? && interview_rounds.none? { |r| r.started_at.present? }
     return "interviews" if interview_rounds.any? { |r| !r.done? }
 
     "decision"
@@ -371,7 +424,17 @@ class Invitation < ApplicationRecord
     list = Array(opening&.selection_parameters).filter_map do |p|
       { name: p["name"], weight: p["weight"].to_i } if p["name"].present? && p["weight"].to_i.positive?
     end
-    list.presence || DEFAULT_SELECTION.map(&:dup)
+    list = list.presence || DEFAULT_SELECTION.map(&:dup)
+    return list unless practical_only?
+
+    # practical-only: keep just the stages the practical round covers, else the task itself
+    list.select { |p| practical_rounds_for(p[:name]).any? }.presence ||
+      [ { name: assessment&.title.presence || "Practical assessment", weight: 100 } ]
+  end
+
+  # Practical rounds that score a given selection stage (by ticked stage or by the round's name).
+  def practical_rounds_for(param_name)
+    assessment_rounds.select { |r| r.score_parameters.include?(param_name) || r.name.casecmp?(param_name.to_s) }
   end
 
   # Interview stages the panel scores: every non-test selection parameter.
@@ -384,8 +447,19 @@ class Invitation < ApplicationRecord
   # (a generic "Interview" stage uses the overall panel average).
   def selection_breakdown
     feedbacks = interview_feedbacks.select(&:persisted?)
-    selection_parameters.map do |param|
-      if param[:name].match?(TEST_PARAMETER)
+    selection_parameters.filter_map do |param|
+      practical = practical_rounds_for(param[:name])
+      if practical.any?
+        graded = practical.select(&:graded?)
+        score = graded.any? ? (graded.sum(&:percentage).to_f / graded.size).round : nil
+        source = if graded.any?
+          "#{graded.sum(&:marks)}/#{graded.sum(&:total_marks)} marks in #{graded.size == 1 ? graded.first.name : "#{graded.size} practical rounds"}"
+        else
+          practical.any?(&:submitted?) ? "Practical submitted — not marked yet" : "Practical not done yet"
+        end
+      elsif param[:name].match?(TEST_PARAMETER)
+        next nil unless test_required? # no MCQ paper on a practical-only invite
+
         score = finished? ? percentage : nil
         source = finished? ? "#{self.score}/#{total_marks} marks" : "Test not taken yet"
       else
@@ -393,7 +467,7 @@ class Invitation < ApplicationRecord
         score = vals.any? ? (vals.sum.to_f / vals.size * 10).round : nil
         source = vals.any? ? "#{(vals.sum.to_f / vals.size).round(1)}/10 from #{vals.size} panelist#{'s' unless vals.size == 1}" : "Not scored yet"
       end
-      param.merge(test: param[:name].match?(TEST_PARAMETER), score: score, source: source,
+      param.merge(test: practical.empty? && param[:name].match?(TEST_PARAMETER), practical: practical.any?, score: score, source: source,
                   points: score && (score * param[:weight] / 100.0).round(1))
     end
   end
@@ -449,6 +523,10 @@ class Invitation < ApplicationRecord
   end
 
   private
+    def assessment_owned_by_user
+      errors.add(:assessment, "is invalid") if assessment && user_id && assessment.user_id != user_id
+    end
+
     def resume_is_a_document
       return unless resume.attached?
 

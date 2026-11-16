@@ -1,0 +1,29 @@
+<%# A spreadsheet task file as tables (one per sheet), with Excel-style column letters and row numbers. %>
+<div class="task-sheet">
+  <% if sheets.size > 1 %>
+    <div class="ts-tabs">
+      <% sheets.each_with_index do |(name, _), i| %>
+        <button type="button" class="<%= 'active' if i.zero? %>" data-action="assessment#showSheet" data-index="<%= i %>"><%= name %></button>
+      <% end %>
+    </div>
+  <% end %>
+  <% sheets.each_with_index do |(name, rows), i| %>
+    <div class="ts-sheet" <%= "hidden" unless i.zero? %>>
+      <% if rows.empty? %>
+        <p class="tp-msg">Sheet “<%= name %>” is empty.</p>
+      <% else %>
+        <% cols = rows.map(&:size).max.to_i %>
+        <div class="ts-scroll">
+          <table>
+            <thead><tr><th></th><% cols.times do |c| %><th><%= ("A".ord + c).chr if c < 26 %><%= "A#{("A".ord + c - 26).chr}" if c >= 26 %></th><% end %></tr></thead>
+            <tbody>
+              <% rows.each_with_index do |row, r| %>
+                <tr><th><%= r + 1 %></th><% cols.times do |c| %><td><%= row[c] %></td><% end %></tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

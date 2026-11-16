@@ -1,6 +1,21 @@
+<%# What the candidate can do right now (replaced live when HR opens a round). locals: invitation: %>
 <% live = invitation.current_round %>
+<% task = invitation.live_assessment %>
 <% upcoming = invitation.interview_rounds.select(&:scheduled?) %>
 <div id="interview_cta">
+  <% if task %>
+    <div class="interview-cta task-cta">
+      <span class="ring-ico"><%= icon(task.task_icon) %></span>
+      <div class="grow">
+        <b>Your practical assessment “<%= task.name %>” is ready</b>
+        <p class="small"><%= task.duration %> minutes · <%= task.total_marks %> marks<%= " · #{pluralize(task.task_attachments.size, 'file')} to work on" if task.task_attachments.any? %>.
+          <%= task.work_started_at ? "Your assessment is running — go back to it." : "The clock starts only after the camera & screen check." %></p>
+      </div>
+      <%= link_to exam_assessment_path(invitation.token), class: "btn btn-primary btn-lg", data: { turbo: false } do %>
+        <%= icon("play") %> <%= task.work_started_at ? "Continue" : "Start now" %>
+      <% end %>
+    </div>
+  <% end %>
   <% if live %>
     <div class="interview-cta">
       <span class="ring-ico"><%= icon("video") %></span>
@@ -10,15 +25,15 @@
   <% end %>
   <% if upcoming.any? %>
     <div class="card card-pad cand-rounds">
-      <b class="small"><%= icon("calendar") %> Your upcoming interview rounds</b>
+      <b class="small"><%= icon("calendar") %> Your upcoming rounds</b>
       <% upcoming.each do |r| %>
         <div class="row between small">
-          <span><%= r.name %></span>
+          <span><%= r.assessment? ? "#{icon('sheet')} #{r.name} (practical)".html_safe : r.name %></span>
           <span class="muted"><%= r.scheduled_at ? r.scheduled_at.strftime("%a %d %b, %-I:%M %p") : "Time to be shared by HR" %></span>
           <% if r.meeting_link.present? %><a href="<%= r.meeting_link %>" target="_blank" rel="noopener" class="btn btn-light btn-sm"><%= icon("link") %> Meeting link</a><% end %>
         </div>
       <% end %>
-      <p class="tiny muted">Keep this page open at that time — a "Join now" button appears here when the round starts.</p>
+      <p class="tiny muted">Keep this page open at that time — a “Start” / “Join now” button appears here when it begins.</p>
     </div>
   <% end %>
 </div>

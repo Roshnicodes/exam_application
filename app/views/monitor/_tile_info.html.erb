@@ -1,6 +1,6 @@
 <% last = invitation.last_alert %>
 <% fresh_alert = last&.violation? && last.created_at > 20.seconds.ago %>
-<% total = invitation.quiz.questions.size %>
+<% total = invitation.quiz ? invitation.quiz.questions.size : 0 %>
 <div id="monitor_tile_<%= invitation.id %>" class="mon-info status-<%= invitation.status %> <%= 'alerting' if fresh_alert %> <%= 'risky' if invitation.warnings_count >= 3 %>">
   <span class="mon-badge"><%= status_badge(invitation) %></span>
   <% if invitation.warnings_count.positive? %>

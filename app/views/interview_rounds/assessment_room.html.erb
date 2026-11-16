@@ -1,0 +1,102 @@
+<% content_for :title, "#{@round.name} · #{@invitation.candidate_name}" %>
+<%= turbo_stream_from @invitation, :events %>
+<%= render layout: "shared/page_header", locals: {
+      title: "#{@round.name} — #{@invitation.candidate_name}", icon: @round.task_icon,
+      subtitle: @round.working? ? "Working now — #{@round.seconds_left / 60} minutes left" : "Practical assessment #{@round.status_label.downcase}",
+      crumbs: [ [ "Candidates", invitations_path ], [ @invitation.candidate_name, invitation_path(@invitation) ] ],
+      chips: [ [ "clock", "#{@round.duration} minutes" ], [ "award", "#{@round.total_marks} marks" ],
+               [ "alert", @round.warning_limit.positive? ? "Auto-submit after #{@round.warning_limit} warnings" : "Warnings only alert you" ],
+               ([ "unlock", "App switching allowed" ] if @round.allow_app_switch?) ].compact } do %>
+  <% if !@round.open? && !@round.submitted? && !@round.cancelled? %>
+    <%= button_to open_invitation_interview_round_path(@invitation, @round), class: "btn btn-primary",
+          form: { data: { turbo_confirm: "Start “#{@round.name}” for #{@invitation.candidate_name}?" } } do %><%= icon("play") %> Start assessment<% end %>
+  <% end %>
+  <% if @round.working? %>
+    <%= button_to complete_invitation_interview_round_path(@invitation, @round), class: "btn btn-light",
+          form: { data: { turbo_confirm: "End #{@round.name} now? Whatever the candidate has uploaded so far stays." } } do %><%= icon("check") %> End now<% end %>
+  <% end %>
+  <% if @round.submitted? %>
+    <%= button_to reopen_invitation_interview_round_path(@invitation, @round), class: "btn btn-light",
+          form: { data: { turbo_confirm: "Let #{@invitation.candidate_name} do this assessment again? Earlier uploads stay on record." } } do %><%= icon("play") %> Another attempt<% end %>
+  <% end %>
+  <%= link_to invitation_path(@invitation, anchor: "rounds"), class: "btn btn-light" do %><%= icon("arrow-left") %> Candidate page<% end %>
+<% end %>
+
+<div class="split">
+  <div class="stack">
+    <% if @round.working? || @round.open? %>
+      <div class="card">
+        <div class="card-head"><h2><%= icon("monitor") %> Live camera &amp; screen</h2><span class="pill"><span class="live-dot"></span> Live</span></div>
+        <div class="card-body">
+          <%= render "shared/live_video", invitation: @invitation %>
+          <p class="tiny muted" style="margin-top:.6rem">The candidate's camera and their shared screen come here live (and are recorded in 1-minute segments).
+            Working in Excel / Tally happens on their screen — watch it here.</p>
+        </div>
+      </div>
+      <div class="card" id="test-call">
+        <div class="card-head"><h2><%= icon("users") %> Talk to the candidate</h2></div>
+        <div class="card-body">
+          <%= render "shared/interview_room", invitation: @invitation, test_call: true, name: Current.user.name, allow_switch: true %>
+          <p class="tiny muted" style="margin-top:.6rem"><b>Allow switching apps</b> lets them open Excel / Tally without tab-switch warnings — camera, phone and second-person checks keep running.</p>
+        </div>
+      </div>
+    <% end %>
+
+    <%= render "interview_rounds/submission", round: @round, invitation: @invitation %>
+
+    <div class="card">
+      <div class="card-head"><h2><%= icon(@round.task_icon) %> The task given</h2></div>
+      <div class="card-body stack">
+        <% if @round.task_attachments.any? %>
+          <div class="file-list">
+            <% @round.task_attachments.each do |file| %>
+              <div class="file-row">
+                <span class="file-ico"><%= icon("file") %></span>
+                <div class="grow"><b><%= file.filename %></b><span class="tiny muted"><%= number_to_human_size(file.byte_size) %><%= " · this candidate only" if @round.task_files.attached? %></span></div>
+                <%= link_to rails_blob_path(file, disposition: "attachment"), class: "btn btn-light btn-sm", data: { turbo: false } do %><%= icon("download") %> Download<% end %>
+                <% if @round.task_files.attached? %>
+                  <%= button_to task_file_invitation_interview_round_path(@invitation, @round, file_id: file.id), method: :delete, class: "act-btn danger",
+                        title: "Remove this file", form: { data: { turbo_confirm: "Remove #{file.filename} from this round?" } } do %><%= icon("trash") %><% end %>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="muted small">No file — the candidate works from the instructions only.</p>
+        <% end %>
+        <% if @round.task_instructions.present? %>
+          <div class="task-text"><%= simple_format(@round.task_instructions) %></div>
+        <% end %>
+        <p class="tiny muted">
+          <% if @round.assessment %>From the saved assessment <%= link_to @round.assessment.title, assessment_path(@round.assessment) %>.<% end %>
+          Change the task, time or marks from the <%= link_to "round's edit form", invitation_path(@invitation, anchor: "rounds") %>.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2><%= icon("bell") %> What happened during this assessment</h2><span class="pill"><span class="live-dot"></span> Live</span></div>
+      <ul class="timeline scroll-y" id="events_invitation_<%= @invitation.id %>">
+        <%= render partial: "proctor_events/proctor_event", collection: @events %>
+      </ul>
+      <% if @events.empty? %><div class="card-body muted small" style="padding-top:0">Nothing yet. Warnings, uploads and snapshots appear here instantly.</div><% end %>
+    </div>
+  </div>
+
+  <div class="stack">
+    <%= render "interview_feedbacks/candidate_brief", invitation: @invitation, hr: true %>
+    <div class="card card-pad" data-controller="clipboard">
+      <b class="small"><%= icon("link") %> Candidate's link</b>
+      <p class="tiny muted" style="margin:.3rem 0 .6rem">Same exam link — the Start button for this assessment appears on it as soon as the round is live.</p>
+      <div class="row wrap">
+        <input type="hidden" value="<%= exam_url(@invitation.token) %>" data-clipboard-target="source">
+        <button type="button" class="btn btn-light btn-sm" data-action="clipboard#copy"><%= icon("copy") %> <span data-clipboard-target="label">Copy link</span></button>
+        <%= whatsapp_button(@invitation.candidate_phone.presence || @invitation.entered_phone,
+              "Hi #{@invitation.candidate_name}, your practical assessment (#{@round.name}) is ready. Open your link and press Start: #{exam_url(@invitation.token)}") %>
+      </div>
+    </div>
+    <%= render "interview_feedbacks/form", round: @round, feedback: @feedback, url: feedback_invitation_interview_round_path(@invitation, @round) %>
+    <%= render "invitations/selection_card", invitation: @invitation %>
+    <%= render "invitations/live_state", invitation: @invitation %>
+  </div>
+</div>

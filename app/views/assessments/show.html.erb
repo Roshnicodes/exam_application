@@ -1,0 +1,85 @@
+<% content_for :title, @assessment.title %>
+<%= render layout: "shared/page_header", locals: {
+      title: @assessment.title, icon: @assessment.kind_icon,
+      subtitle: [ @assessment.kind_label, @assessment.description.presence ].compact.join(" · "),
+      crumbs: [ [ "Practical assessments", assessments_path ] ],
+      chips: [ [ "clock", "#{@assessment.duration_minutes} minutes" ], [ "award", "#{@assessment.max_marks} marks · pass #{@assessment.pass_percentage}%" ],
+               [ "alert", @assessment.max_warnings.positive? ? "Auto-submit after #{@assessment.max_warnings} warnings" : "Warnings only alert HR" ],
+               ([ "lock", "Inactive" ] unless @assessment.active?) ].compact } do %>
+  <%= link_to new_invitation_path(plan: "practical", assessment_id: @assessment.id), class: "btn btn-primary" do %><%= icon("send") %> Invite a candidate<% end %>
+  <%= button_to duplicate_assessment_path(@assessment), class: "btn btn-light" do %><%= icon("copy") %> Duplicate<% end %>
+  <%= link_to edit_assessment_path(@assessment), class: "btn btn-light" do %><%= icon("edit") %> Edit<% end %>
+<% end %>
+
+<div class="split">
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2><%= icon("file") %> Task files</h2><span class="tiny muted"><%= pluralize(@assessment.files.size, "file") %></span></div>
+      <div class="card-body">
+        <% if @assessment.files.attached? %>
+          <div class="file-list">
+            <% @assessment.files.attachments.each do |file| %>
+              <div class="file-row">
+                <span class="file-ico"><%= icon("file") %></span>
+                <div class="grow"><b><%= file.filename %></b><span class="tiny muted"><%= number_to_human_size(file.byte_size) %></span></div>
+                <%= link_to rails_blob_path(file, disposition: "attachment"), class: "btn btn-light btn-sm", data: { turbo: false } do %><%= icon("download") %> Download<% end %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="muted small">No file uploaded — the candidate only sees the instructions below. <%= link_to "Add a file", edit_assessment_path(@assessment) %>.</p>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2><%= icon("list") %> Instructions the candidate sees</h2></div>
+      <div class="card-body">
+        <% if @assessment.instructions.present? %>
+          <div class="task-text"><%= simple_format(@assessment.instructions) %></div>
+        <% else %>
+          <p class="muted small">No instructions yet. <%= link_to "Add them", edit_assessment_path(@assessment) %> so the candidate knows exactly what to do.</p>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2><%= icon("users") %> Given to</h2><span class="tiny muted"><%= pluralize(@assessment.used_count, "round") %></span></div>
+      <% if @rounds.any? %>
+        <% @rounds.each do |round| %>
+          <div class="list-item">
+            <span class="avatar" style="background: <%= gradient_for(round.invitation.candidate_name) %>"><%= initials_for(round.invitation.candidate_name) %></span>
+            <div class="grow person"><div><b><%= round.invitation.candidate_name %></b><span><%= round.invitation.vacancy %> · <%= round.status_label %><%= " · #{round.marks}/#{round.total_marks} marks" if round.graded? %></span></div></div>
+            <%= link_to room_invitation_interview_round_path(round.invitation, round), class: "btn btn-light btn-sm" do %><%= icon("eye") %> Open<% end %>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="card-body small muted">Not given to anyone yet. Create an invite with this assessment, or add it as a round on a candidate's page.</div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="card card-pad">
+      <b class="small"><%= icon("shield") %> Rules applied during this assessment</b>
+      <div class="rules" style="margin-top:.8rem">
+        <div class="rule"><%= icon("camera") %> Camera + microphone on &amp; recorded</div>
+        <div class="rule"><%= icon("monitor") %> Entire screen shared &amp; recorded</div>
+        <div class="rule"><%= icon("maximize") %> Full screen only — tab / app switch is a warning</div>
+        <div class="rule"><%= icon("users") %> Second person or phone detected = warning</div>
+        <div class="rule"><%= icon("copy") %> Copy / paste &amp; right-click blocked</div>
+        <div class="rule"><%= icon("clock") %> Auto-submits when the time ends</div>
+      </div>
+      <p class="tiny muted" style="margin-top:.8rem">
+        Working in another app (Excel, Tally) is expected — the candidate keeps this page open and HR sees their screen live.
+        Use the <b>“Allow app switching”</b> button in the live room while they work in that app.
+      </p>
+    </div>
+    <div class="card card-pad kv">
+      <div><span>Upload required</span><b><%= @assessment.require_upload? ? "Yes" : "No" %></b></div>
+      <div><span>Download allowed</span><b><%= @assessment.allow_download? ? "Yes" : "No" %></b></div>
+      <div><span>Typing box</span><b><%= @assessment.allow_notes? ? "Shown" : "Hidden" %></b></div>
+      <div style="grid-column:1/-1"><span>Accepted uploads</span><b style="font-weight:500"><%= @assessment.extensions.join(" ") %></b></div>
+    </div>
+  </div>
+</div>

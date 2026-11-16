@@ -1,0 +1,44 @@
+<% content_for :title, "Practical assessments" %>
+<%= render layout: "shared/page_header", locals: {
+      title: "Practical assessments", icon: "sheet",
+      subtitle: "Live tasks the candidate solves on screen — Excel, Tally, Word, data entry, coding… fully proctored",
+      crumbs: [ [ "Dashboard", root_path ] ],
+      stats: [
+        { label: "Assessments", value: @assessments.size, icon: "sheet", tone: "violet" },
+        { label: "Active", value: @assessments.count(&:active?), icon: "check-circle", tone: "green" },
+        { label: "Avg. time", value: "#{@assessments.any? ? (@assessments.sum(&:duration_minutes) / @assessments.size) : 0} min", icon: "clock", tone: "blue" }
+      ] } do %>
+  <%= link_to new_assessment_path, class: "btn btn-primary" do %><%= icon("plus") %> New assessment<% end %>
+<% end %>
+
+<% if @assessments.any? %>
+  <div class="grid grid-3">
+    <% @assessments.each do |a| %>
+      <div class="card card-pad has-stretch <%= "is-off" unless a.active? %>">
+        <div class="row between">
+          <span class="avatar soft" style="border-radius:14px"><%= icon(a.kind_icon) %></span>
+          <span class="row" style="gap:.4rem">
+            <span class="badge"><%= a.kind_label %></span>
+            <%= render "shared/row_actions", edit_path: edit_assessment_path(a), delete_path: assessment_path(a), confirm: "Delete \"#{a.title}\"?" %>
+          </span>
+        </div>
+        <h3 style="margin-top:1rem;font-size:1.1rem"><%= link_to a.title, assessment_path(a), class: "stretched" %></h3>
+        <p class="small muted" style="margin-top:.35rem;min-height:2.6em"><%= truncate(a.description.presence || a.instructions.presence || "No description", length: 90) %></p>
+        <div class="row wrap" style="margin-top:1rem;gap:.5rem">
+          <span class="pill"><%= icon("clock") %> <%= a.duration_minutes %> min</span>
+          <span class="pill"><%= icon("award") %> <%= a.max_marks %> marks</span>
+          <span class="pill"><%= icon("file") %> <%= pluralize(a.files.size, "file") %></span>
+          <% unless a.active? %><span class="pill"><%= icon("lock") %> Inactive</span><% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <div class="card empty">
+    <div class="ico"><%= icon("sheet") %></div>
+    <h3>No practical assessments yet</h3>
+    <p>Upload an Excel sheet, a Tally task, a letter to draft — anything the candidate has to work on live.<br>
+       You can then give it to a candidate on its own, or together with the MCQ test.</p><br>
+    <%= link_to new_assessment_path, class: "btn btn-primary" do %><%= icon("plus") %> Create assessment<% end %>
+  </div>
+<% end %>

@@ -32,7 +32,7 @@ class InvitationsController < ApplicationController
   def language
     @invitation.update!(language: params[:language] == "hi" ? "hi" : "en")
     @invitation.broadcast_language
-    note = @invitation.hindi? && !@invitation.quiz.hindi_ready? ? " The paper has Hindi for #{@invitation.quiz.hindi_count}/#{@invitation.quiz.questions.size} questions — the rest stay in English." : ""
+    note = @invitation.hindi? && @invitation.quiz && !@invitation.quiz.hindi_ready? ? " The paper has Hindi for #{@invitation.quiz.hindi_count}/#{@invitation.quiz.questions.size} questions — the rest stay in English." : ""
     redirect_to @invitation, notice: "Test language set to #{Invitation::LANGUAGES[@invitation.language]}.#{note}"
   end
 
@@ -74,17 +74,22 @@ class InvitationsController < ApplicationController
   def new
     plan = Invitation::INTERVIEW_PLANS.key?(params[:plan]) ? params[:plan] : "separate"
     @invitation = Current.user.invitations.new(max_warnings: 5, interview_mode: "Online", quiz_id: params[:quiz_id], vacancy_id: params[:vacancy_id],
+                                               assessment_id: params[:assessment_id],
                                                interview_plan: plan,
                                                interview_date: 1.day.from_now.change(hour: 11),
                                                link_expires_at: 3.days.from_now.end_of_day)
     load_form_options
-    redirect_to new_quiz_path, alert: "Create a question paper first, then invite candidates." if @quizzes.empty?
+    if @quizzes.empty? && @assessments.empty?
+      redirect_to new_quiz_path, alert: "Create a question paper (or a practical assessment) first, then invite candidates."
+    end
   end
 
   def create
     @invitation = Current.user.invitations.new(invitation_params.except(:panelist_ids))
     @invitation.panelist_ids = invitation_params[:panelist_ids]
     @invitation.quiz = Current.user.quizzes.find_by(id: invitation_params[:quiz_id])
+    @invitation.assessment = Current.user.assessments.find_by(id: invitation_params[:assessment_id])
+    @invitation.quiz = nil if @invitation.practical_only? # no MCQ paper on a practical-only invite
     @invitation.opening = Current.user.vacancies.find_by(id: invitation_params[:vacancy_id])
     if @invitation.save
       redirect_to @invitation, notice: "Invitation created. Share the exam link with #{@invitation.candidate_name}."
@@ -104,13 +109,17 @@ class InvitationsController < ApplicationController
   end
 
   def update
-    attrs = invitation_params.except(:quiz_id, :vacancy_id, :panelist_ids)
+    attrs = invitation_params.except(:quiz_id, :vacancy_id, :panelist_ids, :assessment_id)
     @invitation.assign_attributes(attrs)
     @invitation.panelist_ids = invitation_params[:panelist_ids] if invitation_params.key?(:panelist_ids)
     @invitation.opening = Current.user.vacancies.find_by(id: invitation_params[:vacancy_id]) if invitation_params.key?(:vacancy_id)
     if @invitation.started_at.nil? && invitation_params[:quiz_id].present?
       @invitation.quiz = Current.user.quizzes.find_by(id: invitation_params[:quiz_id]) || @invitation.quiz
     end
+    if invitation_params.key?(:assessment_id) && @invitation.assessment_rounds.none? { |r| r.work_started_at.present? }
+      @invitation.assessment = Current.user.assessments.find_by(id: invitation_params[:assessment_id])
+    end
+    @invitation.quiz = nil if @invitation.practical_only? && @invitation.started_at.nil?
     plan_changed = @invitation.interview_plan_changed?
     if @invitation.save
       note = plan_changed && !@invitation.replan_rounds! ? " Rounds already started, so the interview plan wasn't rebuilt — edit rounds directly." : ""
@@ -122,14 +131,14 @@ class InvitationsController < ApplicationController
   end
 
   def report
-    @questions = @invitation.quiz.questions
+    @questions = @invitation.quiz&.questions || Question.none
     @events = @invitation.proctor_events.timeline
   end
 
   # Printable report: candidate details, result and the full question paper with their answers.
   # The browser saves it as a PDF ("Download PDF" opens the print dialog), so no PDF gem is needed.
   def pdf
-    @questions = @invitation.quiz.questions.to_a
+    @questions = @invitation.quiz ? @invitation.quiz.questions.to_a : []
     @violations = @invitation.proctor_events.violations.order(:created_at).to_a
     render layout: false
   end
@@ -174,6 +183,7 @@ class InvitationsController < ApplicationController
 
     def load_form_options
       @quizzes = Current.user.quizzes.order(:title)
+      @assessments = Current.user.assessments.active.ordered.to_a
       @vacancies = Current.user.vacancies.open.includes(:department).order(:title)
       @employees = Current.user.employees.ordered
       @panelist_ids = Array(params.dig(:invitation, :panelist_ids)).compact_blank.presence&.map(&:to_i) ||
@@ -188,6 +198,6 @@ class InvitationsController < ApplicationController
     def invitation_params
       params.expect(invitation: [ :candidate_name, :candidate_email, :candidate_phone, :vacancy, :department, :experience,
                                   :interview_date, :interview_mode, :location, :notes, :quiz_id, :vacancy_id, :max_warnings,
-                                  :link_expires_at, :meeting_link, :interview_plan, :resume, :language, panelist_ids: [] ])
+                                  :link_expires_at, :meeting_link, :interview_plan, :resume, :language, :assessment_id, panelist_ids: [] ])
     end
 end

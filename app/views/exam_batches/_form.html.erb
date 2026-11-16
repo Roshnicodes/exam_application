@@ -1,6 +1,7 @@
 <%= form_with model: batch, url: batch.persisted? ? exam_batch_path(batch) : exam_batches_path, class: "card", multipart: true,
       data: { controller: "invite-form", invite_form_test_title_value: "Bulk invite — online test", invite_form_interview_title_value: "Bulk invite — test + interview",
-              invite_form_test_button_value: "Create test links", invite_form_interview_button_value: "Create test links & interview plan" } do |f| %>
+              invite_form_test_button_value: "Create test links", invite_form_interview_button_value: "Create test links & interview plan",
+              invite_form_practical_title_value: "Bulk invite — practical assessment", invite_form_practical_button_value: "Create assessment links" } do |f| %>
   <div class="form-section">
     <% if batch.errors.any? || @row_errors.present? %>
       <div class="errors"><b>Please fix these:</b>
@@ -26,7 +27,7 @@
         <%= f.label :name do %>Batch name <span class="req">*</span><% end %>
         <%= f.text_field :name, required: true, class: "input", placeholder: "e.g. Campus drive – Morning slot" %>
       </div>
-      <div class="field">
+      <div class="field" data-invite-form-target="testOnly">
         <%= f.label :quiz_id do %>Question paper <span class="req">*</span><% end %>
         <% locked = batch.persisted? && batch.invitations.where.not(started_at: nil).exists? %>
         <%= f.select :quiz_id, @quizzes.map { |q| [ "#{q.title} (#{q.questions.size} Qs · #{q.duration_minutes} min)", q.id ] }, { prompt: "Select a question paper" }, class: "input", required: true, disabled: locked %>
@@ -43,6 +44,13 @@
           <%= f.text_field :vacancy_title, class: "input", placeholder: "e.g. Sales Executive" %>
         </div>
       <% end %>
+      <div class="field full" data-invite-form-target="assessmentPart">
+        <%= f.label :assessment_id do %><%= icon("sheet") %> Practical assessment for everyone in this batch<% end %>
+        <%= f.select :assessment_id, @assessments.map { |a| [ "#{a.title} — #{a.kind_label} · #{a.duration_minutes} min · #{a.max_marks} marks", a.id ] },
+              { include_blank: @assessments.any? ? "— none —" : "— no practical assessment created yet —" },
+              class: "input", data: { invite_form_target: "assessmentSelect" } %>
+        <span class="hint" data-invite-form-target="assessmentHint">Optional — every candidate gets the same practical task as a round after the test.</span>
+      </div>
       <div class="field">
         <%= f.label :interview_date, "Test / interview date & time" %>
         <%= f.datetime_local_field :interview_date, class: "input" %>

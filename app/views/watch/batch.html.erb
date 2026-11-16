@@ -6,7 +6,7 @@
 <% waiting = @invitations - live - done %>
 <%= render layout: "shared/page_header", locals: {
       title: "Live — #{@batch.name}", icon: "video",
-      subtitle: "#{@batch.post_name} · #{@batch.quiz.title}",
+      subtitle: "#{@batch.post_name} · #{@batch.quiz&.title || @batch.assessment&.title}",
       stats: [
         { label: "Writing the test now", value: live.size, icon: "video", tone: "red" },
         { label: "Not started yet", value: waiting.size, icon: "clock", tone: "amber" },
