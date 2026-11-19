@@ -129,7 +129,7 @@ class AnswerKeyAssessmentTest < ActionDispatch::IntegrationTest
     assert_match "Head – Finance", response.body
   end
 
-  test "a file that is only the answer key is never shown to the candidate" do
+  test "every task file reaches the candidate as uploaded" do
     sign_in_as @user
     post assessments_path, params: { assessment: {
       title: "Leaky paper", description: "x", kind: "case_study", duration_minutes: 30, max_marks: 10, pass_percentage: 50, max_warnings: 5,
@@ -139,53 +139,23 @@ class AnswerKeyAssessmentTest < ActionDispatch::IntegrationTest
     } }
     assessment = Assessment.order(:id).last
     assert_redirected_to assessment_path(assessment)
-    get assessment_path(assessment)
-    assert_match "Only answers — never shown to the candidate", response.body
 
     invitation = @user.invitations.create!(candidate_name: "Ravi", candidate_phone: "9876500001", vacancy: "Accountant",
                                            assessment: assessment, interview_plan: "practical", max_warnings: 5)
-    assert_equal [ "question_paper.docx" ], invitation.interview_rounds.sole.task_attachments.map { |f| f.filename.to_s }
+    round = invitation.interview_rounds.sole
+    assert_equal [ "question_paper.docx", "Answer Key.txt" ], round.task_attachments.map { |f| f.filename.to_s }
   end
 
-  # The paper HR uploads has the answers in it and there is no separate answer key: the candidate
-  # still gets the paper (without the answers) and an answer sheet; the answers become the key.
-  PAPER_WITH_ANSWERS = <<~TXT
-    Accountant Assistant Test – Question Paper with Answer Key
-    Section A: MCQ (1 mark each)
-    Q1. Late fee for GSTR-3B per day?
-    (a) ₹25
-    (b) ₹50
-    (c) ₹100
-    (d) Nil
-    Answer: (b)
-    Explanation: ₹50 per day, capped.
-    Q2. ITC time limit is under
-    a) Sec 16(4)
-    b) Sec 17
-    Ans: A
-    Section B: Written
-    Q3. Due dates of GSTR-1 and GSTR-3B. (2 marks)
-    Ans: GSTR-1 on the 11th, GSTR-3B on the 20th.
-  TXT
-
-  test "a paper with its answers in it: the candidate sees it without them and answers on the answer sheet" do
+  test "without an answer key a practical works as before: the file to read, an upload, no answer sheet" do
     sign_in_as @user
+    paper = "Q1. Late fee for GSTR-3B?\n(a) 250\n(b) 500\nAnswer: (b)\nQ2. Explain the purpose of GSTR-1. (4 marks)\n"
     post assessments_path, params: { assessment: {
-      title: "Accountant Assistant Test", description: "GST", kind: "case_study", duration_minutes: 60, max_marks: 50, pass_percentage: 50,
-      max_warnings: 5, require_upload: "1", allow_download: "1", active: "1",
-      files: [ Rack::Test::UploadedFile.new(StringIO.new(PAPER_WITH_ANSWERS.dup), "text/plain", original_filename: "Accountant Assistant Test.txt") ]
+      title: "Paper only", description: "x", kind: "case_study", duration_minutes: 30, max_marks: 10, pass_percentage: 50, max_warnings: 5,
+      require_upload: "1", allow_download: "1", active: "1",
+      files: [ Rack::Test::UploadedFile.new(StringIO.new(paper), "text/plain", original_filename: "paper.txt") ]
     } }
     assessment = Assessment.order(:id).last
-    assert_redirected_to assessment_path(assessment)
-    assert_equal 50, assessment.max_marks # HR's marks stay
-    items = assessment.answer_items.index_by { |i| i["id"] }
-    assert_equal %w[q1 q2 q3], items.keys
-    assert_equal [ "choice", "B", [ "₹25", "₹50", "₹100", "Nil" ] ], items["q1"].values_at("kind", "answer", "options")
-    assert_equal "A", items["q2"]["answer"]
-    assert_equal "text", items["q3"]["kind"]
-    assert_match "11th", items["q3"]["model"]
-    get assessment_path(assessment)
-    assert_match "Has answers in it", response.body
+    assert_empty assessment.answer_items
 
     invitation = @user.invitations.create!(candidate_name: "Roshni", candidate_phone: "9876500002", vacancy: "Accountant",
                                            assessment: assessment, interview_plan: "practical", max_warnings: 5)
@@ -196,39 +166,11 @@ class AnswerKeyAssessmentTest < ActionDispatch::IntegrationTest
     round.open!
     post exam_assessment_start_path(token)
     get exam_assessment_path(token)
-    assert_match "qp-panel", response.body
-    assert_match "Late fee for GSTR-3B per day?", response.body
-    assert_match "₹100", response.body
-    assert_no_match "Upload your finished work", response.body
-    assert_no_match "disposition=attachment", response.body # no download of a file that has answers
-    assert_no_match "Explanation", response.body
-    assert_no_match "GSTR-3B on the 20th", response.body
-
-    paper = round.task_attachments.sole
-    get exam_assessment_task_preview_path(token, paper.id)
-    assert_response :success
-    assert_match "Late fee for GSTR-3B per day?", response.body
-    assert_no_match(/Answer:|Ans:|Explanation|20th/, response.body)
-
-    post exam_assessment_submit_path(token), params: { answers: { q1: "B", q2: "B", q3: "GSTR-1 by 11th, GSTR-3B by 20th" } }
-    round.reload
-    assert round.submitted?
-    assert_equal 1.0, round.item_marks["q1"]["marks"]
-    assert_equal 0.0, round.item_marks["q2"]["marks"]
-    assert_equal 2.0, round.item_marks["q3"]["marks"]
-  end
-
-  test "a written test's paper without any answer key still gives an answer sheet (HR marks it)" do
-    sign_in_as @user
-    paper = "Q1. Late fee for GSTR-3B?\na) 250\nb) 500\nQ2. Explain the purpose of GSTR-1. (4 marks)\n"
-    post assessments_path, params: { assessment: {
-      title: "Paper only", description: "x", kind: "case_study", duration_minutes: 30, max_marks: 10, pass_percentage: 50, max_warnings: 5,
-      files: [ Rack::Test::UploadedFile.new(StringIO.new(paper), "text/plain", original_filename: "paper.txt") ]
-    } }
-    items = Assessment.order(:id).last.answer_items
-    assert_equal [ %w[q1 choice], %w[q2 text] ], items.map { |i| i.values_at("id", "kind") }
-    assert_equal [ 1.0, 4.0 ], items.map { |i| i["marks"] }
-    assert_equal({ "marks" => 0.0, "max" => 1.0, "correct" => nil, "review" => true }, AnswerKey.mark(items.first, "A")) # no key yet: HR checks
+    assert_empty assessment.reload.answer_items
+    assert_match "paper.txt", response.body                 # the whole file, as uploaded
+    assert_match "disposition=attachment", response.body    # download allowed
+    assert_match "Upload your finished work", response.body
+    assert_no_match "Your answer sheet", response.body
   end
 
   test "an answer key the app can't read is a form error" do

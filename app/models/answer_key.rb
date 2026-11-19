@@ -52,8 +52,6 @@ class AnswerKey
     max = item["marks"].to_f
     given = response.to_s.strip
     return { "marks" => 0.0, "max" => max, "correct" => false, "review" => false, "blank" => true } if given.empty?
-    # no correct answer known yet (a question from the paper): HR marks it
-    return { "marks" => 0.0, "max" => max, "correct" => nil, "review" => true } if item["kind"] != "text" && item["answer"].blank?
 
     case item["kind"]
     when "choice"
@@ -142,6 +140,11 @@ class AnswerKey
       close = -> { @written << current if current; current = nil }
 
       @lines.each do |line|
+        next if line.match?(/\A(?:Q(?:\.?\s*No\.?)?\s+Ans(?:wer)?s?\s*)+\z/i) # "Q Ans Q Ans" (a key table's head, as a PDF gives it)
+
+        words = line.split(/\s+/)
+        next if words.size >= 2 && words.size.even? && !line.include?("|") && mcq_row(words) # "1 B 6 C 11 C" (a PDF's key table)
+
         cells = line.split(" | ").map(&:strip)
         if cells.size > 1
           next if mcq_row(cells) || summary_row(cells, section)

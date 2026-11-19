@@ -222,11 +222,9 @@ class ExamsController < ApplicationController
     file = @round.task_attachments.find { |a| a.id == params[:file_id].to_i }
     return head :not_found unless file
 
-    # a Word question paper — or a PDF / text one that had answers in it — shown as text + tables,
-    # without its answers
-    view = @round.candidate_view(file)
-    if view && (file.filename.extension.to_s.downcase == "docx" || view["removed"])
-      return render partial: "exams/task_doc", locals: { lines: view["lines"] }
+    if file.filename.extension.to_s.downcase == "docx" # a Word question paper, shown as text + tables (all of it)
+      lines = @round.paper_view(file)&.dig("lines") || Assessment.file_lines(file) # (unreadable: the error below)
+      return render partial: "exams/task_doc", locals: { lines: lines }
     end
 
     sheets = file.blob.open { |tmp| Spreadsheet.preview(tmp.path, file.filename.extension_with_delimiter) }

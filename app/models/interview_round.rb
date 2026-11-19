@@ -149,32 +149,25 @@ class InterviewRound < ApplicationRecord
     instructions.presence || assessment&.instructions
   end
 
-  # The files the candidate gets: this round's own uploads, else the saved assessment's.
-  # (a file that is only an answer key is never handed to the candidate)
+  # The files the candidate gets — exactly as HR uploaded them: this round's own uploads, else the
+  # saved assessment's. (The answer key is a separate file and never one of these.)
   def task_attachments
-    list = task_files.attached? ? task_files.attachments.to_a : (assessment&.files&.attachments&.to_a || [])
-    list.reject { |file| candidate_view(file)&.dig("key_only") }
+    task_files.attached? ? task_files.attachments.to_a : (assessment&.files&.attachments&.to_a || [])
   end
 
-  # How the candidate sees a Word / PDF / text task file: its text, with any answers taken out.
-  def candidate_view(file)
-    (@candidate_views ||= {})[file.blob_id] ||= [ assessment ? assessment.candidate_view(file) : Assessment.paper_view(file) ]
-    @candidate_views[file.blob_id].first
+  # A Word / PDF / text task file's text (see Assessment.paper_view)
+  def paper_view(file)
+    (@paper_views ||= {})[file.blob_id] ||= [ Assessment.paper_view(file) ]
+    @paper_views[file.blob_id].first
   end
 
-  # Answers were taken out of this file: the candidate only sees it on the page, never downloads it.
-  def answers_removed?(file)
-    !!candidate_view(file)&.dig("removed")
-  end
-
-  # Reads the question paper into the answer sheet once (again after HR edits the test): the
-  # questions' text and options, and — for a written test without an answer key — the questions
-  # themselves. Not for the built-in Excel sheet.
+  # Tests saved before questions were read from the paper: reads the questions' text (and MCQ
+  # options) into the answer sheet once (again after HR edits the test).
   def prepare_answer_sheet!
-    return unless assessment && !online_sheet?
-    return if answer_items.any? && answer_items.all? { |i| i.key?("question") }
+    return unless assessment && answer_sheet?
+    return if answer_items.all? { |i| i.key?("question") }
 
-    Rails.cache.fetch([ "paper-read", assessment.id, assessment.updated_at.to_i, task_attachments.map(&:blob_id) ]) do
+    Rails.cache.fetch([ "paper-read", 4, assessment.id, assessment.updated_at.to_i, task_attachments.map(&:blob_id) ]) do
       assessment.read_paper!
       true
     end
@@ -183,7 +176,7 @@ class InterviewRound < ApplicationRecord
 
   # The question paper shown next to the answer sheet.
   def question_paper
-    task_attachments.find { |f| (view = candidate_view(f)) && view["lines"].any?(&:present?) }
+    task_attachments.find { |f| paper_view(f)&.dig("lines")&.any?(&:present?) }
   end
 
   def allow_download?

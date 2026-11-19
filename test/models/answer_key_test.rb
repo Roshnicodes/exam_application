@@ -76,4 +76,34 @@ class AnswerKeyTest < ActiveSupport::TestCase
   test "a file with nothing usable is rejected" do
     assert_raises(AnswerKey::Error) { AnswerKey.new([ "Just a title", "No answers here" ]).items }
   end
+  test "a PDF's key table (spaces, not cells) is read" do
+    pdf = [ "Section A: MCQ Answer Key (1 mark each)", "Q Ans Q Ans Q Ans", "1 B 6 C 11 C", "2 B 7 B 12 B", "5 B 10 C 15 B", "*** End of Answer Key ***" ]
+    items = AnswerKey.new(pdf).items
+    assert_equal %w[q1 q2 q5 q6 q7 q10 q11 q12 q15], items.map { |i| i["id"] }
+    assert_equal %w[B C C], items.values_at(0, 3, 6).map { |i| i["answer"] }
+    assert items.all? { |i| i["marks"] == 1.0 && i["kind"] == "choice" }
+  end
+
+  test "the candidate sees a paper without the answer key at its end; a key alone is never shown" do
+    paper = [ "Accountant Assistant Test Paper – Answer Key", "Section A: MCQ (1 mark each)",
+              "Q1. Late fee for GSTR-3B?", "A. ₹250   B. ₹500   C. ₹750   D. Nil", "Q2. ITC time limit?", "(a) Sec 16(4)", "(b) Sec 17",
+              "Section B: Descriptive", "Q3. Explain GSTR-1. (2 marks)",
+              "Section A: MCQ Answer Key (1 mark each)", "Q | Ans | Q | Ans", "1 | B | 2 | A", "Model answers", "Q3. GSTR-1 is the return of outward supplies." ]
+    view = QuestionPaper.candidate_view(paper)
+    assert view["removed"]
+    assert_not view["key_only"]
+    assert_equal "Q3. Explain GSTR-1. (2 marks)", view["lines"].last
+    assert_equal %w[₹250 ₹500 ₹750 Nil], QuestionPaper.extract(view["lines"])["q1"]["options"]
+
+    key = [ "Section A: MCQ Answer Key (1 mark each)", "Q Ans Q Ans", "1 B 6 C", "Q16. Purpose of GSTR-1 (2 marks)", "Outward supplies, by the 11th." ]
+    assert QuestionPaper.candidate_view(key)["key_only"]
+    assert_empty QuestionPaper.candidate_view(key)["lines"]
+  end
+  test "a data table in a question is not mistaken for an answer key" do
+    paper = [ "3. The number of farmers covered by four field teams is:", "Team | Farmers", "A | 185", "B | 240",
+              "What is the combined coverage?", "A. 700", "B. 715" ]
+    view = QuestionPaper.candidate_view(paper)
+    assert_not view["removed"]
+    assert_equal paper, view["lines"]
+  end
 end

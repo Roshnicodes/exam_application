@@ -12,10 +12,6 @@
   </div>
   <% if assessment.answer_sheet? %>
     <div class="card-body">
-      <% if assessment.answer_items.any? { |i| i["from_paper"] } && !assessment.answer_key.attached? %>
-        <p class="task-note" style="margin:0 0 .8rem"><%= icon("alert") %> <span>This answer sheet was made from the question paper.
-          <% if assessment.answer_items.any? { |i| i["kind"] == "choice" && i["answer"].blank? } %>Fill the correct option of each MCQ below (or upload an answer key) so they are marked by themselves — until then HR marks them.<% else %>Answers found in the paper were used as the key — check them below.<% end %></span></p>
-      <% end %>
       <p class="small muted" style="margin-bottom:.8rem">The candidate answers these questions on an answer sheet; it is marked when they submit. Correct anything that was read wrongly and press <b>Save answer key</b>.
         <b>Option</b> and <b>Number</b> answers are marked exactly (numbers allow ±1%); <b>Written</b> answers get marks for the key points of the model answer — HR can change any mark later.</p>
       <%= form_with url: answer_key_assessment_path(assessment), method: :patch do %>

@@ -21,14 +21,7 @@
             <% @assessment.files.attachments.each do |file| %>
               <div class="file-row">
                 <span class="file-ico"><%= icon("file") %></span>
-                <% view = @assessment.candidate_view(file) %>
-                <div class="grow"><b><%= file.filename %></b><span class="tiny muted"><%= number_to_human_size(file.byte_size) %></span>
-                  <% if view&.dig("key_only") %>
-                    <span class="tiny file-note bad"><%= icon("lock") %> Only answers — never shown to the candidate. Upload the question paper too.</span>
-                  <% elsif view&.dig("removed") %>
-                    <span class="tiny file-note"><%= icon("shield") %> Has answers in it — the candidate sees it on the page without them (no download).</span>
-                  <% end %>
-                </div>
+                <div class="grow"><b><%= file.filename %></b><span class="tiny muted"><%= number_to_human_size(file.byte_size) %></span></div>
                 <%= link_to rails_blob_path(file, disposition: "attachment"), class: "btn btn-light btn-sm", data: { turbo: false } do %><%= icon("download") %> Download<% end %>
               </div>
             <% end %>
