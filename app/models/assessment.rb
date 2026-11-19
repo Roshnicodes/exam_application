@@ -30,6 +30,8 @@ class Assessment < ApplicationRecord
   normalizes :title, with: ->(v) { v.to_s.squish }
   normalizes :allowed_extensions, with: ->(v) { v.to_s.downcase.gsub(/\s+/, "") }
 
+  after_update :carry_settings_to_rounds
+
   validates :title, presence: true
   validates :description, presence: { message: "— write a short description of the task" }, length: { maximum: 200 }
   validates :kind, inclusion: { in: KINDS.keys }
@@ -109,6 +111,18 @@ class Assessment < ApplicationRecord
   end
 
   private
+    # Rounds made earlier kept a copy of the time / marks / warning limit. When HR changes them
+    # here, rounds not yet submitted that still have the old copy follow (a value HR set for one
+    # candidate on purpose — different from the old one — is left alone).
+    def carry_settings_to_rounds
+      { "max_warnings" => :max_warnings, "duration_minutes" => :duration_minutes, "max_marks" => :max_marks }.each do |attr, column|
+        next unless saved_change_to_attribute?(attr)
+
+        old_value, new_value = saved_change_to_attribute(attr)
+        interview_rounds.where(submitted_at: nil, column => old_value).update_all(column => new_value, updated_at: Time.current)
+      end
+    end
+
     def files_are_sane
       return unless files.attached?
 

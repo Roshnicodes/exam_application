@@ -348,10 +348,10 @@ class Invitation < ApplicationRecord
   def build_assessment_round
     return false unless assessment
 
+    # time, marks and the warning limit are not copied: the round follows the practical test,
+    # so HR's later changes there (e.g. warnings "Never") apply to it too
     interview_rounds.create!(kind: "assessment", assessment: assessment, name: assessment.title, position: 1,
-                             parameters: [], duration_minutes: assessment.duration_minutes,
-                             max_marks: assessment.max_marks, max_warnings: assessment.max_warnings,
-                             scheduled_at: interview_date)
+                             parameters: [], scheduled_at: interview_date)
     true
   end
 

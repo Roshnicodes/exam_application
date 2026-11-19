@@ -137,9 +137,7 @@ class InterviewRoundsController < ApplicationController
       return unless round.assessment
 
       round.name = round.assessment.title if round.name.blank?
-      round.duration_minutes ||= round.assessment.duration_minutes
-      round.max_marks ||= round.assessment.max_marks
-      round.max_warnings = round.assessment.max_warnings if round.max_warnings.nil?
+      # time / marks / warning limit left blank follow the practical test (and its later changes)
     end
 
     # Task files uploaded for this one candidate (they replace the saved assessment's files).
