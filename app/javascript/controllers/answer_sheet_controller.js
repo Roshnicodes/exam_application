@@ -1,8 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 import { csrfToken } from "lib/media"
 
-// The candidate's answer sheet for a practical test that has an answer key, one question at a time:
-// the question and a box to type the answer in. Saves itself; marked on the server when they submit
+// The candidate's answer sheet for a practical test that has an answer key, one question at a time
+// (MCQs first, then written / numerical). Saves itself; marked on the server when they submit
 // (or when the time ends — the assessment controller waits for the last save).
 export default class extends Controller {
   static targets = [ "progress", "status", "item", "navButton", "prev", "next", "finish" ]
@@ -66,6 +66,11 @@ export default class extends Controller {
     this.setStatus("Saving…")
     clearTimeout(this.debounce)
     this.debounce = setTimeout(() => this.save(), 1200)
+  }
+
+  clear(event) {
+    event.currentTarget.closest("[data-answer-sheet-target='item']")?.querySelectorAll("input[type=radio]").forEach((r) => { r.checked = false })
+    this.changed()
   }
 
   answers() {

@@ -1,5 +1,5 @@
 <%# The candidate's answer sheet for a practical test with an answer key, one question at a time:
-    the question, and a box under it where the candidate types the answer (nothing to choose).
+    MCQs first (question + options to tick), then the written / numerical ones (question + a box under it).
     The question paper stays open on the left (exams/_question_paper). locals: round:, invitation: %>
 <% items = round.answer_items %>
 <% choices = items.select { |i| i["kind"] == "choice" } %>
@@ -20,14 +20,18 @@
 
   <%# question navigator %>
   <nav class="as-nav" aria-label="Questions">
-    <div class="as-nav-group">
-      <span class="as-nav-label">Questions</span>
-      <% ordered.each_with_index do |item, i| %>
-        <button type="button" class="as-nav-btn <%= 'current' if i.zero? %>" data-answer-sheet-target="navButton"
-                data-index="<%= i %>" data-id="<%= item['id'] %>" data-action="answer-sheet#go"
-                title="<%= item['label'] %>"><%= item["label"].to_s.delete_prefix("Q") %></button>
-      <% end %>
-    </div>
+    <% [ [ "MCQ", choices ], [ "Written", others ] ].each do |group, list| %>
+      <% next if list.empty? %>
+      <div class="as-nav-group">
+        <span class="as-nav-label"><%= group %></span>
+        <% list.each do |item| %>
+          <% i = ordered.index(item) %>
+          <button type="button" class="as-nav-btn <%= 'current' if i.zero? %>" data-answer-sheet-target="navButton"
+                  data-index="<%= i %>" data-id="<%= item['id'] %>" data-action="answer-sheet#go"
+                  title="<%= item['label'] %>"><%= item["label"].to_s.delete_prefix("Q") %></button>
+        <% end %>
+      </div>
+    <% end %>
   </nav>
 
   <div class="card-body">
@@ -37,7 +41,10 @@
       <div class="as-step" data-answer-sheet-target="item" data-id="<%= item["id"] %>" data-q="<%= item["id"][/\d+/] %>" <%= "hidden" unless i.zero? %>>
         <div class="as-step-head">
           <span class="as-qno"><%= item["label"] %></span>
-          <span class="tiny muted"><%= fmt.(item["marks"]) %> <%= item["marks"].to_f == 1 ? "mark" : "marks" %></span>
+          <span class="tiny muted">
+            <%= item["kind"] == "choice" ? "Multiple choice" : (item["kind"] == "number" ? "Numerical" : "Written answer") %>
+            · <%= fmt.(item["marks"]) %> <%= item["marks"].to_f == 1 ? "mark" : "marks" %>
+          </span>
           <span class="grow"></span>
           <span class="tiny muted"><%= i + 1 %> of <%= ordered.size %></span>
         </div>
@@ -53,12 +60,31 @@
         </div>
 
         <% if item["kind"] == "choice" %>
-          <% if Array(item["options"]).any? %>
-            <ol class="as-optlist" type="a"><% item["options"].each do |option| %><li><%= option %></li><% end %></ol>
+          <% options = Array(item["options"]) %>
+          <% if options.size >= 2 %>
+            <div class="as-options" role="radiogroup" aria-label="<%= item["label"] %>">
+              <% options.each_with_index do |option, n| %>
+                <% letter = AnswerKey::LETTERS[n] %>
+                <label class="as-option">
+                  <input type="radio" name="as_<%= item["id"] %>" value="<%= letter %>" data-answer="<%= item["id"] %>"
+                         <%= "checked" if answer.upcase == letter %> data-action="change->answer-sheet#changed">
+                  <span class="as-letter"><%= letter %></span>
+                  <span class="as-otext"><%= option %></span>
+                </label>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="as-opts" role="radiogroup" aria-label="<%= item["label"] %>">
+              <% AnswerKey::LETTERS.first(4).each do |letter| %>
+                <label>
+                  <input type="radio" name="as_<%= item["id"] %>" value="<%= letter %>" data-answer="<%= item["id"] %>"
+                         <%= "checked" if answer.upcase == letter %> data-action="change->answer-sheet#changed">
+                  <span><%= letter %></span>
+                </label>
+              <% end %>
+            </div>
           <% end %>
-          <label class="as-label" for="as_<%= item["id"] %>">Your answer</label>
-          <input type="text" id="as_<%= item["id"] %>" class="input" placeholder="Type your answer (e.g. b, or the answer itself)" spellcheck="false"
-                 autocomplete="off" value="<%= answer %>" data-answer="<%= item["id"] %>" data-action="input->answer-sheet#changed keydown.enter->answer-sheet#next:prevent">
+          <button type="button" class="as-clear tiny" data-action="answer-sheet#clear">Clear my choice</button>
         <% elsif item["kind"] == "number" %>
           <label class="as-label" for="as_<%= item["id"] %>">Your answer</label>
           <input type="text" inputmode="decimal" id="as_<%= item["id"] %>" class="input" placeholder="Your answer (number / amount)" spellcheck="false"
