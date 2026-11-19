@@ -55,7 +55,11 @@ class AnswerKey
 
     case item["kind"]
     when "choice"
-      ok = given.upcase == item["answer"].to_s.upcase
+      letter = chosen_letter(item, given)
+      # a typed answer the app can't tie to an option: HR checks it
+      return { "marks" => 0.0, "max" => max, "correct" => nil, "review" => true } if letter.nil?
+
+      ok = letter == item["answer"].to_s.upcase
       { "marks" => ok ? max : 0.0, "max" => max, "correct" => ok, "review" => false }
     when "number"
       want = number(item["answer"])
@@ -71,6 +75,20 @@ class AnswerKey
       share = [ matched.size / (terms.size * 0.7), 1.0 ].min # ~70% of the key points earns full marks
       { "marks" => ((max * share) * 2).round / 2.0, "max" => max, "correct" => nil, "review" => true, "matched" => matched }
     end
+  end
+
+  # The option a typed MCQ answer means: "B", "b", "(b)", "b) ₹500", "Option B" — or the option's
+  # own text ("₹500") when the paper's options are known. nil when it can't be told.
+  def self.chosen_letter(item, given)
+    text = given.to_s.strip
+    if (m = text.match(/\A(?:option\s*|ans(?:wer)?\s*[:\-.]?\s*)?(?:\(([A-Ea-e])\)|([A-Ea-e])(?=\z|[.):,]))/i))
+      return (m[1] || m[2]).upcase
+    end
+
+    plain = ->(v) { v.to_s.downcase.gsub(/\b(?:rs|inr)\b\.?/, "").gsub(/[^\p{Alnum}%]/, "") }
+    options = Array(item["options"])
+    index = options.index { |o| plain.(o).present? && plain.(o) == plain.(text) }
+    LETTERS[index] if index
   end
 
   # Key points of a model answer: amounts, percentages, dates, sections / rules, form names.

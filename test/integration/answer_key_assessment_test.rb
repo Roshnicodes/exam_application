@@ -69,7 +69,8 @@ class AnswerKeyAssessmentTest < ActionDispatch::IntegrationTest
     assert_match "qp-panel", response.body          # the paper stays open next to the answers
     assert_match "Full paper", response.body
     assert_match "Late fee for GSTR-3B?", response.body # the question above its options
-    assert_match "as-option", response.body
+    assert_match %(id="as_q1" class="input"), response.body # a box to type the answer — nothing to choose
+    assert_no_match 'type="radio"', response.body
     assert_match "Review &amp; submit", response.body
     assert_no_match "Upload your finished work", response.body # nothing to upload: answers save by themselves
     assert_no_match "up-zone", response.body

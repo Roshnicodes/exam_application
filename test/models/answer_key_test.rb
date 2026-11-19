@@ -106,4 +106,12 @@ class AnswerKeyTest < ActiveSupport::TestCase
     assert_not view["removed"]
     assert_equal paper, view["lines"]
   end
+  test "a typed MCQ answer is read as its option" do
+    item = { "kind" => "choice", "answer" => "B", "marks" => 1, "options" => [ "₹250", "₹500", "₹750", "Nil" ] }
+    [ "B", "b", "(b)", "b) ₹500", "Option B", "Answer: B", "₹500", "Rs. 500", "500" ].each do |typed|
+      assert_equal 1.0, AnswerKey.mark(item, typed)["marks"], typed
+    end
+    assert_equal({ "marks" => 0.0, "max" => 1.0, "correct" => false, "review" => false }, AnswerKey.mark(item, "a"))
+    assert AnswerKey.mark(item, "a late fee of 500")["review"] # can't tell: HR checks it
+  end
 end
