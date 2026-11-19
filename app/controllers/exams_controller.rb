@@ -9,7 +9,7 @@ class ExamsController < ApplicationController
              with: -> { redirect_to exam_path(params[:token]), alert: "Too many attempts. Please wait a few minutes." }
 
   # the practical assessment runs on its own pages (it can come before, after or instead of the test)
-  ASSESSMENT_ACTIONS = %i[assessment assessment_start assessment_notes assessment_files assessment_remove_file assessment_submit assessment_task_preview assessment_sheet assessment_sheet_save].freeze
+  ASSESSMENT_ACTIONS = %i[assessment assessment_start assessment_notes assessment_files assessment_remove_file assessment_submit assessment_task_preview assessment_sheet assessment_sheet_save assessment_answers].freeze
 
   before_action :set_invitation
   before_action :redirect_if_finished, except: %i[finished events recordings interview] + ASSESSMENT_ACTIONS
@@ -219,10 +219,25 @@ class ExamsController < ApplicationController
     file = @round.task_attachments.find { |a| a.id == params[:file_id].to_i }
     return head :not_found unless file
 
+    if file.filename.extension.to_s.downcase == "docx" # a Word question paper, shown as text + tables
+      lines = file.blob.open do |tmp|
+        QuestionPaperParser.new(ActionDispatch::Http::UploadedFile.new(tempfile: tmp, filename: file.filename.to_s)).lines
+      end
+      return render partial: "exams/task_doc", locals: { lines: lines }
+    end
+
     sheets = file.blob.open { |tmp| Spreadsheet.preview(tmp.path, file.filename.extension_with_delimiter) }
     render partial: "exams/task_sheet", locals: { sheets: sheets }
-  rescue Spreadsheet::Error => e
+  rescue Spreadsheet::Error, QuestionPaperParser::Error => e
     render plain: e.message, status: :unprocessable_entity
+  end
+
+  # Autosave of the answer sheet (answers to the questions of the practical's answer key).
+  def assessment_answers
+    return head :unprocessable_entity unless @round&.working? && @round.answer_sheet?
+
+    @round.record_answers(params.fetch(:answers, {}).to_unsafe_h)
+    render json: { ok: true, answered: @round.answered_count, total: @round.answer_items.size, seconds_left: @round.seconds_left }
   end
 
   # The built-in spreadsheet: the candidate's saved workbook, else the task as HR uploaded it.
@@ -230,7 +245,7 @@ class ExamsController < ApplicationController
     return head :not_found unless @round&.working? && @round.online_sheet?
 
     render json: { sheets: @round.working_sheets, saved_at: @round.sheet_saved_at, seconds_left: @round.seconds_left }
-  rescue Spreadsheet::Error => e
+  rescue Spreadsheet::Error, QuestionPaperParser::Error => e
     render json: { error: e.message }, status: :unprocessable_entity
   end
 
@@ -262,7 +277,8 @@ class ExamsController < ApplicationController
     if errors.any?
       return redirect_to exam_assessment_path(@invitation.token), alert: errors.to_sentence
     end
-    if @round.require_upload? && !@round.online_sheet? && !@round.submissions.attached? && @round.candidate_notes.blank?
+    @round.record_answers(params[:answers].to_unsafe_h) if params[:answers].respond_to?(:to_unsafe_h) && @round.answer_sheet?
+    if @round.require_upload? && !@round.online_sheet? && !@round.answer_sheet? && !@round.submissions.attached? && @round.candidate_notes.blank?
       return redirect_to exam_assessment_path(@invitation.token), alert: "Please upload your solved file (or type your answer) before submitting."
     end
 

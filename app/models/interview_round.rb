@@ -190,6 +190,66 @@ class InterviewRound < ApplicationRecord
     submitted_at.present?
   end
 
+  # ---- Answer sheet marked from the practical test's answer key ----
+  def answer_items
+    assessment&.answer_items.presence || []
+  end
+
+  def answer_sheet?
+    answer_items.any?
+  end
+
+  def key_total
+    answer_items.sum { |i| i["marks"].to_f }
+  end
+
+  # Autosave of the candidate's answers ({ "q1" => "B", "q21a" => "Output CGST 95,000 …" })
+  def record_answers(given)
+    ids = answer_items.map { |i| i["id"] }
+    clean = given.to_h.transform_keys(&:to_s).slice(*ids).transform_values { |v| v.to_s.strip.first(6000) }
+    update!(answers: answers.merge(clean))
+  end
+
+  def answered_count
+    answer_items.count { |i| answers[i["id"]].present? }
+  end
+
+  # Marks every question from the key; questions HR has already marked keep HR's marks.
+  def auto_mark!
+    return unless answer_sheet?
+
+    marks = answer_items.to_h do |item|
+      result = AnswerKey.mark(item, answers[item["id"]])
+      hr = item_marks[item["id"]]
+      result = result.merge("marks" => hr["marks"], "by_hr" => true) if hr&.dig("by_hr")
+      [ item["id"], result ]
+    end
+    apply_item_marks!(marks)
+  end
+
+  # HR changes the marks of some questions ({ "q16" => "1.5" }); the total follows.
+  def set_item_marks!(given)
+    marks = item_marks.deep_dup
+    answer_items.each do |item|
+      value = given.to_h[item["id"]].to_s.strip
+      next if value.blank? || !value.match?(/\A\d+(\.\d+)?\z/)
+
+      max = item["marks"].to_f
+      marks[item["id"]] = (marks[item["id"]] || AnswerKey.mark(item, answers[item["id"]]))
+                            .merge("marks" => [ value.to_f, max ].min, "max" => max, "by_hr" => true, "review" => false)
+    end
+    apply_item_marks!(marks)
+  end
+
+  # The answer sheet's score (out of the key's total), e.g. 37.5
+  def sheet_score
+    item_marks.values.sum { |m| m["marks"].to_f }
+  end
+
+  def to_review_count
+    item_marks.values.count { |m| m["review"] && !m["by_hr"] }
+  end
+
   # ---- Built-in spreadsheet (Excel tasks solved on the page) ----
 
   # The spreadsheet task file the built-in spreadsheet opens (first .xlsx / .csv / .ods of the task).
@@ -263,17 +323,34 @@ class InterviewRound < ApplicationRecord
     return if submitted?
 
     attach_sheet_answer! # the built-in spreadsheet becomes an .xlsx HR can download
+    begin_marking = answer_sheet?
     update!(submitted_at: Time.current, ended_at: Time.current, status: "completed", termination_reason: reason)
     case reason
     when nil then log!("assessment_submitted", "#{name} - #{submissions.size} file(s) uploaded")
     when "time_up" then log!("assessment_time_up", "#{name} - #{submissions.size} file(s) uploaded")
     else log!("assessment_ended", "#{name} - #{reason}")
     end
+    mark_from_key if begin_marking
+  end
+
+  # Auto-marking never stops a submission; a problem is logged for HR to mark by hand.
+  def mark_from_key
+    auto_mark!
+  rescue StandardError => e
+    Rails.logger.error("Auto-marking failed for round #{id}: #{e.class} #{e.message}")
   end
 
   # HR gives the candidate another go (the earlier uploads stay on record).
   def reopen_work!
     update!(work_started_at: nil, submitted_at: nil, ended_at: nil, termination_reason: nil, status: "open", started_at: Time.current)
+  end
+
+  def apply_item_marks!(marks)
+    update!(item_marks: marks)
+    score = marks.values.sum { |m| m["marks"].to_f }
+    scaled = key_total.positive? ? (score * total_marks / key_total).round : score.round
+    note = grade_note.presence || "Marked from the answer key (written answers by their key points — please check)."
+    grade!(scaled.clamp(0, total_marks), note)
   end
 
   def grade!(marks_value, note = nil)

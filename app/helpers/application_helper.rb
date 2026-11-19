@@ -221,6 +221,7 @@ module ApplicationHelper
   def task_preview_kind(file)
     case file.filename.extension.to_s.downcase
     when "xlsx", "xlsm", "csv", "ods" then "sheet"
+    when "docx" then "doc"
     when "pdf" then "pdf"
     when "png", "jpg", "jpeg", "gif", "webp" then "image"
     when "txt", "md", "json", "xml" then "text"

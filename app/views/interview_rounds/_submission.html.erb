@@ -13,6 +13,7 @@
     </span>
   </div>
   <div class="card-body stack">
+    <%= render "interview_rounds/answer_marks", round: round, invitation: invitation, readonly: local_assigns[:readonly] %>
     <%= render "interview_rounds/sheet_answer", round: round %>
 
     <% if round.submissions.attached? %>

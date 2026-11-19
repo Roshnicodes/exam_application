@@ -1,0 +1,59 @@
+<%# The candidate's answer sheet for a practical test with an answer key. locals: round:, invitation: %>
+<% items = round.answer_items %>
+<% choices = items.select { |i| i["kind"] == "choice" } %>
+<% others = items.reject { |i| i["kind"] == "choice" } %>
+<section class="card answer-card" data-controller="answer-sheet"
+         data-answer-sheet-url-value="<%= exam_assessment_answers_path(invitation.token) %>" data-answer-sheet-total-value="<%= items.size %>">
+  <div class="card-head">
+    <h2><%= icon("edit") %> Your answer sheet</h2>
+    <span class="row" style="gap:.5rem">
+      <span class="state-pill" data-answer-sheet-target="progress"><%= round.answered_count %> / <%= items.size %> answered</span>
+      <span class="tiny as-status" data-answer-sheet-target="status">Saves automatically</span>
+    </span>
+  </div>
+  <div class="card-body">
+    <p class="small muted" style="margin:-.2rem 0 1rem">Answer each question from the paper here. Your answers save by themselves and are marked when you submit. · प्रश्नपत्र के हर प्रश्न का उत्तर यहाँ दें — अपने-आप सेव होता है।</p>
+
+    <% if choices.any? %>
+      <h3 class="as-head">Multiple choice <span class="tiny muted">· tap the right option</span></h3>
+      <div class="as-choices">
+        <% choices.each do |item| %>
+          <div class="as-choice" data-answer-sheet-target="item" data-id="<%= item["id"] %>">
+            <b><%= item["label"] %></b>
+            <div class="as-opts" role="radiogroup" aria-label="<%= item["label"] %>">
+              <% AnswerKey::LETTERS.first(4).each do |letter| %>
+                <label>
+                  <input type="radio" name="as_<%= item["id"] %>" value="<%= letter %>" data-answer="<%= item["id"] %>"
+                         <%= "checked" if round.answers[item["id"]].to_s.upcase == letter %> data-action="change->answer-sheet#changed">
+                  <span><%= letter %></span>
+                </label>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if others.any? %>
+      <h3 class="as-head" style="margin-top:<%= choices.any? ? "1.4rem" : "0" %>">Written &amp; numerical answers</h3>
+      <div class="as-written">
+        <% others.each do |item| %>
+          <div class="as-q" data-answer-sheet-target="item" data-id="<%= item["id"] %>">
+            <label for="as_<%= item["id"] %>">
+              <b><%= item["label"] %></b> <%= item["title"] %>
+              <span class="tiny muted">· <%= number_with_precision(item["marks"], precision: 1, strip_insignificant_zeros: true) %> marks</span>
+            </label>
+            <% if item["kind"] == "number" %>
+              <input type="text" inputmode="decimal" id="as_<%= item["id"] %>" class="input" placeholder="Your answer (number)" spellcheck="false"
+                     value="<%= round.answers[item["id"]] %>" data-answer="<%= item["id"] %>" data-action="input->answer-sheet#changed">
+            <% else %>
+              <textarea id="as_<%= item["id"] %>" rows="4" class="input" spellcheck="false"
+                        placeholder="Write your answer — show the working and the final figures (amounts, sections, due dates…)"
+                        data-answer="<%= item["id"] %>" data-action="input->answer-sheet#changed"><%= round.answers[item["id"]] %></textarea>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</section>

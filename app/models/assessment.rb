@@ -25,6 +25,7 @@ class Assessment < ApplicationRecord
   has_many :invitations, dependent: :restrict_with_error
   has_many :exam_batches, dependent: :restrict_with_error
   has_many_attached :files # the task itself: the sheet / brief / data the candidate works on
+  has_one_attached :answer_key # HR's answer key file (never shown to the candidate); read into answer_items
 
   normalizes :title, with: ->(v) { v.to_s.squish }
   normalizes :allowed_extensions, with: ->(v) { v.to_s.downcase.gsub(/\s+/, "") }
@@ -40,6 +41,41 @@ class Assessment < ApplicationRecord
 
   scope :ordered, -> { order(:title) }
   scope :active, -> { where(active: true) }
+
+  # ---- Answer key: automatic marking of the candidate's answer sheet ----
+  def answer_sheet?
+    answer_items.present?
+  end
+
+  def key_total
+    answer_items.sum { |i| i["marks"].to_f }
+  end
+
+  # Reads HR's uploaded key into questions (raises AnswerKey::Error when nothing usable is found).
+  def read_answer_key!(file)
+    self.answer_items = AnswerKey.parse(file)
+    answer_key.attach(file)
+    self.max_marks = key_total.ceil if key_total.positive? # the test is out of the key's total
+  end
+
+  # HR's corrections from the review table: kind, correct answer, marks per question.
+  def update_answer_items(rows)
+    by_id = rows.to_h { |r| [ r["id"].to_s, r ] }
+    self.answer_items = answer_items.filter_map do |item|
+      row = by_id[item["id"]]
+      next item unless row
+      next if row["remove"] == "1"
+
+      kind = AnswerKey::KINDS.key?(row["kind"]) ? row["kind"] : item["kind"]
+      marks = row["marks"].to_s.strip.match?(/\A\d+(\.\d+)?\z/) ? row["marks"].to_f : item["marks"]
+      answer = row["answer"].to_s.strip
+      answer = answer.upcase.first(1) if kind == "choice"
+      item.merge("kind" => kind, "marks" => marks, "answer" => answer.presence,
+                 "terms" => kind == "text" && row["model"].present? ? AnswerKey.terms_in(row["model"]).first(14) : item["terms"],
+                 "model" => row.key?("model") ? row["model"].to_s.first(4000) : item["model"])
+    end
+    self.max_marks = key_total.ceil if key_total.positive?
+  end
 
   def kind_label
     KINDS.dig(kind, 0) || "Practical task"

@@ -1,0 +1,10 @@
+<%# A Word task file (e.g. the question paper) shown inside the assessment page: paragraphs and tables. %>
+<div class="task-doc">
+  <% lines.chunk_while { |a, b| a.include?(" | ") == b.include?(" | ") }.each do |block| %>
+    <% if block.first.include?(" | ") %>
+      <div class="ts-scroll"><table><% block.each_with_index do |row, i| %><tr><% row.split(" | ").each do |cell| %><%= i.zero? ? content_tag(:th, cell) : content_tag(:td, cell) %><% end %></tr><% end %></table></div>
+    <% else %>
+      <% block.each do |line| %><% next if line.strip.empty? %><p class="<%= 'td-q' if line.match?(/\A\s*(Q\s?\d+[.)]|\d+[.)]\s|Section\s+[A-Z]\b)/i) %>"><%= line %></p><% end %>
+    <% end %>
+  <% end %>
+</div>

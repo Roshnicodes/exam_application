@@ -47,6 +47,20 @@ class QuestionPaperParser
     end
   end
 
+  # The document as plain lines (tables as "cell | cell"), for other readers such as AnswerKey.
+  def lines
+    case @ext
+    when ".docx" then docx_lines.map { |l| l.delete(MARK_ON + MARK_OFF) }
+    when ".pdf" then pdf_lines
+    when ".txt" then File.read(@file.path, encoding: "bom|utf-8").scrub.lines.map(&:chomp)
+    when ".xlsx", ".xls", ".csv"
+      book = Roo::Spreadsheet.open(@file.path, extension: @ext.delete(".").to_sym)
+      book.sheets.flat_map { |name| sheet = book.sheet(name); (1..sheet.last_row.to_i).map { |i| sheet.row(i).map { |v| Spreadsheet.clean(v) }.join(" | ") } }
+    when ".doc" then raise Error, "Old Word (.doc) files can't be read. Open it in Word, Save As .docx (or PDF) and upload that."
+    else raise Error, "Unsupported file. Upload Word (.docx), PDF, Excel (.xlsx / .csv) or text (.txt)."
+    end
+  end
+
   private
     # ---------------------------------------------------------------- readers
     def docx_lines

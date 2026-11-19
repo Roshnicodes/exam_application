@@ -2489,3 +2489,58 @@ body { overflow-x: clip; }
 @media (max-width: 380px) { .guide-tip { white-space: normal; } .guide-tip * { white-space: normal; } }
 .guide-tip { display: block; }
 .guide-tip > svg.icon { vertical-align: -3px; margin-right: .35rem; }
+/* answer key */
+.key-status { display: flex; gap: .6rem; align-items: flex-start; padding: .75rem .9rem; border-radius: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; color: #065f46; font-size: .86rem; }
+.key-table td { vertical-align: top; }
+.key-table .input-sm, .input.input-sm { padding: .35rem .5rem; font-size: .82rem; height: auto; }
+.key-terms { display: flex; flex-wrap: wrap; gap: .25rem; }
+.key-terms .chip { font-size: .72rem; padding: .1rem .45rem; border-radius: 99px; background: #ecfdf5; border: 1px solid #bbf7d0; color: #065f46; white-space: nowrap; }
+.key-model { margin-top: .35rem; }
+.key-model summary { cursor: pointer; color: var(--muted); }
+.key-model textarea { margin-top: .35rem; font-size: .8rem; }
+/* candidate's answer sheet */
+.answer-card .as-head { font-size: .95rem; margin-bottom: .6rem; }
+.as-status { color: var(--brand); font-weight: 600; } .as-status.bad { color: var(--red); }
+.as-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .5rem; }
+.as-choice { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .45rem .55rem .45rem .8rem; border: 1px solid var(--line); border-radius: 12px; background: #fff; transition: .15s; }
+.as-choice.done { border-color: #86efac; background: #f0fdf4; }
+.as-choice b { font-size: .86rem; min-width: 2.4rem; }
+.as-opts { display: flex; gap: .3rem; }
+.as-opts label { position: relative; cursor: pointer; }
+.as-opts input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.as-opts span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; border: 1.5px solid var(--line); font-weight: 700; font-size: .85rem; color: var(--ink-2); background: #fff; transition: .15s; }
+.as-opts label:hover span { border-color: var(--brand); }
+.as-opts input:checked + span { background: linear-gradient(135deg, #22c55e, #059669); border-color: transparent; color: #fff; box-shadow: 0 6px 14px -8px rgba(5, 150, 105, .9); }
+.as-opts input:focus-visible + span { outline: 2px solid var(--brand); outline-offset: 2px; }
+.as-written { display: grid; gap: .9rem; }
+.as-q { padding: .8rem .9rem; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+.as-q.done { border-color: #bbf7d0; }
+.as-q label { display: block; font-size: .88rem; margin-bottom: .45rem; line-height: 1.4; }
+.as-q textarea { min-height: 96px; resize: vertical; }
+@media (max-width: 420px) { .as-choices { grid-template-columns: minmax(0, 1fr); } }
+/* HR: answer sheet marks */
+.answer-marks { display: grid; gap: .6rem; }
+.am-table td { vertical-align: top; }
+.am-table tr.am-ok td:first-child { box-shadow: inset 3px 0 0 #22c55e; }
+.am-table tr.am-bad td:first-child { box-shadow: inset 3px 0 0 #ef4444; }
+.am-given { max-width: 340px; font-size: .84rem; overflow-wrap: anywhere; }
+.am-given p { margin: 0 0 .3rem; }
+.am-mark { display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; }
+.key-terms .chip.hit { background: #22c55e; border-color: #16a34a; color: #fff; }
+.key-terms .chip:not(.hit) { opacity: .75; }
+.am-form .table-wrap { max-height: 70vh; overflow: auto; }
+/* a Word question paper inside the assessment page */
+.task-doc { padding: 1rem 1.25rem; max-width: 900px; margin: 0 auto; font-size: .92rem; line-height: 1.6; color: var(--ink); }
+.task-doc p { margin: 0 0 .45rem; }
+.task-doc p.td-q { font-weight: 700; margin-top: .9rem; }
+.task-doc table { border-collapse: collapse; margin: .4rem 0 .8rem; font-size: .84rem; }
+.task-doc th, .task-doc td { border: 1px solid #e2e8f0; padding: .3rem .55rem; text-align: left; vertical-align: top; }
+.task-doc th { background: #f1f5f9; font-weight: 600; }
+.key-table { min-width: 760px; }
+.key-table th:nth-child(1) { width: 4.5rem; } .key-table th:nth-child(2) { width: 24%; } .key-table th:nth-child(3) { width: 9.5rem; }
+.key-table th:nth-child(5) { width: 6rem; } .key-table th:nth-child(6) { width: 2.5rem; }
+.key-table select.input { min-width: 8.5rem; }
+/* two-column pages: a column never grows wider than the screen (tables scroll inside) */
+.split > *, .stack > *, .answer-marks > * { min-width: 0; }
+.card-head { flex-wrap: wrap; row-gap: .4rem; }
+.card-head > .row { flex-wrap: wrap; }

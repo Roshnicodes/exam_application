@@ -13,7 +13,11 @@ Rails.application.routes.draw do
   end
   # Practical / live assessments (Excel, Tally, Word, data entry, coding…) HR can give in a round
   resources :assessments do
-    member { post :duplicate }
+    member do
+      post :duplicate
+      patch :answer_key
+      delete :remove_answer_key
+    end
   end
   resources :departments, except: :show
   resources :vacancies
@@ -55,6 +59,8 @@ Rails.application.routes.draw do
         post :complete
         post :feedback
         post :grade
+        post :mark_items
+        post :remark
         post :reopen
         delete :task_file
       end
@@ -100,6 +106,7 @@ Rails.application.routes.draw do
     post "assessment/submit" => "exams#assessment_submit", as: :assessment_submit
     get "assessment/sheet" => "exams#assessment_sheet", as: :assessment_sheet
     patch "assessment/sheet" => "exams#assessment_sheet_save", as: :assessment_sheet_save
+    patch "assessment/answers" => "exams#assessment_answers", as: :assessment_answers
   end
 
   get "up" => "rails/health#show", as: :rails_health_check

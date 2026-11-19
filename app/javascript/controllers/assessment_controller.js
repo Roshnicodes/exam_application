@@ -35,14 +35,14 @@ export default class extends Controller {
     body.replaceChildren()
     this.previewTarget.classList.remove("hidden")
 
-    if (kind === "sheet") {
-      body.append(this.previewMessage("Opening the sheet…"))
+    if (kind === "sheet" || kind === "doc") {
+      body.append(this.previewMessage(kind === "doc" ? "Opening the document…" : "Opening the sheet…"))
       try {
         const response = await fetch(src, { headers: { Accept: "text/html" } })
         if (!response.ok) throw new Error(await response.text())
         body.innerHTML = await response.text()
       } catch (e) {
-        body.replaceChildren(this.previewMessage(`This sheet could not be shown here. ${e.message || ""} Use Download instead.`))
+        body.replaceChildren(this.previewMessage(`This file could not be shown here. ${e.message || ""} Use Download instead.`))
       }
     } else if (kind === "image") {
       const img = document.createElement("img")

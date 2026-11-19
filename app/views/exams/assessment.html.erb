@@ -26,7 +26,7 @@
     <%= render "shared/brand" %>
     <div class="grow hide-sm" style="text-align:center">
       <b><%= @invitation.candidate_name %></b>
-      <div class="tiny muted"><%= @round.name %> · <%= @round.total_marks %> marks · <% if online_sheet %>auto-saved<% else %><span data-assessment-target="fileCount"><%= files.size %></span> file(s) uploaded<% end %></div>
+      <div class="tiny muted"><%= @round.name %> · <%= @round.total_marks %> marks · <% if online_sheet || @round.answer_sheet? %>auto-saved<% else %><span data-assessment-target="fileCount"><%= files.size %></span> file(s) uploaded<% end %></div>
     </div>
     <span class="grow" style="display:none"></span>
     <span class="warn-meter" title="Warnings"><%= icon("alert") %> <span data-proctor-target="warnLabel"><%= @round.warnings_count %><%= "/#{@round.warning_limit}" if @round.warning_limit.positive? %></span></span>
@@ -56,7 +56,7 @@
                 <div class="grow"><b><%= file.filename %></b><span class="tiny muted"><%= number_to_human_size(file.byte_size) %></span></div>
                 <% kind = task_preview_kind(file) %>
                 <button type="button" class="btn btn-light btn-sm" data-action="assessment#preview" data-name="<%= file.filename %>" data-kind="<%= kind %>"
-                        data-src="<%= kind == "sheet" ? exam_assessment_task_preview_path(@invitation.token, file.id) : rails_blob_path(file, disposition: "inline") %>"><%= icon("eye") %> View</button>
+                        data-src="<%= kind.in?(%w[sheet doc]) ? exam_assessment_task_preview_path(@invitation.token, file.id) : rails_blob_path(file, disposition: "inline") %>"><%= icon("eye") %> View</button>
                 <% if @round.allow_download? %>
                   <%= link_to rails_blob_path(file, disposition: "attachment"), class: "btn btn-primary btn-sm", data: { turbo: false } do %><%= icon("download") %> Download<% end %>
                 <% end %>
@@ -77,6 +77,9 @@
           <p class="task-note"><%= icon("alert") %> Stay on this page in full screen. Switching tabs or apps gives a warning<%= " (#{@round.warning_limit} warnings end the assessment)" if @round.warning_limit.positive? %>.</p>
         <% end %>
       </section>
+
+      <%# ---------------- answer sheet (practical tests with an answer key) ---------------- %>
+      <% if @round.answer_sheet? %><%= render "exams/answer_sheet", round: @round, invitation: @invitation %><% end %>
 
       <%# ---------------- the built-in spreadsheet: the task sheet, filled right here ---------------- %>
       <% if online_sheet %>
@@ -308,7 +311,7 @@
             </div>
           </div>
         <% else %>
-        <h2 style="font-size:1.1rem"><%= icon("upload") %> Upload your finished work<%= " *" if @round.require_upload? %></h2>
+        <h2 style="font-size:1.1rem"><%= icon("upload") %> <%= @round.answer_sheet? ? "Extra file (optional)" : "Upload your finished work" %><%= " *" if @round.require_upload? && !@round.answer_sheet? %></h2>
         <p class="small muted" style="margin:.3rem 0 1rem">
           Save the file on your computer, then upload it here. You can upload more than once — the last upload is what HR checks.
           Allowed: <%= @round.accept_attribute.split(",").first(10).join(" ") %>. Max <%= Assessment::MAX_FILE_SIZE / 1.megabyte %> MB each.

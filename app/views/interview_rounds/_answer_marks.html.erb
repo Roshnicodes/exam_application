@@ -1,0 +1,71 @@
+<%# The answer sheet, marked from the answer key. HR can change any question's marks.
+    locals: round:, invitation:, readonly: false %>
+<% if round.answer_sheet? %>
+  <% marks = round.item_marks %>
+  <% fmt = ->(n) { number_with_precision(n.to_f, precision: 1, strip_insignificant_zeros: true) } %>
+  <div class="answer-marks" id="answer-sheet">
+    <div class="row between" style="flex-wrap:wrap;gap:.5rem">
+      <b class="small"><%= icon("check-circle") %> Answer sheet · marked from the answer key</b>
+      <span class="row" style="gap:.4rem;flex-wrap:wrap">
+        <% if marks.any? %>
+          <span class="state-pill green"><%= fmt.(round.sheet_score) %> / <%= fmt.(round.key_total) %></span>
+          <% if round.to_review_count.positive? %><span class="state-pill" style="background:#fef3c7;color:#92400e"><%= round.to_review_count %> written to check</span><% end %>
+        <% else %>
+          <span class="tiny muted"><%= round.answered_count %> / <%= round.answer_items.size %> answered<%= " so far" if round.working? %></span>
+        <% end %>
+      </span>
+    </div>
+    <%= form_with url: mark_items_invitation_interview_round_path(invitation, round), class: "am-form" do %>
+      <div class="table-wrap">
+        <table class="table am-table">
+          <thead><tr><th>Q</th><th>Candidate's answer</th><th>Correct / key points</th><th class="num">Marks</th></tr></thead>
+          <tbody>
+            <% round.answer_items.each do |item| %>
+              <% m = marks[item["id"]] || {} %>
+              <% given = round.answers[item["id"]].to_s %>
+              <tr class="<%= 'am-ok' if m['correct'] == true %> <%= 'am-bad' if m['correct'] == false && given.present? %>">
+                <td><b><%= item["label"] %></b><% if item["title"].present? %><div class="tiny muted"><%= truncate(item["title"], length: 60) %></div><% end %></td>
+                <td class="am-given"><%= given.present? ? simple_format(truncate(given, length: 900)) : content_tag(:span, "Not answered", class: "tiny muted") %></td>
+                <td class="small">
+                  <% if item["kind"] == "text" %>
+                    <% matched = Array(m["matched"]) %>
+                    <div class="key-terms">
+                      <% Array(item["terms"]).each do |t| %><span class="chip <%= 'hit' if matched.include?(t) %>"><%= AnswerKey.term_label(t) %></span><% end %>
+                    </div>
+                    <% if item["rubric"].present? %><div class="tiny muted" style="margin-top:.3rem">Marking: <%= truncate(item["rubric"], length: 160) %></div><% end %>
+                  <% else %>
+                    <b><%= item["answer"] %></b>
+                  <% end %>
+                </td>
+                <td class="num">
+                  <% if readonly %>
+                    <b><%= fmt.(m["marks"]) %></b> / <%= fmt.(item["marks"]) %>
+                  <% else %>
+                    <span class="am-mark">
+                      <%= number_field_tag "marks[#{item['id']}]", (m.key?("marks") ? fmt.(m["marks"]) : nil), step: 0.5, min: 0, max: item["marks"], class: "input input-sm", style: "width:4.6rem", placeholder: "—" %>
+                      <span class="tiny muted">/ <%= fmt.(item["marks"]) %></span>
+                    </span>
+                  <% end %>
+                  <% if m["by_hr"] %><div class="tiny muted">by HR</div><% elsif m["review"] %><div class="tiny" style="color:#b45309">auto · check</div><% elsif m.key?("marks") %><div class="tiny muted">auto</div><% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+      <% unless readonly %>
+        <div class="row between" style="margin-top:.8rem;flex-wrap:wrap;gap:.5rem">
+          <span class="tiny muted">Written answers get marks for the key points found (green). Change any mark and save — the total and result update.</span>
+          <span class="row" style="gap:.4rem">
+            <% if round.submitted? %>
+              <button type="submit" class="btn btn-primary btn-sm"><%= icon("check") %> Save marks</button>
+            <% end %>
+          </span>
+        </div>
+      <% end %>
+    <% end %>
+    <% if !readonly && round.submitted? %>
+      <%= button_to remark_invitation_interview_round_path(invitation, round), class: "btn btn-light btn-sm", form: { style: "margin-top:.5rem", data: { turbo_confirm: "Mark again from the answer key? Marks you changed by hand are kept." } } do %><%= icon("activity") %> Mark again from the key<% end %>
+    <% end %>
+  </div>
+<% end %>

@@ -72,6 +72,37 @@
     </div>
   </div>
 
+  <%# answer key: the candidate's answer sheet is marked automatically from it %>
+  <div class="form-section">
+    <div class="form-section-head">
+      <span class="ico"><%= icon("check-circle") %></span>
+      <div><h3>Answer key <span class="muted small">(optional — for automatic marking)</span></h3>
+        <p class="small muted">Upload the answer key / marking scheme (Word, PDF, Excel or text). The candidate then gets an answer sheet for these questions
+          and it is marked the moment they submit: MCQs and numbers exactly, written answers by the key points of your model answer (you can change any mark).
+          The candidate never sees this file.</p></div>
+    </div>
+    <div class="fields">
+      <% if assessment.answer_sheet? %>
+        <div class="field full">
+          <div class="key-status">
+            <%= icon("check-circle") %>
+            <span><b><%= pluralize(assessment.answer_items.size, "question") %>, <%= number_with_precision(assessment.key_total, precision: 1, strip_insignificant_zeros: true) %> marks</b>
+              read from <%= assessment.answer_key.attached? ? assessment.answer_key.filename : "the answer key" %> — upload a new file to replace it.</span>
+          </div>
+        </div>
+      <% end %>
+      <div class="field full">
+        <%= f.label :answer_key, assessment.answer_sheet? ? "Replace the answer key" : "Answer key file" %>
+        <div class="dropzone" data-controller="dropzone" data-action="click->dropzone#pick">
+          <span class="ico"><%= icon("upload") %></span>
+          <div class="grow small" data-dropzone-target="label">Click or drop the answer key — .docx, .pdf, .xlsx, .csv, .txt</div>
+          <%= f.file_field :answer_key, accept: ".docx,.pdf,.xlsx,.xls,.csv,.txt", data: { dropzone_target: "input", action: "change->dropzone#changed" } %>
+        </div>
+        <span class="hint">Understands “Q1 – (b)”, a “Q | Ans” table, “Q16. … (2 marks)”, parts like “(a) … (1.5 marks)” and a section-wise marks table. You can check and correct every question after saving.</span>
+      </div>
+    </div>
+  </div>
+
   <div class="form-section">
     <div class="form-section-head">
       <span class="ico"><%= icon("list") %></span>

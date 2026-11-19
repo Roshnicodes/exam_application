@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_07_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_19_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -61,6 +61,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_090000) do
     t.datetime "updated_at", null: false
     t.boolean "allow_app_switch", default: false, null: false
     t.boolean "online_sheet", default: true, null: false
+    t.jsonb "answer_items", default: [], null: false
     t.index ["user_id", "title"], name: "index_assessments_on_user_id_and_title"
     t.index ["user_id"], name: "index_assessments_on_user_id"
   end
@@ -211,6 +212,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_090000) do
     t.boolean "allow_app_switch"
     t.jsonb "sheet_data"
     t.datetime "sheet_saved_at"
+    t.jsonb "answers", default: {}, null: false
+    t.jsonb "item_marks", default: {}, null: false
     t.index ["assessment_id"], name: "index_interview_rounds_on_assessment_id"
     t.index ["invitation_id"], name: "index_interview_rounds_on_invitation_id"
     t.index ["kind", "status"], name: "index_interview_rounds_on_kind_and_status"

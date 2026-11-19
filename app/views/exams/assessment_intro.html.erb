@@ -38,10 +38,19 @@
         <div class="task-brief">
           <% if @round.task_instructions.present? %>
             <div class="task-text"><%= simple_format(@round.task_instructions) %></div>
-          <% elsif !@round.online_sheet? %>
+          <% elsif !@round.online_sheet? && !@round.answer_sheet? %>
             <p class="small muted">HR will share the task on the next screen. Open the file, do the work and upload it back before the time ends.</p>
           <% end %>
         </div>
+        <% if @round.answer_sheet? %>
+          <div class="intro-sheet">
+            <span class="is-ico"><%= icon("edit") %></span>
+            <div>
+              <b>You'll answer <%= pluralize(@round.answer_items.size, "question") %> on an answer sheet on the next screen</b>
+              <p class="small muted">Tap the option for MCQs and write the working / final figures for the others. It saves by itself and is marked when you submit. · अगली स्क्रीन पर उत्तर-पत्र में जवाब दें — अपने-आप सेव होता है।</p>
+            </div>
+          </div>
+        <% end %>
         <% if @round.online_sheet? %>
           <div class="intro-sheet">
             <span class="is-ico"><%= icon("sheet") %></span>

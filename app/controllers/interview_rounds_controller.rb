@@ -54,6 +54,26 @@ class InterviewRoundsController < ApplicationController
     redirect_to room_invitation_interview_round_path(@invitation, @round), alert: e.record.errors.full_messages.to_sentence
   end
 
+  # HR's own marks for some questions of the answer sheet (the rest stay as auto-marked).
+  def mark_items
+    return redirect_to(room_invitation_interview_round_path(@invitation, @round), alert: "This round has no answer key.") unless @round.answer_sheet?
+
+    @round.set_item_marks!(params.fetch(:marks, {}).to_unsafe_h)
+    @invitation.broadcast_feedback
+    redirect_to room_invitation_interview_round_path(@invitation, @round, anchor: "answer-sheet"),
+                notice: "Marks saved: #{@round.marks}/#{@round.total_marks} (#{@round.percentage}%)."
+  end
+
+  # Mark again from the (corrected) answer key; HR's own marks are kept.
+  def remark
+    return redirect_to(room_invitation_interview_round_path(@invitation, @round), alert: "This round has no answer key.") unless @round.answer_sheet?
+
+    @round.auto_mark!
+    @invitation.broadcast_feedback
+    redirect_to room_invitation_interview_round_path(@invitation, @round, anchor: "answer-sheet"),
+                notice: "Marked again from the answer key: #{@round.marks}/#{@round.total_marks}."
+  end
+
   # Another attempt at the practical (earlier uploads stay on record).
   def reopen
     @round.reopen_work!

@@ -1,7 +1,7 @@
 # HR's library of practical ("live") assessments: an Excel sheet, a Tally entry, a Word letter,
 # a data-entry file, a coding task… Uploaded once here, then given to any candidate as a round.
 class AssessmentsController < ApplicationController
-  before_action :set_assessment, only: %i[show edit update destroy duplicate]
+  before_action :set_assessment, only: %i[show edit update destroy duplicate answer_key remove_answer_key]
 
   def index
     @assessments = Current.user.assessments.ordered.with_attached_files
@@ -20,8 +20,8 @@ class AssessmentsController < ApplicationController
   def create
     @assessment = Current.user.assessments.new(assessment_params)
     attach_files
-    if @assessment.save
-      redirect_to @assessment, notice: "Practical assessment “#{@assessment.title}” saved. Give it to a candidate from their round list or a new invite."
+    if read_key && @assessment.save
+      redirect_to @assessment, notice: [ "Practical assessment “#{@assessment.title}” saved. Give it to a candidate from their round list or a new invite.", key_notice ].compact.join(" ")
     else
       render :new, status: :unprocessable_entity
     end
@@ -34,11 +34,26 @@ class AssessmentsController < ApplicationController
     @assessment.assign_attributes(assessment_params)
     purge_files
     attach_files
-    if @assessment.save
-      redirect_to @assessment, notice: "“#{@assessment.title}” updated."
+    if read_key && @assessment.save
+      redirect_to @assessment, notice: [ "“#{@assessment.title}” updated.", key_notice ].compact.join(" ")
     else
       render :edit, status: :unprocessable_entity
     end
+  end
+
+  # HR's corrections to the questions read from the answer key (kind, answer, marks, remove).
+  def answer_key
+    rows = params.fetch(:items, {}).to_unsafe_h.values
+    @assessment.update_answer_items(rows)
+    @assessment.save!
+    redirect_to assessment_path(@assessment, anchor: "answer-key"),
+                notice: "Answer key saved — #{@assessment.answer_items.size} questions, #{helpers.number_with_precision(@assessment.key_total, precision: 1, strip_insignificant_zeros: true)} marks."
+  end
+
+  def remove_answer_key
+    @assessment.answer_key.purge
+    @assessment.update!(answer_items: [])
+    redirect_to @assessment, notice: "Answer key removed — answers will be marked by hand."
   end
 
   # Same task with another name / file — handy for "Excel test – Level 2".
@@ -60,6 +75,24 @@ class AssessmentsController < ApplicationController
   end
 
   private
+    # An uploaded answer key is read straight away; a file it can't read is shown as a form error.
+    def read_key
+      file = params.dig(:assessment, :answer_key)
+      return true unless file.respond_to?(:original_filename)
+
+      @assessment.read_answer_key!(file)
+      @key_read = true
+    rescue AnswerKey::Error => e
+      @assessment.errors.add(:base, "Answer key: #{e.message}")
+      false
+    end
+
+    def key_notice
+      return unless @key_read
+
+      "Answer key read: #{@assessment.answer_items.size} questions, #{helpers.number_with_precision(@assessment.key_total, precision: 1, strip_insignificant_zeros: true)} marks — check it below."
+    end
+
     def set_assessment
       @assessment = Current.user.assessments.find(params[:id])
     end
