@@ -9,7 +9,13 @@
     <% if invitation.warnings_count.positive? %><small><%= icon("alert") %> <%= invitation.warnings_count %> warnings</small><% end %>
   </div>
   <div class="cand-score">
-    <% if invitation.finished? %>
+    <% if invitation.practical_submitted? %>
+      <% if (practical = invitation.practical_result) %>
+        <span class="result-pill <%= practical[:passed] ? 'pass' : 'fail' %>"><%= practical[:passed] ? "Qualified" : "Disqualified" %></span><small><%= practical[:marks] %>/<%= practical[:total] %> marks</small>
+      <% else %>
+        <b class="muted">—</b><small>To be marked</small>
+      <% end %>
+    <% elsif invitation.finished? %>
       <span class="result-pill <%= invitation.passed? ? 'pass' : 'fail' %>"><%= invitation.passed? ? "Qualified" : "Disqualified" %></span><small><%= invitation.score %>/<%= invitation.total_marks %> marks</small>
     <% else %>
       <b class="muted">—</b><small><%= invitation.interview_date && !invitation.test_only? ? invitation.interview_date.strftime("%d %b") : "Not taken yet" %></small>

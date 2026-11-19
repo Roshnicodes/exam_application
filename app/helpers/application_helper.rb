@@ -75,7 +75,7 @@ module ApplicationHelper
   end
 
   def status_badge(invitation)
-    key = invitation.link_expired? ? "expired" : invitation.status
+    key = if invitation.practical_submitted? then "submitted" elsif invitation.link_expired? then "expired" else invitation.status end
     tag.span(class: "badge badge-#{key}") { tag.span(class: "dot") + invitation.status_label }
   end
 

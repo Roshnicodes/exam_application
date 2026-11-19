@@ -54,6 +54,13 @@ class InterviewRoundsController < ApplicationController
     redirect_to room_invitation_interview_round_path(@invitation, @round), alert: e.record.errors.full_messages.to_sentence
   end
 
+  # The candidate's solved practical — every question with their answer, the key and the marks —
+  # as a printable page ("Download PDF" opens the browser's print dialog: Save as PDF).
+  def answer_sheet
+    @violations = @invitation.proctor_events.for_round(@round).violations.order(:created_at).to_a
+    render layout: false
+  end
+
   # HR's own marks for some questions of the answer sheet (the rest stay as auto-marked).
   def mark_items
     return redirect_to(room_invitation_interview_round_path(@invitation, @round), alert: "This round has no answer key.") unless @round.answer_sheet?

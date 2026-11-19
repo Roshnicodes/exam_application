@@ -99,6 +99,28 @@ class AnswerKeyAssessmentTest < ActionDispatch::IntegrationTest
     assert_equal 4.0, round.item_marks["q4"]["marks"]
     assert_equal 7, round.marks                        # 7 of 8
 
+    # a practical-only candidate who submitted shows as Submitted, with the practical's marks
+    invitation.reload
+    assert invitation.verified?                        # (the invite's own status is untouched)
+    assert invitation.practical_submitted?
+    get invitations_path
+    row = response.body[/id="invitation_item_#{invitation.id}".*?cand-chev/m]
+    assert_match "Submitted", row
+    assert_match "7/8 marks", row
+    assert_no_match "Not taken yet", row
+    get invitations_path(status: "submitted")
+    assert_match "invitation_item_#{invitation.id}", response.body
+    assert_includes Invitation.work_submitted, invitation
+    assert_not_includes Invitation.completed, invitation # results / MCQ ranking stay as they were
+
+    # the solved answer sheet, printable as a PDF
+    get answer_sheet_invitation_interview_round_path(invitation, round)
+    assert_response :success
+    assert_match "Practical Answer Sheet", response.body
+    assert_match "Late fee for GSTR-3B?", response.body   # the question
+    assert_match "GSTR-1 by 11th and GSTR-3B by 20th", response.body # the candidate's answer
+    assert_match "7 / 8", response.body
+
     # HR changes Q3 and marks again from the key: HR's mark stays
     get room_invitation_interview_round_path(invitation, round)
     assert_response :success

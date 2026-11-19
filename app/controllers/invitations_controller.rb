@@ -167,7 +167,7 @@ class InvitationsController < ApplicationController
     def filtered_invitations
       scope = Current.user.invitations.includes(:quiz, :interview_rounds).recent
       if params[:status] == "submitted"
-        scope = scope.completed # finished the test (incl. auto-terminated)
+        scope = scope.work_submitted # finished the test (incl. auto-terminated), or a practical-only invite's practical
       elsif Invitation::STATUSES.include?(params[:status])
         scope = scope.where(status: params[:status])
       end

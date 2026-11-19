@@ -60,6 +60,7 @@ Rails.application.routes.draw do
         post :feedback
         post :grade
         post :mark_items
+        get :answer_sheet # the candidate's solved answer sheet, printable / Save as PDF
         post :remark
         post :reopen
         delete :task_file

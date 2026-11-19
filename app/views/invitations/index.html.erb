@@ -9,7 +9,7 @@
       stats: [
         { label: "Invited", value: all.count, icon: "send", tone: "violet", path: invitations_path(group: "position") },
         { label: "Live now", value: all.live.count, icon: "video", tone: "red", path: invitations_path(status: "in_progress") },
-        { label: "Submitted", value: all.completed.count, icon: "check-circle", tone: "blue", path: invitations_path(status: "submitted", group: "position") },
+        { label: "Submitted", value: all.work_submitted.count, icon: "check-circle", tone: "blue", path: invitations_path(status: "submitted", group: "position") },
         { label: "Qualified", value: all.qualified.count, icon: "award", tone: "green", path: invitations_path(status: "qualified", group: "position") },
         { label: "Disqualified", value: all.disqualified.count, icon: "x-circle", tone: "amber", path: invitations_path(status: "disqualified", group: "position") }
       ] } do %>

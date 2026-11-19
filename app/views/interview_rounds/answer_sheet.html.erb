@@ -1,0 +1,208 @@
+<%# The candidate's solved practical assessment, printable: every question with the candidate's
+    answer, the correct answer / key points and the marks (the application's and the final, with who
+    changed them). "Download PDF" opens the browser's print dialog (choose "Save as PDF").
+    Standalone page: no app layout. %>
+<% inv = @invitation %>
+<% round = @round %>
+<% marks = round.item_marks %>
+<% fmt = ->(n) { number_with_precision(n.to_f, precision: 1, strip_insignificant_zeros: true) } %>
+<% items = round.answer_items %>
+<% ordered = items.select { |i| i["kind"] == "choice" } + items.reject { |i| i["kind"] == "choice" } %>
+<% result = !round.graded? ? [ "To be marked", "muted" ] : (round.passed? ? [ "Qualified", "pass" ] : [ "Disqualified", "fail" ]) %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= "#{inv.candidate_name} - #{round.name} - Answer sheet" %></title>
+  <style>
+    :root { --ink: #0f172a; --ink-2: #334155; --muted: #64748b; --line: #e2e8f0; --brand: #059669; --brand-soft: #ecfdf5;
+            --red: #dc2626; --red-soft: #fef2f2; --amber: #b45309; }
+    * { box-sizing: border-box; }
+    html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { margin: 0; background: #eef2f0; color: var(--ink); font: 11.5px/1.42 "Segoe UI", system-ui, -apple-system, Roboto, "Noto Sans", "Noto Sans Devanagari", Arial, sans-serif; }
+    .toolbar { position: sticky; top: 0; z-index: 5; display: flex; gap: .6rem; align-items: center; justify-content: center; flex-wrap: wrap;
+               padding: .7rem 1rem; background: #0f172a; color: #e2e8f0; font-size: 13px; }
+    .toolbar button, .toolbar a { border: 0; cursor: pointer; padding: .55rem 1rem; border-radius: 9px; font: inherit; font-weight: 700; text-decoration: none; }
+    .toolbar .primary { background: linear-gradient(135deg, #22c55e, #059669); color: #fff; }
+    .toolbar .light { background: rgba(255, 255, 255, .12); color: #fff; }
+    .toolbar label { display: inline-flex; gap: .35rem; align-items: center; cursor: pointer; }
+    .toolbar small { color: #94a3b8; }
+    .sheet { width: 210mm; max-width: 100%; margin: 18px auto; background: #fff; padding: 10mm 11mm 9mm; box-shadow: 0 10px 40px -20px rgba(15, 23, 42, .4); }
+    header.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding-bottom: 6px; border-bottom: 2.5px solid var(--brand); }
+    .logo { display: flex; gap: .6rem; align-items: center; }
+    .logo .mark { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(135deg, #22c55e, #047857); color: #fff; font-weight: 800; font-size: 15px; }
+    .logo b { font-size: 15px; } .logo b span { color: var(--brand); }
+    .logo small { display: block; color: var(--muted); font-size: 11px; }
+    .doc-title { text-align: right; } .doc-title h1 { margin: 0; font-size: 16px; } .doc-title p { margin: 1px 0 0; color: var(--muted); }
+    h2 { font-size: 12.5px; margin: 12px 0 6px; padding-bottom: 3px; border-bottom: 1px solid var(--line); }
+    .kv { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 14px; margin-top: 10px; }
+    .kv div span { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .03em; }
+    .kv div b { font-size: 11.5px; overflow-wrap: anywhere; }
+    .totals { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .totals div { flex: 1; min-width: 110px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; }
+    .totals span { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; }
+    .totals b { font-size: 15px; }
+    .totals .pass b { color: var(--brand); } .totals .fail b { color: var(--red); } .totals .muted b { color: var(--muted); }
+    .q { border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; margin-bottom: 6px; break-inside: avoid; page-break-inside: avoid; }
+    .q-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+    .q-head b { font-size: 12px; }
+    .q-marks { white-space: nowrap; font-weight: 700; }
+    .q-marks small { color: var(--muted); font-weight: 400; }
+    .q-text { margin: 3px 0 5px; color: var(--ink-2); }
+    .q-text p, .ans p, .key p { margin: 0 0 2px; }
+    .ctx { color: var(--muted); font-size: 10.5px; }
+    .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; margin: 0 0 5px; padding: 0; list-style: none; }
+    .opts li { padding: 2px 6px; border-radius: 5px; }
+    .opts li.picked { background: #e0f2fe; font-weight: 700; }
+    .opts li.right { box-shadow: inset 0 0 0 1.5px var(--brand); }
+    .opts li.picked.wrong { background: var(--red-soft); }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .label { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 1px; }
+    .ans { background: #f8fafc; border-radius: 6px; padding: 4px 7px; overflow-wrap: anywhere; }
+    .key { overflow-wrap: anywhere; }
+    .blank { color: var(--muted); font-style: italic; }
+    .tag { display: inline-block; padding: 0 6px; border-radius: 99px; font-size: 10px; font-weight: 700; }
+    .tag.ok { background: var(--brand-soft); color: var(--brand); } .tag.bad { background: var(--red-soft); color: var(--red); } .tag.chk { background: #fef3c7; color: var(--amber); }
+    .chips span { display: inline-block; margin: 0 3px 2px 0; padding: 0 5px; border-radius: 99px; border: 1px solid var(--line); font-size: 10px; }
+    .chips span.hit { background: var(--brand-soft); border-color: #86efac; color: #065f46; }
+    .files li, .viol li { margin-bottom: 2px; }
+    footer { margin-top: 12px; padding-top: 6px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; display: flex; justify-content: space-between; }
+    body.no-key .key-col, body.no-key .opts li.right { box-shadow: none; } body.no-key .key-col { display: none; } body.no-key .row2 { grid-template-columns: 1fr; }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none; }
+      .sheet { width: auto; margin: 0; padding: 0; box-shadow: none; }
+      h2 { break-after: avoid; page-break-after: avoid; }
+    }
+    @media (max-width: 640px) {
+      .sheet { padding: 16px; margin: 0; }
+      .kv { grid-template-columns: repeat(2, 1fr); }
+      .row2, .opts { grid-template-columns: 1fr; }
+      header.top { flex-direction: column; } .doc-title { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button type="button" class="primary" onclick="window.print()">⬇ Download PDF / Print</button>
+    <label><input type="checkbox" onchange="document.body.classList.toggle('no-key', !this.checked)" checked> Show correct answers</label>
+    <a class="light" href="<%= room_invitation_interview_round_path(inv, round) %>">← Back</a>
+    <small>In the print window choose “Save as PDF” as the printer.</small>
+  </div>
+
+  <main class="sheet">
+    <header class="top">
+      <div class="logo">
+        <span class="mark">✓</span>
+        <div><b><span>ASA</span> CHAYAN</b><small>An Integrated Talent Acquisition &amp; Employee Development Platform</small></div>
+      </div>
+      <div class="doc-title">
+        <h1>Practical Answer Sheet</h1>
+        <p><%= round.name %></p>
+        <p>Generated <%= Time.current.strftime("%d %b %Y, %-I:%M %p") %> by <%= Current.user.name %></p>
+      </div>
+    </header>
+
+    <div class="kv">
+      <div><span>Candidate</span><b><%= inv.candidate_name %></b></div>
+      <div><span>Mobile</span><b><%= inv.candidate_phone.presence || inv.entered_phone.presence || "—" %></b></div>
+      <div><span>Position</span><b><%= inv.vacancy.presence || "—" %></b></div>
+      <div><span>Department</span><b><%= inv.department.presence || "—" %></b></div>
+      <div><span>Task</span><b><%= round.task_label %></b></div>
+      <div><span>Started</span><b><%= round.work_started_at ? round.work_started_at.strftime("%d %b %Y, %-I:%M %p") : "—" %></b></div>
+      <div><span>Submitted</span><b><%= round.submitted_at ? round.submitted_at.strftime("%d %b %Y, %-I:%M %p") : "Not yet" %></b></div>
+      <div><span>Time taken</span><b><%= duration_between(round.work_started_at, round.submitted_at) %></b></div>
+    </div>
+
+    <div class="totals">
+      <% if round.answer_sheet? %>
+        <div><span>Answered</span><b><%= round.answered_count %> / <%= items.size %></b></div>
+        <div><span>Application marks</span><b><%= marks.any? ? "#{fmt.(round.auto_score)} / #{fmt.(round.key_total)}" : "—" %></b></div>
+        <div><span>Final marks<%= " (reviewed)" if round.changed_by.any? %></span><b><%= marks.any? ? "#{fmt.(round.sheet_score)} / #{fmt.(round.key_total)}" : "—" %></b></div>
+      <% end %>
+      <div><span>Score</span><b><%= round.graded? ? "#{round.marks} / #{round.total_marks} (#{round.percentage}%)" : "—" %></b></div>
+      <div class="<%= result[1] %>"><span>Result (pass <%= round.pass_percentage %>%)</span><b><%= result[0] %></b></div>
+      <div><span>Warnings</span><b><%= round.warnings_count %></b></div>
+    </div>
+    <% if round.changed_by.any? %><p class="ctx" style="margin:4px 0 0">Marks changed by <%= round.changed_by.to_sentence %>.</p><% end %>
+
+    <% if round.answer_sheet? %>
+      <h2>Questions and answers</h2>
+      <% ordered.each do |item| %>
+        <% m = marks[item["id"]] || {} %>
+        <% given = round.answers[item["id"]].to_s %>
+        <% auto = m.key?("auto") ? m["auto"] : m["marks"] %>
+        <div class="q">
+          <div class="q-head">
+            <b><%= item["label"] %><%= " · #{item['title']}" if item["question"].blank? && item["title"].present? %></b>
+            <span class="q-marks">
+              <% if m.key?("marks") %>
+                <%= fmt.(m["marks"]) %> / <%= fmt.(item["marks"]) %>
+                <% if m["by_hr"] %><small>(app <%= fmt.(auto) %> · by <%= m["by"].presence || "HR" %>)</small><% end %>
+              <% else %>
+                — / <%= fmt.(item["marks"]) %>
+              <% end %>
+              <% if m["correct"] == true %><span class="tag ok">Correct</span><% elsif m["correct"] == false && given.present? %><span class="tag bad">Wrong</span><% elsif m["review"] && !m["by_hr"] %><span class="tag chk">Check</span><% end %>
+            </span>
+          </div>
+          <% if item["context"].present? %><div class="ctx"><%= simple_format(item["context"]) %></div><% end %>
+          <% if item["question"].present? %><div class="q-text"><%= simple_format(item["question"]) %></div><% end %>
+
+          <% if item["kind"] == "choice" && Array(item["options"]).any? %>
+            <% picked = AnswerKey.chosen_letter(item, given) %>
+            <ul class="opts">
+              <% item["options"].each_with_index do |option, n| %>
+                <% letter = AnswerKey::LETTERS[n] %>
+                <li class="<%= 'picked' if picked == letter %> <%= 'right' if item['answer'].to_s.upcase == letter %> <%= 'wrong' if picked == letter && item['answer'].to_s.upcase != letter %>"><b><%= letter %>.</b> <%= option %></li>
+              <% end %>
+            </ul>
+          <% end %>
+
+          <div class="row2">
+            <div>
+              <span class="label">Candidate's answer</span>
+              <div class="ans"><%= given.present? ? simple_format(given) : content_tag(:span, "Not answered", class: "blank") %></div>
+            </div>
+            <div class="key-col">
+              <span class="label">Correct answer / key points</span>
+              <div class="key">
+                <% if item["kind"] == "text" %>
+                  <% matched = Array(m["matched"]) %>
+                  <% if Array(item["terms"]).any? %><div class="chips"><% item["terms"].each do |t| %><span class="<%= 'hit' if matched.include?(t) %>"><%= AnswerKey.term_label(t) %></span><% end %></div><% end %>
+                  <% if item["model"].present? %><%= simple_format(truncate(item["model"], length: 1500)) %><% end %>
+                  <% if item["rubric"].present? %><p class="ctx">Marking: <%= item["rubric"] %></p><% end %>
+                <% else %>
+                  <b><%= item["answer"].presence || "—" %></b>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+
+    <% if round.candidate_notes.present? %>
+      <h2>Candidate's notes</h2>
+      <div class="ans"><%= simple_format(round.candidate_notes) %></div>
+    <% end %>
+
+    <% if round.submissions.attached? %>
+      <h2>Files submitted</h2>
+      <ul class="files">
+        <% round.submissions.attachments.each do |file| %><li><b><%= file.filename %></b> · <%= number_to_human_size(file.byte_size) %> · <%= file.created_at.strftime("%d %b, %-I:%M %p") %></li><% end %>
+      </ul>
+    <% end %>
+
+    <% if @violations.any? %>
+      <h2>Warnings during the assessment</h2>
+      <ul class="viol">
+        <% @violations.group_by(&:label).each do |label, list| %><li><b><%= label %></b> × <%= list.size %> <span class="ctx">(<%= list.map { |v| v.created_at.strftime("%-I:%M %p") }.first(8).join(", ") %>)</span></li><% end %>
+      </ul>
+    <% end %>
+
+    <footer><span><%= inv.candidate_name %> · <%= round.name %></span><span>ASA CHAYAN · confidential</span></footer>
+  </main>
+  <% if params[:print].present? %><script>window.addEventListener("load", () => setTimeout(() => window.print(), 400))</script><% end %>
+</body>
+</html>

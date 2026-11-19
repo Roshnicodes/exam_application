@@ -86,6 +86,7 @@
                       form: { data: { turbo_confirm: "Start “#{round.name}” for #{invitation.candidate_name}? They get the Start button on their link right away." } } do %><%= icon("play") %> Start now<% end %>
               <% end %>
               <% if round.submitted? %>
+                <%= link_to answer_sheet_invitation_interview_round_path(invitation, round, print: 1), class: "btn btn-light btn-sm", target: "_blank", rel: "noopener", data: { turbo: false } do %><%= icon("download") %> PDF<% end %>
                 <%= button_to reopen_invitation_interview_round_path(invitation, round), class: "btn btn-light btn-sm",
                       form: { data: { turbo_confirm: "Let #{invitation.candidate_name} do “#{round.name}” again? Their earlier uploads stay on record." } } do %><%= icon("play") %> Give another attempt<% end %>
               <% end %>

@@ -64,6 +64,15 @@ class Invitation < ApplicationRecord
     completed.joins(:quiz).where("invitations.total_marks > 0 AND ROUND(invitations.score * 100.0 / invitations.total_marks) >= quizzes.pass_percentage")
   }
   scope :disqualified, -> { completed.where.not(id: qualified.select(:id)) }
+  # practical-only invites whose practical assessment(s) are all submitted (no MCQ test to finish)
+  scope :practical_submitted, -> {
+    rounds = InterviewRound.assessments
+    where(interview_plan: "practical")
+      .where(id: rounds.where.not(submitted_at: nil).select(:invitation_id))
+      .where.not(id: rounds.where(submitted_at: nil).where.not(status: "cancelled").select(:invitation_id))
+  }
+  # finished what they were invited for: the online test, or (practical-only) the practical
+  scope :work_submitted, -> { where(id: completed.select(:id)).or(where(id: practical_submitted.select(:id))) }
 
   after_create :build_interview_rounds
   after_update_commit :broadcast_live_state
@@ -81,6 +90,7 @@ class Invitation < ApplicationRecord
   end
 
   def status_label
+    return "Submitted" if practical_submitted?
     return "Link expired" if link_expired?
 
     { "pending" => "Link shared", "otp_requested" => "Awaiting OTP", "verified" => "Verified",
@@ -225,6 +235,22 @@ class Invitation < ApplicationRecord
   # The practical assessment the candidate can work on right now (HR made it live).
   def live_assessment
     assessment_rounds.find { |r| r.working? } || assessment_rounds.find { |r| r.open? && !r.submitted? }
+  end
+
+  # A practical-only candidate who has submitted their practical assessment(s).
+  def practical_submitted?
+    return false unless practical_only?
+
+    rounds = assessment_rounds.reject(&:cancelled?)
+    rounds.any? && rounds.all?(&:submitted?)
+  end
+
+  # The practical's marks once every round is marked: { marks:, total:, passed: } (else nil)
+  def practical_result
+    rounds = assessment_rounds.reject(&:cancelled?)
+    return if rounds.empty? || !rounds.all?(&:graded?)
+
+    { marks: rounds.sum(&:marks), total: rounds.sum(&:total_marks), passed: rounds.all?(&:passed?) }
   end
 
   def assessment_pending?

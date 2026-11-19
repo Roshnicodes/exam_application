@@ -5,6 +5,9 @@
     <span class="tiny muted">
       <% if round.submitted? %>
         Submitted <%= nice_time(round.submitted_at) %> · took <%= duration_between(round.work_started_at, round.submitted_at) %>
+        <% unless local_assigns[:watch_token] %>
+          · <%= link_to answer_sheet_invitation_interview_round_path(invitation, round, print: 1), target: "_blank", rel: "noopener", data: { turbo: false } do %><%= icon("download") %> Download PDF<% end %>
+        <% end %>
       <% elsif round.working? %>
         Working now · <%= round.seconds_left / 60 %> min left
       <% else %>
