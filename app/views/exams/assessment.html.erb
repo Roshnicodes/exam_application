@@ -5,7 +5,7 @@
 <% online_sheet = @round.online_sheet? %>
 <% answer_sheet = @round.answer_sheet? %>
 <%# a test with an answer key: the question paper stays open next to the answer sheet %>
-<% paper = answer_sheet ? @round.task_attachments.find { |f| Assessment::PAPER_EXTENSIONS.include?(f.filename.extension_with_delimiter.downcase) } : nil %>
+<% paper = answer_sheet ? @round.question_paper : nil %>
 <% auto_saved = online_sheet || answer_sheet %>
 <div data-controller="assessment proctor"
      data-assessment-seconds-left-value="<%= @round.seconds_left %>"
@@ -58,10 +58,11 @@
               <div class="file-row">
                 <span class="file-ico"><%= icon("file") %></span>
                 <div class="grow"><b><%= file.filename %></b><span class="tiny muted"><%= number_to_human_size(file.byte_size) %></span></div>
-                <% kind = task_preview_kind(file) %>
+                <% clean = @round.answers_removed?(file) %><%# answers taken out: shown on the page only %>
+                <% kind = clean ? "doc" : task_preview_kind(file) %>
                 <button type="button" class="btn btn-light btn-sm" data-action="assessment#preview" data-name="<%= file.filename %>" data-kind="<%= kind %>"
                         data-src="<%= kind.in?(%w[sheet doc]) ? exam_assessment_task_preview_path(@invitation.token, file.id) : rails_blob_path(file, disposition: "inline") %>"><%= icon("eye") %> View</button>
-                <% if @round.allow_download? %>
+                <% if @round.allow_download? && !clean %>
                   <%= link_to rails_blob_path(file, disposition: "attachment"), class: "btn btn-primary btn-sm", data: { turbo: false } do %><%= icon("download") %> Download<% end %>
                 <% end %>
               </div>
@@ -72,20 +73,20 @@
         <% if @round.task_instructions.present? %>
           <div class="task-text" style="margin-top:1rem"><%= simple_format(@round.task_instructions) %></div>
         <% else %>
-          <p class="small muted" style="margin-top:1rem"><%= if paper then "Read each question in the paper and answer it on the answer sheet — one question at a time; use Next to move on." elsif answer_sheet then "Answer each question on the answer sheet below." elsif online_sheet then "Fill the answer sheet below — it works like Excel." else "Work on the file above." end %> If anything is unclear, ask HR in the chat (the video call button at the bottom right).</p>
+          <p class="small muted" style="margin-top:1rem"><%= if paper then "Read each question in the paper and answer it on the answer sheet — one question at a time; use Next to move on." elsif answer_sheet then "Answer each question on the answer sheet below." elsif online_sheet then "Fill the answer sheet below — it works like Excel." elsif task_files.any? then "Work on the file above." else "Your task is described here by HR." end %> If anything is unclear, ask HR in the chat (the video call button at the bottom right).</p>
         <% end %>
 
         <% if @round.allow_app_switch? %>
-          <p class="task-note ok"><%= icon("unlock") %> You may open <b><%= @round.task_label %></b> or another app to do this task — your screen stays shared with HR.<%= " Come back to this page to upload your file." unless auto_saved %></p>
+          <p class="task-note ok"><%= icon("unlock") %> <span>You may open another app if this task needs one — your screen stays shared with HR.<%= " Come back to this page to upload your file." unless auto_saved %></span></p>
         <% else %>
-          <p class="task-note"><%= icon("alert") %> Stay on this page in full screen. Switching tabs or apps gives a warning<%= " (#{@round.warning_limit} warnings end the assessment)" if @round.warning_limit.positive? %>.</p>
+          <p class="task-note"><%= icon("alert") %> <span>Stay on this page in full screen. Switching tabs or apps gives a warning<%= " (#{@round.warning_limit} warnings end the assessment)" if @round.warning_limit.positive? %>.</span></p>
         <% end %>
       </section>
 
       <%# ---------------- answer sheet (practical tests with an answer key) ---------------- %>
       <% if paper %>
         <div class="qp-split">
-          <%= render "exams/question_paper", paper: paper, invitation: @invitation %>
+          <%= render "exams/question_paper", paper: paper, round: @round, invitation: @invitation %>
           <%= render "exams/answer_sheet", round: @round, invitation: @invitation %>
         </div>
       <% elsif answer_sheet %>

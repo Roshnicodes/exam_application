@@ -150,10 +150,40 @@ class InterviewRound < ApplicationRecord
   end
 
   # The files the candidate gets: this round's own uploads, else the saved assessment's.
-  # (an answer key that slipped in as a task file is never handed to the candidate)
+  # (a file that is only an answer key is never handed to the candidate)
   def task_attachments
     list = task_files.attached? ? task_files.attachments.to_a : (assessment&.files&.attachments&.to_a || [])
-    list.reject { |file| file.filename.to_s.match?(Assessment::ANSWER_KEY_NAME) || assessment&.answer_key_file?(file) }
+    list.reject { |file| candidate_view(file)&.dig("key_only") }
+  end
+
+  # How the candidate sees a Word / PDF / text task file: its text, with any answers taken out.
+  def candidate_view(file)
+    (@candidate_views ||= {})[file.blob_id] ||= [ assessment ? assessment.candidate_view(file) : Assessment.paper_view(file) ]
+    @candidate_views[file.blob_id].first
+  end
+
+  # Answers were taken out of this file: the candidate only sees it on the page, never downloads it.
+  def answers_removed?(file)
+    !!candidate_view(file)&.dig("removed")
+  end
+
+  # Reads the question paper into the answer sheet once (again after HR edits the test): the
+  # questions' text and options, and — for a written test without an answer key — the questions
+  # themselves. Not for the built-in Excel sheet.
+  def prepare_answer_sheet!
+    return unless assessment && !online_sheet?
+    return if answer_items.any? && answer_items.all? { |i| i.key?("question") }
+
+    Rails.cache.fetch([ "paper-read", assessment.id, assessment.updated_at.to_i, task_attachments.map(&:blob_id) ]) do
+      assessment.read_paper!
+      true
+    end
+    assessment.reload
+  end
+
+  # The question paper shown next to the answer sheet.
+  def question_paper
+    task_attachments.find { |f| (view = candidate_view(f)) && view["lines"].any?(&:present?) }
   end
 
   def allow_download?

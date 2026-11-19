@@ -2608,3 +2608,4 @@ body { overflow-x: clip; }
 @media (max-width: 960px) { .exam-layout.exam-layout-paper { grid-template-columns: minmax(0, 1fr); } }
 /* reviewers' marks: heading */
 .am-title { display: flex; align-items: center; gap: .4rem; }
+.file-note { display: flex; align-items: center; gap: .3rem; margin-top: .2rem; color: #065f46; } .file-note.bad { color: var(--red); }

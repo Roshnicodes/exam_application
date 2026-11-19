@@ -52,6 +52,8 @@ class AnswerKey
     max = item["marks"].to_f
     given = response.to_s.strip
     return { "marks" => 0.0, "max" => max, "correct" => false, "review" => false, "blank" => true } if given.empty?
+    # no correct answer known yet (a question from the paper): HR marks it
+    return { "marks" => 0.0, "max" => max, "correct" => nil, "review" => true } if item["kind"] != "text" && item["answer"].blank?
 
     case item["kind"]
     when "choice"

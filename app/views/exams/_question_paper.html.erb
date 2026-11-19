@@ -1,6 +1,7 @@
 <%# The question paper, open next to the answer sheet the whole time (so the candidate never has to
-    leave the page or open a pop-up to read it). “Full paper” opens it large. locals: paper:, invitation: %>
-<% kind = task_preview_kind(paper) %>
+    leave the page or open a pop-up to read it). “Full paper” opens it large. Answers in the file
+    are never shown. locals: paper:, round:, invitation: %>
+<% kind = round.answers_removed?(paper) ? "doc" : task_preview_kind(paper) %>
 <% src = kind.in?(%w[sheet doc]) ? exam_assessment_task_preview_path(invitation.token, paper.id) : rails_blob_path(paper, disposition: "inline") %>
 <section class="card qp-panel" data-controller="question-paper" data-question-paper-kind-value="<%= kind %>" data-question-paper-src-value="<%= src %>"
          data-action="answer-sheet:step@window->question-paper#focus">

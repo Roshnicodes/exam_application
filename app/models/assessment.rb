@@ -40,7 +40,6 @@ class Assessment < ApplicationRecord
   validates :pass_percentage, numericality: { only_integer: true, in: 0..100 }
   validates :max_warnings, numericality: { only_integer: true, in: 0..50 }
   validate :files_are_sane
-  validate :answer_key_not_in_task_files
 
   scope :ordered, -> { order(:title) }
   scope :active, -> { where(active: true) }
@@ -63,21 +62,65 @@ class Assessment < ApplicationRecord
 
   PAPER_EXTENSIONS = %w[.docx .pdf .txt].freeze
 
-  # The question paper among the task files (Word / PDF / text, never the answer key).
-  def paper_file
-    files.attachments.find { |f| PAPER_EXTENSIONS.include?(f.filename.extension_with_delimiter.downcase) && !answer_key_file?(f) }
+  # ---- What the candidate may see of a task file ----
+  # A Word / PDF / text file is read: answers in it ("Answer: B", an "Answer Key" section, "Q1 – (b)")
+  # are taken out before the candidate sees it, and a file that is only an answer key is never shown.
+  #   => nil (not a paper) or { "lines" => [...], "removed" => bool, "key_only" => bool }
+  def self.paper_view(attachment)
+    return unless PAPER_EXTENSIONS.include?(attachment.filename.extension_with_delimiter.downcase)
+
+    Rails.cache.fetch([ "paper-view", 2, attachment.blob.checksum ]) { QuestionPaper.candidate_view(file_lines(attachment)) }
+  rescue QuestionPaperParser::Error, Zip::Error, ArgumentError, ActiveStorage::FileNotFoundError => e
+    Rails.logger.warn("Could not read task file #{attachment.filename}: #{e.message}")
+    nil
   end
 
-  # Puts each question's text (and MCQ options) from the paper next to the answer key's questions,
-  # so the candidate's answer sheet shows the question right above the answer.
+  def self.file_lines(attachment)
+    attachment.blob.open do |tmp|
+      QuestionPaperParser.new(ActionDispatch::Http::UploadedFile.new(tempfile: tmp, filename: attachment.filename.to_s)).lines
+    end
+  end
+
+  # The view of a task file for the candidate; the answer key file itself is never shown as it is.
+  def candidate_view(attachment)
+    view = self.class.paper_view(attachment)
+    same_as_key = answer_key.attached? && attachment.blob.checksum == answer_key.blob.checksum
+    return { "lines" => [], "removed" => true, "key_only" => true } if same_as_key && (view.nil? || !view["removed"])
+
+    view
+  end
+
+  def hidden_from_candidate?(attachment)
+    !!candidate_view(attachment)&.dig("key_only")
+  end
+
+  # The question paper among the task files (Word / PDF / text that is not only an answer key).
+  def paper_file
+    files.attachments.find { |f| (view = candidate_view(f)) && !view["key_only"] && view["lines"].any?(&:present?) }
+  end
+
+  # Gets the answer sheet ready from the question paper:
+  #  - no answer key uploaded: a paper that has its answers in it gives the key; otherwise the paper's
+  #    questions become the answer sheet (HR marks it — or fills the correct answers in later)
+  #  - each question's text (and MCQ options) is put next to the key's question, so the candidate
+  #    sees the question right above the answer.
   def read_paper!
     file = paper_file
-    return if answer_items.blank? || file.nil?
+    return if file.nil?
 
-    lines = file.blob.open do |tmp|
-      QuestionPaperParser.new(ActionDispatch::Http::UploadedFile.new(tempfile: tmp, filename: file.filename.to_s)).lines
+    view = candidate_view(file)
+    paper = QuestionPaper.extract(view["lines"])
+    if answer_items.blank? && !answer_key.attached?
+      return if built_in_sheet? # the built-in Excel is the answer there
+
+      # a paper with answers in it, or a written test's paper, becomes the answer sheet
+      # (other tasks' briefs — numbered steps — do not)
+      return unless view["removed"] || kind == "case_study"
+
+      self.answer_items = items_from_paper(paper, answers: (key_in_paper(file) if view["removed"]))
+      return if answer_items.blank? # (the test stays out of HR's marks: the sheet's score is scaled to them)
     end
-    paper = QuestionPaper.extract(lines)
+
     items = answer_items.map do |item|
       parent = item["id"][/\Aq\d+/]
       whole = paper[parent]
@@ -95,9 +138,49 @@ class Assessment < ApplicationRecord
 
       item.merge("question" => found["text"], "context" => context, "options" => item["kind"] == "choice" ? Array(found["options"]).first(5).presence : nil).compact
     end
-    update_column(:answer_items, items)
+    update_columns(answer_items: items)
   rescue QuestionPaperParser::Error, Zip::Error, ArgumentError => e
     Rails.logger.warn("Could not read the question paper of assessment #{id}: #{e.message}")
+  end
+
+  # The answers written in the question paper itself (a paper with its answer key in it):
+  # { "q1" => { "letter" => "B" }, "q16" => { "text" => "GSTR-1 is …" } }
+  def key_in_paper(file)
+    lines = self.class.file_lines(file)
+    answers = QuestionPaper.answers_in(lines)
+    key = begin
+      AnswerKey.new(lines).items
+    rescue AnswerKey::Error
+      []
+    end
+    key.each { |item| answers[item["id"]] = { "letter" => item["answer"] }.merge(answers[item["id"]] || {}) if item["kind"] == "choice" && item["answer"].present? }
+    answers
+  end
+
+  # The candidate works in the built-in Excel (it is on, and there is a workbook to fill)
+  def built_in_sheet?
+    online_sheet? && files.attachments.any? { |f| Spreadsheet::WORKBOOK_EXTENSIONS.include?(f.filename.extension_with_delimiter.downcase) }
+  end
+
+  # Without an answer key: the paper's own questions (MCQs where options were found, else written).
+  def items_from_paper(paper, answers: nil)
+    answers ||= {}
+    questions = paper.select { |id, q| id.match?(/\Aq\d+\z/) && q["text"].present? }.sort_by { |id, _| id[1..].to_i }
+    return [] if questions.empty?
+
+    given = questions.to_h { |id, q| [ id, q["text"][/\((\d+(?:\.\d+)?)\s*marks?\)/i, 1]&.to_f ] }
+    questions.each { |id, q| given[id] ||= 1.0 if Array(q["options"]).size >= 2 && given[id].nil? } # an MCQ: 1 mark
+    unknown = given.values.count(&:nil?)
+    share = unknown.positive? ? [ (max_marks - given.values.compact.sum) / unknown, 1.0 ].max.round(1) : 0
+    questions.map do |id, q|
+      choice = Array(q["options"]).size >= 2
+      answer = answers[id] || {}
+      model = answer["text"].to_s.first(4000)
+      { "id" => id, "label" => "Q#{id[1..]}", "title" => q["text"].lines.first.to_s.strip.first(120),
+        "kind" => choice ? "choice" : "text", "answer" => (answer["letter"] if choice),
+        "model" => (model.presence unless choice), "terms" => choice ? [] : AnswerKey.terms_in(model).first(14),
+        "marks" => given[id] || share, "from_paper" => true }.compact
+    end
   end
 
   # HR's corrections from the review table: kind, correct answer, marks per question.
@@ -146,30 +229,11 @@ class Assessment < ApplicationRecord
     ext.present? && extensions.include?(ext)
   end
 
-  # Files that must never reach the candidate: named like an answer key, or the answer key itself.
-  ANSWER_KEY_NAME = /answer[\s_.-]*key|solution|marking[\s_.-]*scheme|model[\s_.-]*answers?/i
-
-  def answer_key_file?(attachment)
-    return true if attachment.filename.to_s.match?(ANSWER_KEY_NAME)
-
-    answer_key.attached? && attachment.blob.checksum == answer_key.blob.checksum
-  end
-
   def used_count
     interview_rounds.count
   end
 
   private
-    def answer_key_not_in_task_files
-      return unless files.attached?
-
-      files.each do |file|
-        next unless answer_key_file?(file)
-
-        errors.add(:files, "— “#{file.filename}” looks like the answer key. Task files are shown to the candidate: upload the answer key only in the “Answer key” box")
-      end
-    end
-
     # Rounds made earlier kept a copy of the time / marks / warning limit. When HR changes them
     # here, rounds not yet submitted that still have the old copy follow (a value HR set for one
     # candidate on purpose — different from the old one — is left alone).

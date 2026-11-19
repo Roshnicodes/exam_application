@@ -164,6 +164,8 @@ class ExamsController < ApplicationController
     return render :assessment_waiting unless @round
     return render :assessment_done if @round.submitted?
     return render :assessment_waiting unless @round.open?
+
+    @round.prepare_answer_sheet! # a test saved before the paper was read: read it now
     return render :assessment_intro if @round.work_started_at.nil?
 
     if @round.time_up?
@@ -177,8 +179,7 @@ class ExamsController < ApplicationController
   def assessment_start
     return redirect_to exam_assessment_path(@invitation.token), alert: "This assessment is not open right now." unless @round&.open? && !@round.submitted?
 
-    # tests saved before questions were read from the paper: read it now, so each question shows its text
-    @round.assessment.read_paper! if @round.answer_sheet? && @round.answer_items.none? { |i| i.key?("question") }
+    @round.prepare_answer_sheet!
     @round.start_work!
     redirect_to exam_assessment_path(@invitation.token)
   end
@@ -221,11 +222,11 @@ class ExamsController < ApplicationController
     file = @round.task_attachments.find { |a| a.id == params[:file_id].to_i }
     return head :not_found unless file
 
-    if file.filename.extension.to_s.downcase == "docx" # a Word question paper, shown as text + tables
-      lines = file.blob.open do |tmp|
-        QuestionPaperParser.new(ActionDispatch::Http::UploadedFile.new(tempfile: tmp, filename: file.filename.to_s)).lines
-      end
-      return render partial: "exams/task_doc", locals: { lines: lines }
+    # a Word question paper — or a PDF / text one that had answers in it — shown as text + tables,
+    # without its answers
+    view = @round.candidate_view(file)
+    if view && (file.filename.extension.to_s.downcase == "docx" || view["removed"])
+      return render partial: "exams/task_doc", locals: { lines: view["lines"] }
     end
 
     sheets = file.blob.open { |tmp| Spreadsheet.preview(tmp.path, file.filename.extension_with_delimiter) }
