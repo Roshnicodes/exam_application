@@ -8,8 +8,9 @@
     <div class="watch-wrap">
       <div class="exam-brand">
         <%= render "shared/brand" %>
-        <span class="pill"><%= icon("eye") %> Panelist view · read only</span>
+        <span class="pill"><%= icon("eye") %> Panelist view</span>
       </div>
+      <%= render "shared/flash" %>
       <%= yield %>
     </div>
   </body>

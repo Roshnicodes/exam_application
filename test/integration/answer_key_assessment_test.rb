@@ -35,6 +35,12 @@ class AnswerKeyAssessmentTest < ActionDispatch::IntegrationTest
     assert_equal 8, assessment.max_marks # out of the key's total
     assert assessment.answer_key.attached?
 
+    # each question's text (and the MCQ's options) is read from the question paper
+    q1 = assessment.answer_items.find { |i| i["id"] == "q1" }
+    assert_equal "Late fee for GSTR-3B?", q1["question"]
+    assert_equal %w[250 500 750 Nil], q1["options"]
+    assert_match "TDS Computation", assessment.answer_items.find { |i| i["id"] == "q4" }["question"]
+
     get assessment_path(assessment)
     assert_response :success
     assert_match "Save answer key", response.body
@@ -60,6 +66,13 @@ class AnswerKeyAssessmentTest < ActionDispatch::IntegrationTest
     get exam_assessment_path(token)
     assert_match "Your answer sheet", response.body
     assert_match "as_q1", response.body
+    assert_match "qp-panel", response.body          # the paper stays open next to the answers
+    assert_match "Full paper", response.body
+    assert_match "Late fee for GSTR-3B?", response.body # the question above its options
+    assert_match "as-option", response.body
+    assert_match "Review &amp; submit", response.body
+    assert_no_match "Upload your finished work", response.body # nothing to upload: answers save by themselves
+    assert_no_match "up-zone", response.body
 
     # the Word question paper opens inside the page
     paper = round.task_attachments.first
@@ -95,6 +108,49 @@ class AnswerKeyAssessmentTest < ActionDispatch::IntegrationTest
     post remark_invitation_interview_round_path(invitation, round)
     assert_equal 1.5, round.reload.item_marks["q3"]["marks"]
     assert_equal 7, round.marks # 6.5 of 8 -> 7 (rounded) out of 8
+    assert_equal 7.0, round.auto_score # the application's own marks stay on record
+    assert_equal [ "HR One" ], round.changed_by
+    get room_invitation_interview_round_path(invitation, round)
+    assert_match "Changed by", response.body
+
+    # a department / thematic head gives their own marks on the panelist link
+    post watch_marks_path(invitation.watch_token, round), params: { marks: { q4: "3" } }
+    assert_equal 4.0, round.reload.item_marks["q4"]["marks"] # no name -> nothing saved
+    post watch_marks_path(invitation.watch_token, round), params: { reviewer_name: "Head – Finance", marks: { q4: "3" } }
+    round.reload
+    assert_equal 3.0, round.item_marks["q4"]["marks"]
+    assert_equal 4.0, round.item_marks["q4"]["auto"]
+    assert_equal "Head – Finance", round.item_marks["q4"]["by"]
+    assert_equal 5.5, round.sheet_score
+    assert_equal 7.0, round.auto_score
+    get watch_round_path(invitation.watch_token, round)
+    assert_response :success
+    assert_match "Marks saved by Head – Finance", response.body
+    assert_match "Head – Finance", response.body
+  end
+
+  test "the answer key can't be given to the candidate as a task file" do
+    sign_in_as @user
+    assert_no_difference "Assessment.count" do
+      post assessments_path, params: { assessment: {
+        title: "Leaky paper", description: "x", kind: "case_study", duration_minutes: 30, max_marks: 10, pass_percentage: 50, max_warnings: 5,
+        files: [ Rack::Test::UploadedFile.new(StringIO.new(KEY), "text/plain", original_filename: "Answer Key.txt") ],
+        answer_key: Rack::Test::UploadedFile.new(StringIO.new(KEY), "text/plain", original_filename: "key.txt")
+      } }
+    end
+    assert_response :unprocessable_entity
+    assert_match "looks like the answer key", response.body
+
+    # one that got in earlier (same file as the key) is still never handed to the candidate
+    assessment = @user.assessments.new(title: "Old paper", description: "x", kind: "case_study", duration_minutes: 30, max_marks: 10,
+                                       pass_percentage: 50, max_warnings: 5)
+    assessment.answer_key.attach(io: StringIO.new(KEY), filename: "key.txt", content_type: "text/plain")
+    assessment.files.attach(io: StringIO.new(KEY), filename: "paper2.txt", content_type: "text/plain")
+    assessment.answer_items = AnswerKey.new(KEY.dup.force_encoding(Encoding::UTF_8).lines).items
+    assessment.save!(validate: false)
+    invitation = @user.invitations.create!(candidate_name: "Ravi", candidate_phone: "9876500001", vacancy: "Accountant",
+                                           assessment: assessment, interview_plan: "practical", max_warnings: 5)
+    assert_empty invitation.interview_rounds.sole.task_attachments
   end
 
   test "an answer key the app can't read is a form error" do

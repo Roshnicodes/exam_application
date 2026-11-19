@@ -21,7 +21,8 @@
                   panelists: @panelists, allow_switch: true %></div>
       </div>
     <% end %>
-    <%= render "interview_rounds/submission", round: @round, invitation: @invitation, readonly: true %>
+    <%= render "interview_rounds/submission", round: @round, invitation: @invitation, readonly: true,
+          watch_token: params[:watch_token], panelists: @panelists %>
     <div class="card">
       <div class="card-head"><h2><%= icon(@round.task_icon) %> The task</h2></div>
       <div class="card-body stack">

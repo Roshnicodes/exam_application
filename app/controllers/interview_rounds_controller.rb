@@ -58,7 +58,7 @@ class InterviewRoundsController < ApplicationController
   def mark_items
     return redirect_to(room_invitation_interview_round_path(@invitation, @round), alert: "This round has no answer key.") unless @round.answer_sheet?
 
-    @round.set_item_marks!(params.fetch(:marks, {}).to_unsafe_h)
+    @round.set_item_marks!(params.fetch(:marks, {}).to_unsafe_h, by: Current.user.name)
     @invitation.broadcast_feedback
     redirect_to room_invitation_interview_round_path(@invitation, @round, anchor: "answer-sheet"),
                 notice: "Marks saved: #{@round.marks}/#{@round.total_marks} (#{@round.percentage}%)."

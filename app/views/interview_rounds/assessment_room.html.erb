@@ -97,6 +97,7 @@
     </div>
     <%= render "interview_feedbacks/form", round: @round, feedback: @feedback, url: feedback_invitation_interview_round_path(@invitation, @round) %>
     <%= render "invitations/selection_card", invitation: @invitation %>
+    <%= render "invitations/decision_card", invitation: @invitation %>
     <%= render "invitations/live_state", invitation: @invitation %>
   </div>
 </div>

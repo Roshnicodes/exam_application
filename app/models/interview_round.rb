@@ -150,10 +150,10 @@ class InterviewRound < ApplicationRecord
   end
 
   # The files the candidate gets: this round's own uploads, else the saved assessment's.
+  # (an answer key that slipped in as a task file is never handed to the candidate)
   def task_attachments
-    return task_files.attachments.to_a if task_files.attached?
-
-    assessment&.files&.attachments&.to_a || []
+    list = task_files.attached? ? task_files.attachments.to_a : (assessment&.files&.attachments&.to_a || [])
+    list.reject { |file| file.filename.to_s.match?(Assessment::ANSWER_KEY_NAME) || assessment&.answer_key_file?(file) }
   end
 
   def allow_download?
@@ -220,25 +220,40 @@ class InterviewRound < ApplicationRecord
 
     marks = answer_items.to_h do |item|
       result = AnswerKey.mark(item, answers[item["id"]])
+      result["auto"] = result["marks"] # what the application gave, always kept
       hr = item_marks[item["id"]]
-      result = result.merge("marks" => hr["marks"], "by_hr" => true) if hr&.dig("by_hr")
+      result = result.merge(hr.slice("marks", "by", "at").merge("by_hr" => true, "review" => false)) if hr&.dig("by_hr")
       [ item["id"], result ]
     end
     apply_item_marks!(marks)
   end
 
-  # HR changes the marks of some questions ({ "q16" => "1.5" }); the total follows.
-  def set_item_marks!(given)
+  # HR / a panelist (department or thematic head) changes the marks of some questions
+  # ({ "q16" => "1.5" }); the application's own marks stay on record next to theirs.
+  def set_item_marks!(given, by: nil)
     marks = item_marks.deep_dup
     answer_items.each do |item|
       value = given.to_h[item["id"]].to_s.strip
       next if value.blank? || !value.match?(/\A\d+(\.\d+)?\z/)
 
       max = item["marks"].to_f
-      marks[item["id"]] = (marks[item["id"]] || AnswerKey.mark(item, answers[item["id"]]))
-                            .merge("marks" => [ value.to_f, max ].min, "max" => max, "by_hr" => true, "review" => false)
+      current = marks[item["id"]] || AnswerKey.mark(item, answers[item["id"]]).then { |r| r.merge("auto" => r["marks"]) }
+      new_value = [ value.to_f, max ].min
+      next if current["marks"].to_f == new_value # unchanged
+
+      marks[item["id"]] = current.merge("marks" => new_value, "max" => max, "by_hr" => true, "review" => false,
+                                        "by" => by.to_s.squish.first(60).presence || "HR", "at" => Time.current.iso8601)
     end
     apply_item_marks!(marks)
+  end
+
+  # What the application gave (before anyone changed marks)
+  def auto_score
+    item_marks.values.sum { |m| (m.key?("auto") ? m["auto"] : m["marks"]).to_f }
+  end
+
+  def changed_by
+    item_marks.values.filter_map { |m| m["by"] if m["by_hr"] }.uniq
   end
 
   # The answer sheet's score (out of the key's total), e.g. 37.5

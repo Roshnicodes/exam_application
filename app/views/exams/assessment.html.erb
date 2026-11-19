@@ -3,12 +3,16 @@
 <div id="exam_control" hidden></div>
 <% files = @round.submissions.attachments.to_a %>
 <% online_sheet = @round.online_sheet? %>
+<% answer_sheet = @round.answer_sheet? %>
+<%# a test with an answer key: the question paper stays open next to the answer sheet %>
+<% paper = answer_sheet ? @round.task_attachments.find { |f| Assessment::PAPER_EXTENSIONS.include?(f.filename.extension_with_delimiter.downcase) } : nil %>
+<% auto_saved = online_sheet || answer_sheet %>
 <div data-controller="assessment proctor"
      data-assessment-seconds-left-value="<%= @round.seconds_left %>"
      data-assessment-notes-url-value="<%= exam_assessment_notes_path(@invitation.token) %>"
      data-assessment-files-url-value="<%= exam_assessment_files_path(@invitation.token) %>"
      data-assessment-remove-url-value="<%= exam_assessment_remove_file_path(@invitation.token, "__ID__") %>"
-     data-assessment-require-upload-value="<%= @round.require_upload? && !online_sheet %>"
+     data-assessment-require-upload-value="<%= @round.require_upload? && !auto_saved %>"
      data-assessment-files-value="<%= files.size %>"
      data-assessment-max-files-value="<%= Assessment::MAX_FILES %>"
      data-assessment-app-switch-value="<%= @round.allow_app_switch? %>"
@@ -26,7 +30,7 @@
     <%= render "shared/brand" %>
     <div class="grow hide-sm" style="text-align:center">
       <b><%= @invitation.candidate_name %></b>
-      <div class="tiny muted"><%= @round.name %> · <%= @round.total_marks %> marks · <% if online_sheet || @round.answer_sheet? %>auto-saved<% else %><span data-assessment-target="fileCount"><%= files.size %></span> file(s) uploaded<% end %></div>
+      <div class="tiny muted"><%= @round.name %> · <%= @round.total_marks %> marks · <% if auto_saved %>auto-saved<% else %><span data-assessment-target="fileCount"><%= files.size %></span> file(s) uploaded<% end %></div>
     </div>
     <span class="grow" style="display:none"></span>
     <span class="warn-meter" title="Warnings"><%= icon("alert") %> <span data-proctor-target="warnLabel"><%= @round.warnings_count %><%= "/#{@round.warning_limit}" if @round.warning_limit.positive? %></span></span>
@@ -34,7 +38,7 @@
     <button type="button" class="btn btn-primary btn-sm" data-action="assessment#confirmSubmit" data-assessment-target="submitButton"><%= icon("send") %><span class="hide-sm">Submit work</span></button>
   </header>
 
-  <div class="exam-layout <%= 'exam-layout-sheet' if online_sheet %>">
+  <div class="exam-layout <%= 'exam-layout-sheet' if online_sheet %> <%= 'exam-layout-paper' if paper %>">
     <div class="stack">
       <%# ---------------- the task ---------------- %>
       <section class="card card-pad task-card">
@@ -46,10 +50,10 @@
           <span class="pill"><%= icon("award") %> <%= @round.total_marks %> marks</span>
         </div>
 
-        <% task_files = online_sheet ? @round.task_attachments.reject { |f| f.id == @round.sheet_task_file&.id } : @round.task_attachments %>
+        <% task_files = @round.task_attachments.reject { |f| (online_sheet && f.id == @round.sheet_task_file&.id) || f.id == paper&.id } %>
         <% if task_files.any? %>
           <div class="task-files">
-            <b class="small"><%= icon("download") %> <%= online_sheet ? "Other task file(s) — for reference" : (@round.allow_download? ? "Your task file(s) — open / download and work on them" : "Task file(s) — view only") %></b>
+            <b class="small"><%= icon("download") %> <%= online_sheet || paper ? "Other task file(s) — for reference" : (@round.allow_download? ? "Your task file(s) — open / download and work on them" : "Task file(s) — view only") %></b>
             <% task_files.each do |file| %>
               <div class="file-row">
                 <span class="file-ico"><%= icon("file") %></span>
@@ -68,18 +72,25 @@
         <% if @round.task_instructions.present? %>
           <div class="task-text" style="margin-top:1rem"><%= simple_format(@round.task_instructions) %></div>
         <% else %>
-          <p class="small muted" style="margin-top:1rem"><%= online_sheet ? "Fill the answer sheet below — it works like Excel." : "Work on the file above." %> If anything is unclear, ask HR in the chat (the video call button at the bottom right).</p>
+          <p class="small muted" style="margin-top:1rem"><%= if paper then "Read each question in the paper and answer it on the answer sheet — one question at a time; use Next to move on." elsif answer_sheet then "Answer each question on the answer sheet below." elsif online_sheet then "Fill the answer sheet below — it works like Excel." else "Work on the file above." end %> If anything is unclear, ask HR in the chat (the video call button at the bottom right).</p>
         <% end %>
 
         <% if @round.allow_app_switch? %>
-          <p class="task-note ok"><%= icon("unlock") %> You may open <b><%= @round.task_label %></b> or another app to do this task — your screen stays shared with HR. Come back to this page to upload your file.</p>
+          <p class="task-note ok"><%= icon("unlock") %> You may open <b><%= @round.task_label %></b> or another app to do this task — your screen stays shared with HR.<%= " Come back to this page to upload your file." unless auto_saved %></p>
         <% else %>
           <p class="task-note"><%= icon("alert") %> Stay on this page in full screen. Switching tabs or apps gives a warning<%= " (#{@round.warning_limit} warnings end the assessment)" if @round.warning_limit.positive? %>.</p>
         <% end %>
       </section>
 
       <%# ---------------- answer sheet (practical tests with an answer key) ---------------- %>
-      <% if @round.answer_sheet? %><%= render "exams/answer_sheet", round: @round, invitation: @invitation %><% end %>
+      <% if paper %>
+        <div class="qp-split">
+          <%= render "exams/question_paper", paper: paper, invitation: @invitation %>
+          <%= render "exams/answer_sheet", round: @round, invitation: @invitation %>
+        </div>
+      <% elsif answer_sheet %>
+        <%= render "exams/answer_sheet", round: @round, invitation: @invitation %>
+      <% end %>
 
       <%# ---------------- the built-in spreadsheet: the task sheet, filled right here ---------------- %>
       <% if online_sheet %>
@@ -301,17 +312,21 @@
 
       <%# ---------------- the candidate's work ---------------- %>
       <section class="card card-pad work-card <%= 'finish-card-sheet' if online_sheet %>">
-        <% if online_sheet %>
-          <%# the answer sheet saves and submits by itself — nothing to upload %>
+        <% if auto_saved %>
+          <%# the answer sheet / built-in Excel saves and submits by itself — nothing to upload %>
           <div class="auto-save-note">
             <span class="as-ico"><%= icon("check-circle") %></span>
             <div>
               <b>No upload needed — your work is saved automatically</b>
-              <p class="small muted">Everything you do in the sheet above is saved every few seconds. When you press <b>Finish &amp; submit</b> (or the time ends) it goes to HR as an Excel file by itself. · शीट अपने-आप सेव होती है और सबमिट होते ही HR को Excel फ़ाइल चली जाती है — कुछ अपलोड नहीं करना।</p>
+              <% if online_sheet %>
+                <p class="small muted">Everything you do in the sheet above is saved every few seconds. When you press <b>Finish &amp; submit</b> (or the time ends) it goes to HR as an Excel file by itself. · शीट अपने-आप सेव होती है और सबमिट होते ही HR को Excel फ़ाइल चली जाती है — कुछ अपलोड नहीं करना।</p>
+              <% else %>
+                <p class="small muted">Your answers are saved every few seconds. When you press <b>Finish &amp; submit</b> (or the time ends) they go to HR and are marked by themselves. · आपके उत्तर अपने-आप सेव होते हैं और समय खत्म होते ही अपने-आप जमा हो जाते हैं — कुछ अपलोड नहीं करना।</p>
+              <% end %>
             </div>
           </div>
         <% else %>
-        <h2 style="font-size:1.1rem"><%= icon("upload") %> <%= @round.answer_sheet? ? "Extra file (optional)" : "Upload your finished work" %><%= " *" if @round.require_upload? && !@round.answer_sheet? %></h2>
+        <h2 style="font-size:1.1rem"><%= icon("upload") %> Upload your finished work<%= " *" if @round.require_upload? %></h2>
         <p class="small muted" style="margin:.3rem 0 1rem">
           Save the file on your computer, then upload it here. You can upload more than once — the last upload is what HR checks.
           Allowed: <%= @round.accept_attribute.split(",").first(10).join(" ") %>. Max <%= Assessment::MAX_FILE_SIZE / 1.megabyte %> MB each.
@@ -340,7 +355,7 @@
         <%= form_with url: exam_assessment_submit_path(@invitation.token), multipart: true, data: { assessment_target: "form", turbo: false } do %>
           <% if @round.allow_notes? %>
             <div class="field full" style="margin-top:1.2rem">
-              <label for="notes"><%= icon("edit") %> <%= online_sheet ? "Notes for HR (optional)" : "Your answer / steps / remarks (optional#{" — or type your answer here instead of a file" unless @round.require_upload?})" %></label>
+              <label for="notes"><%= icon("edit") %> <%= auto_saved ? "Notes for HR (optional)" : "Your answer / steps / remarks (optional#{" — or type your answer here instead of a file" unless @round.require_upload?})" %></label>
               <textarea name="notes" id="notes" rows="7" class="input" spellcheck="false" data-assessment-target="notes"
                         data-action="input->assessment#notesChanged"
                         placeholder="e.g. Steps I followed, formulas used, assumptions… (saved automatically)"><%= @round.candidate_notes %></textarea>
@@ -348,7 +363,7 @@
             </div>
           <% end %>
           <div class="row between" style="margin-top:1rem">
-            <span class="tiny muted"><%= icon("lock") %> <%= online_sheet ? "Your sheet and notes save by themselves." : "Your files and notes are saved the moment you upload them." %></span>
+            <span class="tiny muted"><%= icon("lock") %> <%= auto_saved ? "Your #{online_sheet ? 'sheet' : 'answers'} and notes save by themselves." : "Your files and notes are saved the moment you upload them." %></span>
             <button type="button" class="btn btn-success" data-action="assessment#confirmSubmit" data-assessment-target="submitButton"><%= icon("check") %> Finish &amp; submit</button>
           </div>
         <% end %>
@@ -396,7 +411,8 @@
       <div class="modal-top"><div class="ring-ico" style="animation:none"><%= icon("send") %></div><h2>Submit your work?</h2><p>You cannot change anything after submitting.</p></div>
       <div class="card-body">
         <% if online_sheet %><p><%= icon("check-circle") %> Your answer sheet is saved and will be submitted.</p><% end %>
-        <% unless online_sheet %>
+        <% if answer_sheet %><p class="as-confirm" id="as-confirm-summary"><%= @round.answered_count %> of <%= @round.answer_items.size %> answered.</p><% end %>
+        <% unless auto_saved %>
         <p><b data-assessment-target="confirmFiles"><%= files.size %> file(s) uploaded</b></p>
         <div class="errors hidden" data-assessment-target="confirmNote" style="margin:.8rem 0 0">No file uploaded yet — submit only if your answer is typed in the box.</div>
         <% end %>

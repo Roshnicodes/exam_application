@@ -21,6 +21,7 @@ class AssessmentsController < ApplicationController
     @assessment = Current.user.assessments.new(assessment_params)
     attach_files
     if read_key && @assessment.save
+      @assessment.read_paper!
       redirect_to @assessment, notice: [ "Practical assessment “#{@assessment.title}” saved. Give it to a candidate from their round list or a new invite.", key_notice ].compact.join(" ")
     else
       render :new, status: :unprocessable_entity
@@ -35,6 +36,7 @@ class AssessmentsController < ApplicationController
     purge_files
     attach_files
     if read_key && @assessment.save
+      @assessment.read_paper!
       redirect_to @assessment, notice: [ "“#{@assessment.title}” updated.", key_notice ].compact.join(" ")
     else
       render :edit, status: :unprocessable_entity

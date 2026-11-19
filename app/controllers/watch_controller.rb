@@ -48,6 +48,23 @@ class WatchController < ApplicationController
     end
   end
 
+  # A panelist (department / thematic head) gives their own marks on the answer sheet; the
+  # application's marks stay visible next to theirs.
+  def marks
+    @invitation = Invitation.find_by!(watch_token: params[:watch_token])
+    round = @invitation.interview_rounds.find(params[:round_id])
+    back = watch_round_path(params[:watch_token], round, anchor: "answer-sheet")
+    return redirect_to(back, alert: "This round has no answer key.") unless round.answer_sheet? && round.submitted?
+
+    panelist = round.panelists.to_a.find { |p| p.id == params[:employee_id].to_i }
+    name = panelist&.name || params[:reviewer_name].to_s.squish.first(60)
+    return redirect_to(back, alert: "Choose your name (or type it) before saving marks.") if name.blank?
+
+    round.set_item_marks!(params.fetch(:marks, {}).to_unsafe_h, by: name)
+    @invitation.broadcast_feedback
+    redirect_to back, notice: "Marks saved by #{name}: #{round.marks}/#{round.total_marks}."
+  end
+
   def batch
     @batch = ExamBatch.find_by!(watch_token: params[:watch_token])
     Invitation.submit_overdue!

@@ -40,11 +40,12 @@
           Up to <%= Assessment::MAX_FILES %> files, <%= Assessment::MAX_FILE_SIZE / 1.megabyte %> MB each.</p></div>
     </div>
     <div class="fields">
-      <% if assessment.files.attached? %>
+      <% saved_files = assessment.files.attachments.select(&:persisted?) %>
+      <% if saved_files.any? %>
         <div class="field full">
           <label>Files already uploaded</label>
           <div class="file-list">
-            <% assessment.files.attachments.each do |file| %>
+            <% saved_files.each do |file| %>
               <div class="file-row">
                 <span class="file-ico"><%= icon("file") %></span>
                 <div class="grow">

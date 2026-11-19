@@ -177,6 +177,8 @@ class ExamsController < ApplicationController
   def assessment_start
     return redirect_to exam_assessment_path(@invitation.token), alert: "This assessment is not open right now." unless @round&.open? && !@round.submitted?
 
+    # tests saved before questions were read from the paper: read it now, so each question shows its text
+    @round.assessment.read_paper! if @round.answer_sheet? && @round.answer_items.none? { |i| i.key?("question") }
     @round.start_work!
     redirect_to exam_assessment_path(@invitation.token)
   end

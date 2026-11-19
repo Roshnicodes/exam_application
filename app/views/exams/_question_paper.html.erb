@@ -1,0 +1,16 @@
+<%# The question paper, open next to the answer sheet the whole time (so the candidate never has to
+    leave the page or open a pop-up to read it). “Full paper” opens it large. locals: paper:, invitation: %>
+<% kind = task_preview_kind(paper) %>
+<% src = kind.in?(%w[sheet doc]) ? exam_assessment_task_preview_path(invitation.token, paper.id) : rails_blob_path(paper, disposition: "inline") %>
+<section class="card qp-panel" data-controller="question-paper" data-question-paper-kind-value="<%= kind %>" data-question-paper-src-value="<%= src %>"
+         data-action="answer-sheet:step@window->question-paper#focus">
+  <div class="qp-head">
+    <b class="grow"><%= icon("file") %> Question paper</b>
+    <button type="button" class="btn btn-light btn-sm" data-action="question-paper#zoom" data-step="-1" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button type="button" class="btn btn-light btn-sm" data-action="question-paper#zoom" data-step="1" title="Bigger text" aria-label="Bigger text">A+</button>
+    <button type="button" class="btn btn-primary btn-sm" data-action="assessment#preview" data-name="<%= paper.filename %>" data-kind="<%= kind %>" data-src="<%= src %>">
+      <%= icon("maximize") %> <span>Full paper</span>
+    </button>
+  </div>
+  <div class="qp-body" data-question-paper-target="body"><p class="tp-msg">Opening the question paper…</p></div>
+</section>

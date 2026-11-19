@@ -40,6 +40,7 @@ class Assessment < ApplicationRecord
   validates :pass_percentage, numericality: { only_integer: true, in: 0..100 }
   validates :max_warnings, numericality: { only_integer: true, in: 0..50 }
   validate :files_are_sane
+  validate :answer_key_not_in_task_files
 
   scope :ordered, -> { order(:title) }
   scope :active, -> { where(active: true) }
@@ -58,6 +59,45 @@ class Assessment < ApplicationRecord
     self.answer_items = AnswerKey.parse(file)
     answer_key.attach(file)
     self.max_marks = key_total.ceil if key_total.positive? # the test is out of the key's total
+  end
+
+  PAPER_EXTENSIONS = %w[.docx .pdf .txt].freeze
+
+  # The question paper among the task files (Word / PDF / text, never the answer key).
+  def paper_file
+    files.attachments.find { |f| PAPER_EXTENSIONS.include?(f.filename.extension_with_delimiter.downcase) && !answer_key_file?(f) }
+  end
+
+  # Puts each question's text (and MCQ options) from the paper next to the answer key's questions,
+  # so the candidate's answer sheet shows the question right above the answer.
+  def read_paper!
+    file = paper_file
+    return if answer_items.blank? || file.nil?
+
+    lines = file.blob.open do |tmp|
+      QuestionPaperParser.new(ActionDispatch::Http::UploadedFile.new(tempfile: tmp, filename: file.filename.to_s)).lines
+    end
+    paper = QuestionPaper.extract(lines)
+    items = answer_items.map do |item|
+      parent = item["id"][/\Aq\d+/]
+      whole = paper[parent]
+      own = paper[item["id"]]
+      # "(a) Output tax" lines without marks are read as MCQ options; for a written question they are its parts
+      if whole && item["kind"] != "choice" && Array(whole["options"]).any?
+        parts = whole["options"].each_with_index.map { |o, i| "(#{(97 + i).chr}) #{o}" }
+        own ||= { "text" => parts[item["id"].delete_prefix(parent).ord - 97] } if item["id"] != parent && item["id"].length == parent.length + 1
+        whole = whole.merge("text" => [ whole["text"], *parts ].join("\n"), "options" => [])
+      end
+      own = nil if own && own["text"].blank?
+      context = (whole["text"].split(/\n(?=\([a-z]\))/).first if own && item["id"] != parent && whole)
+      found = own || whole
+      next item.except("question", "context", "options") unless found
+
+      item.merge("question" => found["text"], "context" => context, "options" => item["kind"] == "choice" ? Array(found["options"]).first(5).presence : nil).compact
+    end
+    update_column(:answer_items, items)
+  rescue QuestionPaperParser::Error, Zip::Error, ArgumentError => e
+    Rails.logger.warn("Could not read the question paper of assessment #{id}: #{e.message}")
   end
 
   # HR's corrections from the review table: kind, correct answer, marks per question.
@@ -106,11 +146,30 @@ class Assessment < ApplicationRecord
     ext.present? && extensions.include?(ext)
   end
 
+  # Files that must never reach the candidate: named like an answer key, or the answer key itself.
+  ANSWER_KEY_NAME = /answer[\s_.-]*key|solution|marking[\s_.-]*scheme|model[\s_.-]*answers?/i
+
+  def answer_key_file?(attachment)
+    return true if attachment.filename.to_s.match?(ANSWER_KEY_NAME)
+
+    answer_key.attached? && attachment.blob.checksum == answer_key.blob.checksum
+  end
+
   def used_count
     interview_rounds.count
   end
 
   private
+    def answer_key_not_in_task_files
+      return unless files.attached?
+
+      files.each do |file|
+        next unless answer_key_file?(file)
+
+        errors.add(:files, "— “#{file.filename}” looks like the answer key. Task files are shown to the candidate: upload the answer key only in the “Answer key” box")
+      end
+    end
+
     # Rounds made earlier kept a copy of the time / marks / warning limit. When HR changes them
     # here, rounds not yet submitted that still have the old copy follow (a value HR set for one
     # candidate on purpose — different from the old one — is left alone).

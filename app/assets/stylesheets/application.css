@@ -2544,3 +2544,67 @@ body { overflow-x: clip; }
 .split > *, .stack > *, .answer-marks > * { min-width: 0; }
 .card-head { flex-wrap: wrap; row-gap: .4rem; }
 .card-head > .row { flex-wrap: wrap; }
+/* application vs reviewer marks */
+.am-summary { display: flex; gap: .6rem; align-items: stretch; flex-wrap: wrap; }
+.am-total { display: grid; gap: .1rem; padding: .55rem .85rem; border-radius: 12px; border: 1px solid var(--line); background: #f8fafc; min-width: 120px; }
+.am-total span { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.am-total b { font-size: 1.15rem; }
+.am-total.final { background: #f0fdf4; border-color: #bbf7d0; } .am-total.final b { color: #047857; }
+.am-meta { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; flex: 1; justify-content: flex-end; }
+.am-who { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin-bottom: .6rem; font-size: .84rem; }
+.am-who .input { width: auto; min-width: 12rem; }
+.am-app { color: var(--muted); }
+.am-table tr.am-changed td:last-child { background: #f0fdf4; }
+/* practical test with an answer key: question paper on the left, one question at a time on the right */
+.exam-layout.exam-layout-paper { max-width: 1680px; grid-template-columns: minmax(0, 1fr) 240px; gap: 1rem; padding-top: 1rem; }
+.exam-layout-paper .task-card { padding: 1rem 1.2rem; }
+.exam-layout-paper .task-card h2 { margin-top: .4rem !important; font-size: 1.1rem !important; }
+.exam-layout-paper .exam-side .card { padding: .9rem 1rem; }
+.exam-layout-paper .rules.tight .rule { font-size: .8rem; }
+.qp-split { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.qp-panel { position: sticky; top: 80px; height: calc(100vh - 96px); min-height: 420px; display: flex; flex-direction: column; overflow: hidden; }
+.qp-head { display: flex; align-items: center; gap: .4rem; padding: .6rem .8rem; border-bottom: 1px solid var(--line); }
+.qp-head b { display: flex; align-items: center; gap: .35rem; font-size: .92rem; }
+.qp-body { position: relative; flex: 1; min-height: 0; overflow: auto; background: #fff; --qp-scale: 1; }
+.qp-body .task-doc { font-size: calc(.9rem * var(--qp-scale)); max-width: none; padding: .9rem 1rem 2rem; }
+.qp-body iframe { width: 100%; height: 100%; border: 0; display: block; }
+.qp-body img { max-width: 100%; }
+.task-doc p.qp-current { background: #fef9c3; box-shadow: -.5rem 0 0 #fef9c3, .5rem 0 0 #fef9c3; border-radius: 4px; }
+.answer-card { min-width: 0; }
+.as-nav { display: flex; flex-wrap: wrap; gap: .5rem .9rem; padding: .7rem 1rem; border-bottom: 1px solid var(--line); background: #f8fafc; max-height: 9.5rem; overflow: auto; }
+.as-nav-group { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; }
+.as-nav-label { font-size: .7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-right: .15rem; }
+.as-nav-btn { min-width: 2.1rem; height: 2.1rem; padding: 0 .4rem; border-radius: 9px; border: 1.5px solid var(--line); background: #fff; font: inherit; font-size: .78rem; font-weight: 700; color: var(--ink-2); cursor: pointer; transition: .15s; }
+.as-nav-btn:hover { border-color: var(--brand); }
+.as-nav-btn.done { background: #dcfce7; border-color: #86efac; color: #065f46; }
+.as-nav-btn.current { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-soft); color: var(--brand); }
+.as-nav-btn.done.current { background: #059669; border-color: #059669; color: #fff; }
+.as-step-head { display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; margin-bottom: .7rem; }
+.as-qno { font-weight: 800; font-size: .95rem; padding: .2rem .6rem; border-radius: 8px; background: var(--brand-soft); color: var(--brand); }
+.as-context { font-size: .84rem; color: var(--muted); border-left: 3px solid var(--line); padding: .1rem 0 .1rem .7rem; margin-bottom: .6rem; }
+.as-context p, .as-qtext p { margin: 0 0 .35rem; }
+.as-qtext { font-size: .98rem; line-height: 1.55; margin-bottom: .9rem; overflow-wrap: anywhere; }
+.as-qtext p:first-child { font-weight: 600; }
+.as-options { display: grid; gap: .5rem; }
+.as-option { position: relative; display: flex; align-items: center; gap: .7rem; padding: .7rem .85rem; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; cursor: pointer; transition: .15s; }
+.as-option:hover { border-color: var(--brand); }
+.as-option input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.as-letter { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--line); font-weight: 700; font-size: .82rem; color: var(--ink-2); }
+.as-otext { font-size: .92rem; overflow-wrap: anywhere; }
+.as-option:has(input:checked) { border-color: #059669; background: #f0fdf4; }
+.as-option input:checked ~ .as-letter { background: linear-gradient(135deg, #22c55e, #059669); border-color: transparent; color: #fff; }
+.as-option input:focus-visible ~ .as-letter { outline: 2px solid var(--brand); outline-offset: 2px; }
+.as-clear { margin-top: .5rem; background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; cursor: pointer; }
+.as-label { display: block; font-size: .8rem; font-weight: 600; color: var(--muted); margin-bottom: .3rem; }
+.as-step textarea { min-height: 180px; resize: vertical; line-height: 1.5; }
+.as-foot { display: flex; align-items: center; gap: .5rem; margin-top: 1.2rem; padding-top: .9rem; border-top: 1px solid var(--line); }
+.as-confirm { font-weight: 600; }
+.as-confirm.as-left { color: #92400e; background: #fef3c7; padding: .55rem .75rem; border-radius: 10px; font-weight: 500; font-size: .88rem; }
+@media (max-width: 1180px) {
+  .qp-split { grid-template-columns: minmax(0, 1fr); }
+  .qp-panel { position: relative; top: 0; height: 48vh; min-height: 300px; }
+}
+@media (max-width: 640px) { .qp-panel { height: 38vh; min-height: 240px; } .qp-head .btn span { display: none; } }
+@media (max-width: 960px) { .exam-layout.exam-layout-paper { grid-template-columns: minmax(0, 1fr); } }
+/* reviewers' marks: heading */
+.am-title { display: flex; align-items: center; gap: .4rem; }

@@ -79,6 +79,7 @@ Rails.application.routes.draw do
   get "watch/:watch_token" => "watch#show", as: :watch
   get "watch/:watch_token/rounds/:round_id" => "watch#round", as: :watch_round
   post "watch/:watch_token/rounds/:round_id/feedback" => "watch#feedback", as: :watch_feedback
+  post "watch/:watch_token/rounds/:round_id/marks" => "watch#marks", as: :watch_marks
 
   # Public candidate flow, addressed by the shared link token
   scope "exam/:token", controller: :exams, as: :exam do
